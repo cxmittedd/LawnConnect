@@ -11,6 +11,7 @@ import {
   LogOut,
   Menu,
   X,
+  User,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
@@ -52,6 +53,7 @@ export function Navigation() {
         ...(isCustomer ? [{ path: '/post-job', label: 'Post Job', icon: Plus }] : []),
         ...(isProvider ? [{ path: '/browse-jobs', label: 'Browse Jobs', icon: Scissors }] : []),
         { path: '/my-jobs', label: 'My Jobs', icon: Briefcase },
+        { path: '/profile', label: 'Profile', icon: User },
         { path: '/about', label: 'About', icon: Info },
         { path: '/contact', label: 'Contact', icon: Mail },
       ]
