@@ -9,10 +9,14 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Smartphone, CheckCircle, Clock, AlertCircle, Copy, ExternalLink } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { sendNotification } from '@/lib/notifications';
 
 interface LynkPaymentCardProps {
   jobId: string;
+  jobTitle: string;
   amount: number;
+  providerId: string;
+  customerId: string;
   providerLynkId: string | null;
   providerName: string;
   paymentStatus: string;
@@ -24,7 +28,10 @@ interface LynkPaymentCardProps {
 
 export function LynkPaymentCard({
   jobId,
+  jobTitle,
   amount,
+  providerId,
+  customerId,
   providerLynkId,
   providerName,
   paymentStatus,
@@ -55,6 +62,15 @@ export function LynkPaymentCard({
 
       if (error) throw error;
 
+      // Notify provider about payment submission
+      sendNotification({
+        type: 'payment_submitted',
+        recipientId: providerId,
+        jobTitle,
+        jobId,
+        additionalData: { amount },
+      });
+
       toast.success('Payment reference submitted! Waiting for provider confirmation.');
       onPaymentUpdate();
     } catch (error: any) {
@@ -80,6 +96,14 @@ export function LynkPaymentCard({
         .eq('id', jobId);
 
       if (error) throw error;
+
+      // Notify customer about payment confirmation
+      sendNotification({
+        type: 'payment_confirmed',
+        recipientId: customerId,
+        jobTitle,
+        jobId,
+      });
 
       toast.success('Payment confirmed! Job is now in progress.');
       setConfirmDialog(false);

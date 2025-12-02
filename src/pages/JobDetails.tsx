@@ -14,6 +14,7 @@ import { format } from 'date-fns';
 import { LynkPaymentCard } from '@/components/LynkPaymentCard';
 import { JobCompletionCard } from '@/components/JobCompletionCard';
 import { JobReviewCard } from '@/components/JobReviewCard';
+import { sendNotification } from '@/lib/notifications';
 
 interface JobDetails {
   id: string;
@@ -183,6 +184,18 @@ export default function JobDetails() {
         .neq('id', proposal.id);
 
       if (rejectError) throw rejectError;
+
+      // Send notification to provider
+      sendNotification({
+        type: 'proposal_accepted',
+        recipientId: proposal.provider_id,
+        jobTitle: job.title,
+        jobId: job.id,
+        additionalData: {
+          customerName: customerName,
+          amount: proposal.proposed_price,
+        },
+      });
 
       toast.success('Proposal accepted! The provider will be notified.');
       setConfirmDialog({ open: false, proposal: null });
@@ -372,10 +385,13 @@ export default function JobDetails() {
             </Card>
 
             {/* Lynk Payment Card - shown after proposal accepted */}
-            {showPaymentCard && acceptedProposal && job.final_price && (
+            {showPaymentCard && acceptedProposal && job.final_price && job.accepted_provider_id && (
               <LynkPaymentCard
                 jobId={job.id}
+                jobTitle={job.title}
                 amount={job.final_price}
+                providerId={job.accepted_provider_id}
+                customerId={job.customer_id}
                 providerLynkId={acceptedProposal.provider_lynk_id}
                 providerName={acceptedProposal.provider_name || 'Provider'}
                 paymentStatus={job.payment_status || 'pending'}
@@ -390,6 +406,8 @@ export default function JobDetails() {
             {showCompletionCard && acceptedProposal && (
               <JobCompletionCard
                 jobId={job.id}
+                jobTitle={job.title}
+                customerId={job.customer_id}
                 status={job.status}
                 providerCompletedAt={job.provider_completed_at}
                 completedAt={job.completed_at}
@@ -404,6 +422,7 @@ export default function JobDetails() {
             {showReviewCard && acceptedProposal && job.accepted_provider_id && (
               <JobReviewCard
                 jobId={job.id}
+                jobTitle={job.title}
                 customerId={job.customer_id}
                 providerId={job.accepted_provider_id}
                 customerName={customerName}
