@@ -13,6 +13,7 @@ import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { LynkPaymentCard } from '@/components/LynkPaymentCard';
 import { JobCompletionCard } from '@/components/JobCompletionCard';
+import { JobReviewCard } from '@/components/JobReviewCard';
 
 interface JobDetails {
   id: string;
@@ -54,6 +55,7 @@ export default function JobDetails() {
   const { user } = useAuth();
   const [job, setJob] = useState<JobDetails | null>(null);
   const [proposals, setProposals] = useState<Proposal[]>([]);
+  const [customerName, setCustomerName] = useState<string>('Customer');
   const [loading, setLoading] = useState(true);
   const [acceptingId, setAcceptingId] = useState<string | null>(null);
   const [confirmDialog, setConfirmDialog] = useState<{ open: boolean; proposal: Proposal | null }>({
@@ -84,6 +86,19 @@ export default function JobDetails() {
       }
 
       setJob(jobData);
+
+      // Fetch customer profile for name
+      if (jobData.customer_id) {
+        const { data: customerProfile } = await supabase
+          .from('profiles')
+          .select('full_name')
+          .eq('id', jobData.customer_id)
+          .maybeSingle();
+        
+        if (customerProfile?.full_name) {
+          setCustomerName(customerProfile.full_name);
+        }
+      }
 
       // Load proposals with provider info
       const { data: proposalData, error: proposalError } = await supabase
@@ -224,6 +239,7 @@ export default function JobDetails() {
   const acceptedProposal = proposals.find(p => p.status === 'accepted');
   const showPaymentCard = job?.status === 'accepted' || job?.status === 'in_progress' || job?.status === 'pending_completion' || job?.status === 'completed';
   const showCompletionCard = (job?.status === 'in_progress' || job?.status === 'pending_completion' || job?.status === 'completed') && job?.payment_status === 'paid';
+  const showReviewCard = job?.status === 'completed';
 
   if (loading) {
     return (
@@ -381,6 +397,20 @@ export default function JobDetails() {
                 isProvider={isProvider}
                 providerName={acceptedProposal.provider_name || 'Provider'}
                 onStatusUpdate={loadJobDetails}
+              />
+            )}
+
+            {/* Reviews Card - shown for completed jobs */}
+            {showReviewCard && acceptedProposal && job.accepted_provider_id && (
+              <JobReviewCard
+                jobId={job.id}
+                customerId={job.customer_id}
+                providerId={job.accepted_provider_id}
+                customerName={customerName}
+                providerName={acceptedProposal.provider_name || 'Provider'}
+                isCustomer={isCustomer}
+                isProvider={isProvider}
+                onReviewSubmit={loadJobDetails}
               />
             )}
           </div>
