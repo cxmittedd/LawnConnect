@@ -7,9 +7,9 @@ import { AuthProvider, ProtectedRoute } from "./lib/auth";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
-import Services from "./pages/Services";
-import Invoices from "./pages/Invoices";
-import Checkout from "./pages/Checkout";
+import PostJob from "./pages/PostJob";
+import BrowseJobs from "./pages/BrowseJobs";
+import MyJobs from "./pages/MyJobs";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
 import NotFound from "./pages/NotFound";
@@ -37,26 +37,26 @@ const App = () => (
               }
             />
             <Route
-              path="/services"
+              path="/post-job"
               element={
                 <ProtectedRoute>
-                  <Services />
+                  <PostJob />
                 </ProtectedRoute>
               }
             />
             <Route
-              path="/invoices"
+              path="/browse-jobs"
               element={
                 <ProtectedRoute>
-                  <Invoices />
+                  <BrowseJobs />
                 </ProtectedRoute>
               }
             />
             <Route
-              path="/checkout"
+              path="/my-jobs"
               element={
                 <ProtectedRoute>
-                  <Checkout />
+                  <MyJobs />
                 </ProtectedRoute>
               }
             />

@@ -3,34 +3,55 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/lib/auth';
 import {
   LayoutDashboard,
-  FileText,
+  Scissors,
   Briefcase,
-  ShoppingCart,
+  Plus,
   Info,
   Mail,
   LogOut,
   Menu,
   X,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 
 export function Navigation() {
   const { user, signOut } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [userRole, setUserRole] = useState<string>('customer');
+
+  useEffect(() => {
+    if (user) {
+      loadUserRole();
+    }
+  }, [user]);
+
+  const loadUserRole = async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from('profiles')
+      .select('user_role')
+      .eq('id', user.id)
+      .single();
+    if (data) setUserRole(data.user_role);
+  };
 
   const handleSignOut = async () => {
     await signOut();
     navigate('/auth');
   };
 
+  const isCustomer = userRole === 'customer' || userRole === 'both';
+  const isProvider = userRole === 'provider' || userRole === 'both';
+
   const navItems = user
     ? [
         { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-        { path: '/services', label: 'Services', icon: Briefcase },
-        { path: '/invoices', label: 'Invoices', icon: FileText },
-        { path: '/checkout', label: 'Checkout', icon: ShoppingCart },
+        ...(isCustomer ? [{ path: '/post-job', label: 'Post Job', icon: Plus }] : []),
+        ...(isProvider ? [{ path: '/browse-jobs', label: 'Browse Jobs', icon: Scissors }] : []),
+        { path: '/my-jobs', label: 'My Jobs', icon: Briefcase },
         { path: '/about', label: 'About', icon: Info },
         { path: '/contact', label: 'Contact', icon: Mail },
       ]
@@ -45,9 +66,9 @@ export function Navigation() {
         <div className="flex h-16 items-center justify-between">
           <Link to={user ? '/dashboard' : '/'} className="flex items-center gap-2">
             <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
-              <Briefcase className="h-5 w-5 text-primary-foreground" />
+              <Scissors className="h-5 w-5 text-primary-foreground" />
             </div>
-            <span className="text-xl font-bold text-foreground">InvoicePro</span>
+            <span className="text-xl font-bold text-foreground">LawnConnect</span>
           </Link>
 
           {/* Desktop Navigation */}

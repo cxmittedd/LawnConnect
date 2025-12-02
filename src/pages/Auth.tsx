@@ -5,9 +5,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useAuth } from '@/lib/auth';
 import { toast } from 'sonner';
-import { Briefcase } from 'lucide-react';
+import { Scissors } from 'lucide-react';
 import { z } from 'zod';
 
 const signInSchema = z.object({
@@ -20,6 +21,7 @@ const signUpSchema = z.object({
   email: z.string().trim().email({ message: 'Invalid email address' }),
   password: z.string().min(6, { message: 'Password must be at least 6 characters' }),
   confirmPassword: z.string(),
+  userRole: z.enum(['customer', 'provider']),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
   path: ['confirmPassword'],
@@ -35,6 +37,7 @@ export default function Auth() {
     email: '',
     password: '',
     confirmPassword: '',
+    userRole: 'customer' as 'customer' | 'provider',
   });
 
   useEffect(() => {
@@ -78,7 +81,7 @@ export default function Auth() {
     }
 
     setLoading(true);
-    const { error } = await signUp(signUpData.email, signUpData.password, signUpData.fullName);
+    const { error } = await signUp(signUpData.email, signUpData.password, signUpData.fullName, signUpData.userRole);
     setLoading(false);
 
     if (error) {
@@ -98,11 +101,11 @@ export default function Auth() {
       <Card className="w-full max-w-md shadow-xl">
         <CardHeader className="text-center space-y-4">
           <div className="mx-auto h-12 w-12 rounded-lg bg-primary flex items-center justify-center">
-            <Briefcase className="h-6 w-6 text-primary-foreground" />
+            <Scissors className="h-6 w-6 text-primary-foreground" />
           </div>
           <div>
-            <CardTitle className="text-2xl">Welcome to InvoicePro</CardTitle>
-            <CardDescription>Manage your services and invoices with ease</CardDescription>
+            <CardTitle className="text-2xl">Welcome to LawnConnect</CardTitle>
+            <CardDescription>Connect customers with lawn care professionals</CardDescription>
           </div>
         </CardHeader>
         <CardContent>
@@ -189,6 +192,28 @@ export default function Auth() {
                     }
                     required
                   />
+                </div>
+                <div className="space-y-2">
+                  <Label>I am a...</Label>
+                  <RadioGroup
+                    value={signUpData.userRole}
+                    onValueChange={(value: 'customer' | 'provider') =>
+                      setSignUpData({ ...signUpData, userRole: value })
+                    }
+                  >
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="customer" id="customer" />
+                      <Label htmlFor="customer" className="font-normal cursor-pointer">
+                        Customer (I need lawn cutting services)
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="provider" id="provider" />
+                      <Label htmlFor="provider" className="font-normal cursor-pointer">
+                        Service Provider (I provide lawn cutting services)
+                      </Label>
+                    </div>
+                  </RadioGroup>
                 </div>
                 <Button type="submit" className="w-full" disabled={loading}>
                   {loading ? 'Creating account...' : 'Create Account'}

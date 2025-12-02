@@ -1,28 +1,28 @@
 import { Navigation } from '@/components/Navigation';
 import { Card, CardContent } from '@/components/ui/card';
-import { Briefcase, Target, Users, Zap } from 'lucide-react';
+import { Scissors, DollarSign, Users, Shield } from 'lucide-react';
 
 export default function About() {
   const features = [
     {
-      icon: Briefcase,
-      title: 'Service Management',
-      description: 'Easily create and manage your service offerings with detailed descriptions and pricing.',
-    },
-    {
-      icon: Target,
-      title: 'Invoice Tracking',
-      description: 'Keep track of all your invoices, their status, and payment history in one place.',
+      icon: Scissors,
+      title: 'Easy Job Posting',
+      description: 'Customers post lawn cutting jobs with photos, location, and pricing starting from J$7,000.',
     },
     {
       icon: Users,
-      title: 'Client Management',
-      description: 'Maintain organized records of your clients and their transaction history.',
+      title: 'Connect Providers',
+      description: 'Service providers browse available jobs and submit proposals based on their expertise.',
     },
     {
-      icon: Zap,
-      title: 'Fast Checkout',
-      description: 'Process payments quickly with our streamlined checkout experience.',
+      icon: DollarSign,
+      title: 'Secure Transactions',
+      description: 'Customers pay upfront, funds held until completion. 10% platform fee from each transaction.',
+    },
+    {
+      icon: Shield,
+      title: 'Trust & Safety',
+      description: 'Rate and review system ensures quality service and builds community trust.',
     },
   ];
 
@@ -32,9 +32,9 @@ export default function About() {
       <main className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-12">
-            <h1 className="text-4xl font-bold text-foreground mb-4">About InvoicePro</h1>
+            <h1 className="text-4xl font-bold text-foreground mb-4">About LawnConnect</h1>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              A modern platform for managing your services, invoices, and client payments all in one place.
+              Jamaica's trusted marketplace connecting homeowners with professional lawn care providers.
             </p>
           </div>
 
@@ -42,10 +42,10 @@ export default function About() {
             <CardContent className="p-8">
               <h2 className="text-2xl font-bold mb-4">Our Mission</h2>
               <p className="text-muted-foreground leading-relaxed">
-                InvoicePro was built to simplify the business management process for freelancers and small businesses. 
-                We understand that managing services, creating invoices, and tracking payments can be time-consuming 
-                and complex. Our platform streamlines these processes, allowing you to focus on what matters most: 
-                growing your business and serving your clients.
+                LawnConnect was created to make finding and providing lawn care services simple and secure in Jamaica. 
+                We connect homeowners who need quality lawn maintenance with skilled service providers looking for work. 
+                With transparent pricing starting at J$7,000, secure payments, and a trusted review system, 
+                we're building a community where both customers and providers succeed.
               </p>
             </CardContent>
           </Card>
@@ -76,12 +76,12 @@ export default function About() {
 
           <Card className="bg-primary/5">
             <CardContent className="p-8 text-center">
-              <h2 className="text-2xl font-bold mb-4">Why Choose InvoicePro?</h2>
+              <h2 className="text-2xl font-bold mb-4">Why Choose LawnConnect?</h2>
               <p className="text-muted-foreground leading-relaxed max-w-2xl mx-auto">
-                We combine powerful features with an intuitive interface to provide a seamless experience. 
-                Whether you're managing a handful of clients or scaling your business, InvoicePro grows with you. 
-                Our platform is designed to be simple yet comprehensive, ensuring you have all the tools you need 
-                without unnecessary complexity.
+                We provide a safe, transparent platform for both customers and service providers. 
+                With escrow payments, a 10% platform fee, and verified reviews, LawnConnect ensures 
+                quality service and fair compensation. Join Jamaica's growing community of satisfied 
+                homeowners and professional lawn care providers.
               </p>
             </CardContent>
           </Card>
