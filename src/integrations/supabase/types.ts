@@ -98,6 +98,9 @@ export type Database = {
           id: string
           lawn_size: string | null
           location: string
+          payment_confirmed_at: string | null
+          payment_confirmed_by: string | null
+          payment_reference: string | null
           payment_status: string | null
           platform_fee: number | null
           preferred_date: string | null
@@ -120,6 +123,9 @@ export type Database = {
           id?: string
           lawn_size?: string | null
           location: string
+          payment_confirmed_at?: string | null
+          payment_confirmed_by?: string | null
+          payment_reference?: string | null
           payment_status?: string | null
           platform_fee?: number | null
           preferred_date?: string | null
@@ -142,6 +148,9 @@ export type Database = {
           id?: string
           lawn_size?: string | null
           location?: string
+          payment_confirmed_at?: string | null
+          payment_confirmed_by?: string | null
+          payment_reference?: string | null
           payment_status?: string | null
           platform_fee?: number | null
           preferred_date?: string | null
@@ -161,6 +170,7 @@ export type Database = {
           created_at: string | null
           full_name: string | null
           id: string
+          lynk_id: string | null
           phone_number: string | null
           updated_at: string | null
           user_role: string
@@ -172,6 +182,7 @@ export type Database = {
           created_at?: string | null
           full_name?: string | null
           id: string
+          lynk_id?: string | null
           phone_number?: string | null
           updated_at?: string | null
           user_role?: string
@@ -183,6 +194,7 @@ export type Database = {
           created_at?: string | null
           full_name?: string | null
           id?: string
+          lynk_id?: string | null
           phone_number?: string | null
           updated_at?: string | null
           user_role?: string

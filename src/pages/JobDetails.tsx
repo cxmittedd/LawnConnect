@@ -11,6 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { MapPin, Calendar, DollarSign, Clock, ArrowLeft, Check, X, User } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import { LynkPaymentCard } from '@/components/LynkPaymentCard';
 
 interface JobDetails {
   id: string;
@@ -25,6 +26,8 @@ interface JobDetails {
   customer_offer: number | null;
   final_price: number | null;
   status: string;
+  payment_status: string | null;
+  payment_reference: string | null;
   customer_id: string;
   accepted_provider_id: string | null;
   created_at: string;
@@ -39,6 +42,7 @@ interface Proposal {
   provider_id: string;
   provider_name: string | null;
   provider_phone: string | null;
+  provider_lynk_id: string | null;
 }
 
 export default function JobDetails() {
@@ -92,7 +96,7 @@ export default function JobDetails() {
         const providerIds = proposalData.map(p => p.provider_id);
         const { data: profiles } = await supabase
           .from('profiles')
-          .select('id, full_name, phone_number')
+          .select('id, full_name, phone_number, lynk_id')
           .in('id', providerIds);
 
         const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
@@ -101,6 +105,7 @@ export default function JobDetails() {
           ...proposal,
           provider_name: profileMap.get(proposal.provider_id)?.full_name || null,
           provider_phone: profileMap.get(proposal.provider_id)?.phone_number || null,
+          provider_lynk_id: profileMap.get(proposal.provider_id)?.lynk_id || null,
         }));
 
         setProposals(enrichedProposals);
@@ -210,6 +215,9 @@ export default function JobDetails() {
   };
 
   const isCustomer = job?.customer_id === user?.id;
+  const isProvider = job?.accepted_provider_id === user?.id;
+  const acceptedProposal = proposals.find(p => p.status === 'accepted');
+  const showPaymentCard = job?.status === 'accepted' || (job?.status === 'in_progress' && job?.payment_status === 'paid');
 
   if (loading) {
     return (
@@ -340,6 +348,21 @@ export default function JobDetails() {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Lynk Payment Card - shown after proposal accepted */}
+            {showPaymentCard && acceptedProposal && job.final_price && (
+              <LynkPaymentCard
+                jobId={job.id}
+                amount={job.final_price}
+                providerLynkId={acceptedProposal.provider_lynk_id}
+                providerName={acceptedProposal.provider_name || 'Provider'}
+                paymentStatus={job.payment_status || 'pending'}
+                paymentReference={job.payment_reference}
+                isCustomer={isCustomer}
+                isProvider={isProvider}
+                onPaymentUpdate={loadJobDetails}
+              />
+            )}
           </div>
 
           {/* Proposals Sidebar */}

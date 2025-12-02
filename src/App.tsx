@@ -11,6 +11,7 @@ import PostJob from "./pages/PostJob";
 import BrowseJobs from "./pages/BrowseJobs";
 import MyJobs from "./pages/MyJobs";
 import JobDetails from "./pages/JobDetails";
+import Profile from "./pages/Profile";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
 import NotFound from "./pages/NotFound";
@@ -66,6 +67,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <JobDetails />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/profile"
+              element={
+                <ProtectedRoute>
+                  <Profile />
                 </ProtectedRoute>
               }
             />
