@@ -4,87 +4,81 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/integrations/supabase/client';
-import { Briefcase, FileText, DollarSign, TrendingUp, ArrowRight } from 'lucide-react';
+import { Scissors, Briefcase, DollarSign, CheckCircle, ArrowRight, Plus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 export default function Dashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [userRole, setUserRole] = useState<string>('customer');
   const [stats, setStats] = useState({
-    totalServices: 0,
-    totalInvoices: 0,
-    pendingInvoices: 0,
-    totalRevenue: 0,
+    activeJobs: 0,
+    completedJobs: 0,
+    totalEarnings: 0,
+    pendingProposals: 0,
   });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadStats();
+    loadUserData();
   }, [user]);
 
-  const loadStats = async () => {
+  const loadUserData = async () => {
     if (!user) return;
 
     try {
-      const [servicesResult, invoicesResult] = await Promise.all([
-        supabase.from('services').select('*', { count: 'exact' }).eq('user_id', user.id),
-        supabase.from('invoices').select('*').eq('user_id', user.id),
-      ]);
+      // Get user profile to determine role
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('user_role')
+        .eq('id', user.id)
+        .single();
 
-      const totalServices = servicesResult.count || 0;
-      const invoices = invoicesResult.data || [];
-      const pendingInvoices = invoices.filter((inv) => inv.status === 'pending').length;
-      const totalRevenue = invoices
-        .filter((inv) => inv.status === 'paid')
-        .reduce((sum, inv) => sum + Number(inv.amount), 0);
+      if (profile) {
+        setUserRole(profile.user_role);
 
-      setStats({
-        totalServices,
-        totalInvoices: invoices.length,
-        pendingInvoices,
-        totalRevenue,
-      });
+        if (profile.user_role === 'customer' || profile.user_role === 'both') {
+          // Load customer stats
+          const { data: jobs } = await supabase
+            .from('job_requests')
+            .select('*')
+            .eq('customer_id', user.id);
+
+          const activeJobs = jobs?.filter(j => ['open', 'in_negotiation', 'accepted', 'in_progress'].includes(j.status)).length || 0;
+          const completedJobs = jobs?.filter(j => j.status === 'completed').length || 0;
+
+          setStats(prev => ({ ...prev, activeJobs, completedJobs }));
+        }
+
+        if (profile.user_role === 'provider' || profile.user_role === 'both') {
+          // Load provider stats
+          const { data: acceptedJobs } = await supabase
+            .from('job_requests')
+            .select('*')
+            .eq('accepted_provider_id', user.id);
+
+          const totalEarnings = acceptedJobs?.filter(j => j.status === 'completed')
+            .reduce((sum, job) => sum + Number(job.provider_payout || 0), 0) || 0;
+
+          const { data: proposals } = await supabase
+            .from('job_proposals')
+            .select('*')
+            .eq('provider_id', user.id)
+            .eq('status', 'pending');
+
+          setStats(prev => ({ 
+            ...prev, 
+            totalEarnings, 
+            pendingProposals: proposals?.length || 0 
+          }));
+        }
+      }
     } catch (error) {
       console.error('Error loading stats:', error);
     } finally {
       setLoading(false);
     }
   };
-
-  const statCards = [
-    {
-      title: 'Active Services',
-      value: stats.totalServices,
-      icon: Briefcase,
-      description: 'Services offered',
-      action: () => navigate('/services'),
-      color: 'text-primary',
-    },
-    {
-      title: 'Total Invoices',
-      value: stats.totalInvoices,
-      icon: FileText,
-      description: 'All time invoices',
-      action: () => navigate('/invoices'),
-      color: 'text-info',
-    },
-    {
-      title: 'Pending Invoices',
-      value: stats.pendingInvoices,
-      icon: TrendingUp,
-      description: 'Awaiting payment',
-      action: () => navigate('/invoices'),
-      color: 'text-warning',
-    },
-    {
-      title: 'Total Revenue',
-      value: `$${stats.totalRevenue.toFixed(2)}`,
-      icon: DollarSign,
-      description: 'From paid invoices',
-      action: () => navigate('/invoices'),
-      color: 'text-success',
-    },
-  ];
 
   if (loading) {
     return (
@@ -100,99 +94,146 @@ export default function Dashboard() {
     );
   }
 
+  const isCustomer = userRole === 'customer' || userRole === 'both';
+  const isProvider = userRole === 'provider' || userRole === 'both';
+
   return (
     <>
       <Navigation />
       <main className="container mx-auto px-4 py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-foreground mb-2">Dashboard</h1>
-          <p className="text-muted-foreground">Welcome back! Here's an overview of your business.</p>
+          <p className="text-muted-foreground">
+            {isCustomer && 'Welcome back! Manage your lawn care requests.'}
+            {isProvider && !isCustomer && 'Welcome back! Find new lawn cutting jobs.'}
+          </p>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-8">
-          {statCards.map((stat) => {
-            const Icon = stat.icon;
-            return (
-              <Card key={stat.title} className="hover:shadow-lg transition-shadow cursor-pointer" onClick={stat.action}>
+        {isCustomer && (
+          <>
+            <div className="grid gap-6 md:grid-cols-3 mb-8">
+              <Card className="hover:shadow-lg transition-shadow">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
-                  <Icon className={`h-5 w-5 ${stat.color}`} />
+                  <CardTitle className="text-sm font-medium">Active Jobs</CardTitle>
+                  <Briefcase className="h-5 w-5 text-primary" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{stat.value}</div>
-                  <p className="text-xs text-muted-foreground mt-1">{stat.description}</p>
+                  <div className="text-2xl font-bold">{stats.activeJobs}</div>
+                  <p className="text-xs text-muted-foreground mt-1">In progress or open</p>
                 </CardContent>
               </Card>
-            );
-          })}
-        </div>
 
-        <div className="grid gap-6 md:grid-cols-2">
-          <Card>
-            <CardHeader>
-              <CardTitle>Quick Actions</CardTitle>
-              <CardDescription>Manage your business operations</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <Button
-                onClick={() => navigate('/services')}
-                variant="outline"
-                className="w-full justify-between"
-              >
-                <span className="flex items-center gap-2">
-                  <Briefcase className="h-4 w-4" />
-                  Manage Services
-                </span>
-                <ArrowRight className="h-4 w-4" />
-              </Button>
-              <Button
-                onClick={() => navigate('/invoices')}
-                variant="outline"
-                className="w-full justify-between"
-              >
-                <span className="flex items-center gap-2">
-                  <FileText className="h-4 w-4" />
-                  Create Invoice
-                </span>
-                <ArrowRight className="h-4 w-4" />
-              </Button>
-              <Button
-                onClick={() => navigate('/checkout')}
-                variant="outline"
-                className="w-full justify-between"
-              >
-                <span className="flex items-center gap-2">
-                  <DollarSign className="h-4 w-4" />
-                  Process Payment
-                </span>
-                <ArrowRight className="h-4 w-4" />
-              </Button>
-            </CardContent>
-          </Card>
+              <Card className="hover:shadow-lg transition-shadow">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Completed</CardTitle>
+                  <CheckCircle className="h-5 w-5 text-success" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{stats.completedJobs}</div>
+                  <p className="text-xs text-muted-foreground mt-1">Successfully finished</p>
+                </CardContent>
+              </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Getting Started</CardTitle>
-              <CardDescription>Set up your business profile</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <div className="h-2 w-2 rounded-full bg-primary"></div>
-                  <p className="text-sm">Add your first service</p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="h-2 w-2 rounded-full bg-primary"></div>
-                  <p className="text-sm">Create your first invoice</p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="h-2 w-2 rounded-full bg-primary"></div>
-                  <p className="text-sm">Explore payment options</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+              <Card className="hover:shadow-lg transition-shadow">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Quick Actions</CardTitle>
+                  <Plus className="h-5 w-5 text-accent" />
+                </CardHeader>
+                <CardContent>
+                  <Button onClick={() => navigate('/post-job')} className="w-full" size="sm">
+                    Post New Job
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Customer Quick Actions</CardTitle>
+                <CardDescription>Manage your lawn care needs</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <Button onClick={() => navigate('/post-job')} variant="outline" className="w-full justify-between">
+                  <span className="flex items-center gap-2">
+                    <Plus className="h-4 w-4" />
+                    Post a New Job Request
+                  </span>
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+                <Button onClick={() => navigate('/my-jobs')} variant="outline" className="w-full justify-between">
+                  <span className="flex items-center gap-2">
+                    <Briefcase className="h-4 w-4" />
+                    View My Job Requests
+                  </span>
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              </CardContent>
+            </Card>
+          </>
+        )}
+
+        {isProvider && (
+          <>
+            <div className="grid gap-6 md:grid-cols-3 mb-8 mt-8">
+              <Card className="hover:shadow-lg transition-shadow">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Total Earnings</CardTitle>
+                  <DollarSign className="h-5 w-5 text-success" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">J${stats.totalEarnings.toFixed(2)}</div>
+                  <p className="text-xs text-muted-foreground mt-1">From completed jobs</p>
+                </CardContent>
+              </Card>
+
+              <Card className="hover:shadow-lg transition-shadow">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Pending Proposals</CardTitle>
+                  <Scissors className="h-5 w-5 text-warning" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{stats.pendingProposals}</div>
+                  <p className="text-xs text-muted-foreground mt-1">Awaiting customer response</p>
+                </CardContent>
+              </Card>
+
+              <Card className="hover:shadow-lg transition-shadow">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Find Work</CardTitle>
+                  <Briefcase className="h-5 w-5 text-primary" />
+                </CardHeader>
+                <CardContent>
+                  <Button onClick={() => navigate('/browse-jobs')} className="w-full" size="sm">
+                    Browse Jobs
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Provider Quick Actions</CardTitle>
+                <CardDescription>Find and manage your lawn cutting jobs</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <Button onClick={() => navigate('/browse-jobs')} variant="outline" className="w-full justify-between">
+                  <span className="flex items-center gap-2">
+                    <Scissors className="h-4 w-4" />
+                    Browse Available Jobs
+                  </span>
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+                <Button onClick={() => navigate('/my-jobs')} variant="outline" className="w-full justify-between">
+                  <span className="flex items-center gap-2">
+                    <CheckCircle className="h-4 w-4" />
+                    View My Accepted Jobs
+                  </span>
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              </CardContent>
+            </Card>
+          </>
+        )}
       </main>
     </>
   );

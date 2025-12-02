@@ -52,7 +52,7 @@ export default function Contact() {
           <div className="text-center mb-12">
             <h1 className="text-4xl font-bold text-foreground mb-4">Contact Us</h1>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Have questions or feedback? We'd love to hear from you.
+              Questions about using LawnConnect? We're here to help.
             </p>
           </div>
 
@@ -136,7 +136,7 @@ export default function Contact() {
                     </div>
                     <div>
                       <h3 className="font-semibold mb-2">Email Us</h3>
-                      <p className="text-sm text-muted-foreground">support@invoicepro.com</p>
+                      <p className="text-sm text-muted-foreground">support@lawnconnect.jm</p>
                       <p className="text-sm text-muted-foreground mt-1">
                         We typically respond within 24 hours
                       </p>

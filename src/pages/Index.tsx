@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useAuth } from '@/lib/auth';
-import { Briefcase, FileText, CreditCard, TrendingUp, ArrowRight } from 'lucide-react';
+import { Scissors, Users, DollarSign, CheckCircle, ArrowRight } from 'lucide-react';
 
 const Index = () => {
   const { user } = useAuth();
@@ -17,24 +17,24 @@ const Index = () => {
 
   const features = [
     {
-      icon: Briefcase,
-      title: 'Service Management',
-      description: 'Create and manage your service offerings with detailed pricing and descriptions.',
+      icon: Scissors,
+      title: 'Post Lawn Jobs',
+      description: 'Customers post their lawn cutting needs with photos and details. Start at J$7,000.',
     },
     {
-      icon: FileText,
-      title: 'Invoice Tracking',
-      description: 'Generate professional invoices and track their status from pending to paid.',
+      icon: Users,
+      title: 'Connect with Providers',
+      description: 'Service providers browse jobs and submit proposals to customers.',
     },
     {
-      icon: CreditCard,
-      title: 'Quick Checkout',
-      description: 'Process payments with our streamlined checkout experience.',
+      icon: DollarSign,
+      title: 'Secure Payments',
+      description: 'Customers pay upfront, funds held securely until job completion. 10% platform fee.',
     },
     {
-      icon: TrendingUp,
-      title: 'Business Insights',
-      description: 'Monitor your revenue, pending payments, and overall business performance.',
+      icon: CheckCircle,
+      title: 'Quality Service',
+      description: 'Rate and review service providers. Build trust in the community.',
     },
   ];
 
@@ -45,9 +45,9 @@ const Index = () => {
           <div className="flex h-16 items-center justify-between">
             <div className="flex items-center gap-2">
               <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
-                <Briefcase className="h-5 w-5 text-primary-foreground" />
+                <Scissors className="h-5 w-5 text-primary-foreground" />
               </div>
-              <span className="text-xl font-bold text-foreground">InvoicePro</span>
+              <span className="text-xl font-bold text-foreground">LawnConnect</span>
             </div>
             <div className="flex gap-3">
               <Button variant="outline" onClick={() => navigate('/about')}>
@@ -62,15 +62,15 @@ const Index = () => {
       <main className="container mx-auto px-4 py-20">
         <div className="text-center mb-16">
           <h1 className="text-5xl md:text-6xl font-bold text-foreground mb-6">
-            Manage Your Business
-            <span className="block text-primary mt-2">With Confidence</span>
+            Connect for
+            <span className="block text-primary mt-2">Lawn Care Services</span>
           </h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-8">
-            The all-in-one platform for managing services, invoices, and payments. 
-            Streamline your workflow and grow your business.
+            Jamaica's premier platform connecting homeowners with professional lawn cutting services. 
+            Post jobs or find work - all starting from J$7,000.
           </p>
           <Button size="lg" className="text-lg px-8" onClick={() => navigate('/auth')}>
-            Start Free Today
+            Join LawnConnect
             <ArrowRight className="ml-2 h-5 w-5" />
           </Button>
         </div>
@@ -96,7 +96,8 @@ const Index = () => {
           <CardContent className="p-12 text-center">
             <h2 className="text-3xl font-bold mb-4">Ready to Get Started?</h2>
             <p className="text-lg opacity-90 mb-6 max-w-2xl mx-auto">
-              Join thousands of professionals who trust InvoicePro to manage their business operations.
+              Whether you need your lawn cut or you're looking to provide lawn care services, 
+              LawnConnect makes it easy to connect.
             </p>
             <Button size="lg" variant="secondary" onClick={() => navigate('/auth')}>
               Create Your Account
