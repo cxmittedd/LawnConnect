@@ -12,6 +12,7 @@ import { MapPin, Calendar, DollarSign, Clock, ArrowLeft, Check, X, User } from '
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { LynkPaymentCard } from '@/components/LynkPaymentCard';
+import { JobCompletionCard } from '@/components/JobCompletionCard';
 
 interface JobDetails {
   id: string;
@@ -31,6 +32,8 @@ interface JobDetails {
   customer_id: string;
   accepted_provider_id: string | null;
   created_at: string;
+  provider_completed_at: string | null;
+  completed_at: string | null;
 }
 
 interface Proposal {
@@ -201,6 +204,8 @@ export default function JobDetails() {
       case 'accepted':
       case 'in_progress':
         return 'bg-primary text-primary-foreground';
+      case 'pending_completion':
+        return 'bg-warning text-warning-foreground';
       case 'completed':
         return 'bg-success text-success-foreground';
       case 'cancelled':
@@ -217,7 +222,8 @@ export default function JobDetails() {
   const isCustomer = job?.customer_id === user?.id;
   const isProvider = job?.accepted_provider_id === user?.id;
   const acceptedProposal = proposals.find(p => p.status === 'accepted');
-  const showPaymentCard = job?.status === 'accepted' || (job?.status === 'in_progress' && job?.payment_status === 'paid');
+  const showPaymentCard = job?.status === 'accepted' || job?.status === 'in_progress' || job?.status === 'pending_completion' || job?.status === 'completed';
+  const showCompletionCard = (job?.status === 'in_progress' || job?.status === 'pending_completion' || job?.status === 'completed') && job?.payment_status === 'paid';
 
   if (loading) {
     return (
@@ -361,6 +367,20 @@ export default function JobDetails() {
                 isCustomer={isCustomer}
                 isProvider={isProvider}
                 onPaymentUpdate={loadJobDetails}
+              />
+            )}
+
+            {/* Job Completion Card - shown after payment confirmed */}
+            {showCompletionCard && acceptedProposal && (
+              <JobCompletionCard
+                jobId={job.id}
+                status={job.status}
+                providerCompletedAt={job.provider_completed_at}
+                completedAt={job.completed_at}
+                isCustomer={isCustomer}
+                isProvider={isProvider}
+                providerName={acceptedProposal.provider_name || 'Provider'}
+                onStatusUpdate={loadJobDetails}
               />
             )}
           </div>

@@ -105,6 +105,7 @@ export type Database = {
           platform_fee: number | null
           preferred_date: string | null
           preferred_time: string | null
+          provider_completed_at: string | null
           provider_payout: number | null
           status: string | null
           title: string
@@ -130,6 +131,7 @@ export type Database = {
           platform_fee?: number | null
           preferred_date?: string | null
           preferred_time?: string | null
+          provider_completed_at?: string | null
           provider_payout?: number | null
           status?: string | null
           title: string
@@ -155,6 +157,7 @@ export type Database = {
           platform_fee?: number | null
           preferred_date?: string | null
           preferred_time?: string | null
+          provider_completed_at?: string | null
           provider_payout?: number | null
           status?: string | null
           title?: string
