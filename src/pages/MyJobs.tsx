@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Navigation } from '@/components/Navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/integrations/supabase/client';
-import { MapPin, Calendar, DollarSign, Briefcase } from 'lucide-react';
+import { MapPin, Calendar, DollarSign, Briefcase, Eye, MessageSquare } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 
@@ -23,11 +25,18 @@ interface Job {
   created_at: string;
 }
 
+interface ProposalCount {
+  job_id: string;
+  count: number;
+}
+
 export default function MyJobs() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [userRole, setUserRole] = useState<string>('customer');
   const [postedJobs, setPostedJobs] = useState<Job[]>([]);
   const [acceptedJobs, setAcceptedJobs] = useState<Job[]>([]);
+  const [proposalCounts, setProposalCounts] = useState<Map<string, number>>(new Map());
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -56,6 +65,24 @@ export default function MyJobs() {
             .order('created_at', { ascending: false });
 
           setPostedJobs(posted || []);
+
+          // Get proposal counts for customer's jobs
+          if (posted && posted.length > 0) {
+            const jobIds = posted.map(j => j.id);
+            const { data: proposals } = await supabase
+              .from('job_proposals')
+              .select('job_id')
+              .in('job_id', jobIds)
+              .eq('status', 'pending');
+
+            if (proposals) {
+              const counts = new Map<string, number>();
+              proposals.forEach(p => {
+                counts.set(p.job_id, (counts.get(p.job_id) || 0) + 1);
+              });
+              setProposalCounts(counts);
+            }
+          }
         }
 
         if (profile.user_role === 'provider' || profile.user_role === 'both') {
@@ -114,56 +141,70 @@ export default function MyJobs() {
   const isCustomer = userRole === 'customer' || userRole === 'both';
   const isProvider = userRole === 'provider' || userRole === 'both';
 
-  const JobCard = ({ job }: { job: Job }) => (
-    <Card className="hover:shadow-lg transition-shadow">
-      <CardHeader>
-        <div className="flex justify-between items-start">
-          <div>
-            <CardTitle className="text-lg">{job.title}</CardTitle>
-            <CardDescription className="flex items-center gap-2 mt-1">
-              <MapPin className="h-3 w-3" />
-              {job.location}
-            </CardDescription>
-          </div>
-          <Badge className={getStatusColor(job.status)}>
-            {getStatusLabel(job.status)}
-          </Badge>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {job.description && (
-          <p className="text-sm text-muted-foreground line-clamp-2">{job.description}</p>
-        )}
-
-        <div className="flex flex-wrap gap-2">
-          {job.lawn_size && (
-            <Badge variant="secondary">{job.lawn_size}</Badge>
-          )}
-          {job.preferred_date && (
-            <Badge variant="outline" className="gap-1">
-              <Calendar className="h-3 w-3" />
-              {format(new Date(job.preferred_date), 'MMM dd, yyyy')}
+  const JobCard = ({ job, showProposalCount = false }: { job: Job; showProposalCount?: boolean }) => {
+    const proposalCount = proposalCounts.get(job.id) || 0;
+    
+    return (
+      <Card 
+        className="hover:shadow-lg transition-shadow cursor-pointer" 
+        onClick={() => navigate(`/job/${job.id}`)}
+      >
+        <CardHeader>
+          <div className="flex justify-between items-start">
+            <div>
+              <CardTitle className="text-lg">{job.title}</CardTitle>
+              <CardDescription className="flex items-center gap-2 mt-1">
+                <MapPin className="h-3 w-3" />
+                {job.location}
+              </CardDescription>
+            </div>
+            <Badge className={getStatusColor(job.status)}>
+              {getStatusLabel(job.status)}
             </Badge>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {job.description && (
+            <p className="text-sm text-muted-foreground line-clamp-2">{job.description}</p>
           )}
-        </div>
 
-        <div className="flex items-center justify-between pt-4 border-t">
-          <div>
-            <div className="text-xs text-muted-foreground">
-              {job.final_price ? 'Final Price' : 'Offered Price'}
-            </div>
-            <div className="text-xl font-bold text-primary flex items-center gap-1">
-              <DollarSign className="h-5 w-5" />
-              J${(job.final_price || job.customer_offer || job.base_price).toFixed(2)}
-            </div>
+          <div className="flex flex-wrap gap-2">
+            {job.lawn_size && (
+              <Badge variant="secondary">{job.lawn_size}</Badge>
+            )}
+            {job.preferred_date && (
+              <Badge variant="outline" className="gap-1">
+                <Calendar className="h-3 w-3" />
+                {format(new Date(job.preferred_date), 'MMM dd, yyyy')}
+              </Badge>
+            )}
+            {showProposalCount && proposalCount > 0 && (
+              <Badge variant="default" className="gap-1">
+                <MessageSquare className="h-3 w-3" />
+                {proposalCount} proposal{proposalCount !== 1 ? 's' : ''}
+              </Badge>
+            )}
           </div>
-          <div className="text-xs text-muted-foreground">
-            Posted {format(new Date(job.created_at), 'MMM dd')}
+
+          <div className="flex items-center justify-between pt-4 border-t">
+            <div>
+              <div className="text-xs text-muted-foreground">
+                {job.final_price ? 'Final Price' : 'Offered Price'}
+              </div>
+              <div className="text-xl font-bold text-primary flex items-center gap-1">
+                <DollarSign className="h-5 w-5" />
+                J${(job.final_price || job.customer_offer || job.base_price).toFixed(2)}
+              </div>
+            </div>
+            <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); navigate(`/job/${job.id}`); }}>
+              <Eye className="h-4 w-4 mr-1" />
+              View
+            </Button>
           </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
+        </CardContent>
+      </Card>
+    );
+  };
 
   return (
     <>
@@ -192,9 +233,9 @@ export default function MyJobs() {
                   </CardContent>
                 </Card>
               ) : (
-                <div className="grid gap-6 md:grid-cols-2">
+              <div className="grid gap-6 md:grid-cols-2">
                   {postedJobs.map((job) => (
-                    <JobCard key={job.id} job={job} />
+                    <JobCard key={job.id} job={job} showProposalCount={job.status === 'open'} />
                   ))}
                 </div>
               )}
