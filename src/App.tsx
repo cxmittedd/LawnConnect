@@ -10,6 +10,7 @@ import Dashboard from "./pages/Dashboard";
 import PostJob from "./pages/PostJob";
 import BrowseJobs from "./pages/BrowseJobs";
 import MyJobs from "./pages/MyJobs";
+import JobDetails from "./pages/JobDetails";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
 import NotFound from "./pages/NotFound";
@@ -57,6 +58,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <MyJobs />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/job/:id"
+              element={
+                <ProtectedRoute>
+                  <JobDetails />
                 </ProtectedRoute>
               }
             />
