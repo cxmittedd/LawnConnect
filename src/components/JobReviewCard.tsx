@@ -8,9 +8,11 @@ import { Star, MessageSquare } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import { sendNotification } from '@/lib/notifications';
 
 interface JobReviewCardProps {
   jobId: string;
+  jobTitle: string;
   customerId: string;
   providerId: string;
   customerName: string;
@@ -31,6 +33,7 @@ interface Review {
 
 export function JobReviewCard({
   jobId,
+  jobTitle,
   customerId,
   providerId,
   customerName,
@@ -93,6 +96,15 @@ export function JobReviewCard({
         });
 
       if (error) throw error;
+
+      // Notify the reviewee about the new review
+      sendNotification({
+        type: 'review_received',
+        recipientId: otherUserId,
+        jobTitle,
+        jobId,
+        additionalData: { rating },
+      });
 
       toast.success('Review submitted successfully!');
       setRating(0);

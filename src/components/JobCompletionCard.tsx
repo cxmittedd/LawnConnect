@@ -8,9 +8,12 @@ import { CheckCircle, Clock, Flag, PartyPopper, Star } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import { sendNotification } from '@/lib/notifications';
 
 interface JobCompletionCardProps {
   jobId: string;
+  jobTitle: string;
+  customerId: string;
   status: string;
   providerCompletedAt: string | null;
   completedAt: string | null;
@@ -22,6 +25,8 @@ interface JobCompletionCardProps {
 
 export function JobCompletionCard({
   jobId,
+  jobTitle,
+  customerId,
   status,
   providerCompletedAt,
   completedAt,
@@ -46,6 +51,14 @@ export function JobCompletionCard({
         .eq('id', jobId);
 
       if (error) throw error;
+
+      // Notify customer that provider marked job complete
+      sendNotification({
+        type: 'job_completed',
+        recipientId: customerId,
+        jobTitle,
+        jobId,
+      });
 
       toast.success('Job marked as complete! Waiting for customer confirmation.');
       setProviderCompleteDialog(false);
