@@ -14,118 +14,218 @@ export type Database = {
   }
   public: {
     Tables: {
-      invoices: {
+      job_photos: {
         Row: {
-          amount: number
-          client_email: string | null
-          client_name: string
           created_at: string | null
-          due_date: string | null
           id: string
-          invoice_number: string
-          notes: string | null
-          service_id: string | null
-          status: string | null
-          updated_at: string | null
-          user_id: string
+          job_id: string
+          photo_url: string
         }
         Insert: {
-          amount?: number
-          client_email?: string | null
-          client_name: string
           created_at?: string | null
-          due_date?: string | null
           id?: string
-          invoice_number: string
-          notes?: string | null
-          service_id?: string | null
-          status?: string | null
-          updated_at?: string | null
-          user_id: string
+          job_id: string
+          photo_url: string
         }
         Update: {
-          amount?: number
-          client_email?: string | null
-          client_name?: string
           created_at?: string | null
-          due_date?: string | null
           id?: string
-          invoice_number?: string
-          notes?: string | null
-          service_id?: string | null
-          status?: string | null
-          updated_at?: string | null
-          user_id?: string
+          job_id?: string
+          photo_url?: string
         }
         Relationships: [
           {
-            foreignKeyName: "invoices_service_id_fkey"
-            columns: ["service_id"]
+            foreignKeyName: "job_photos_job_id_fkey"
+            columns: ["job_id"]
             isOneToOne: false
-            referencedRelation: "services"
+            referencedRelation: "job_requests"
             referencedColumns: ["id"]
           },
         ]
       }
+      job_proposals: {
+        Row: {
+          created_at: string | null
+          id: string
+          job_id: string
+          message: string | null
+          proposed_price: number
+          provider_id: string
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          job_id: string
+          message?: string | null
+          proposed_price: number
+          provider_id: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          job_id?: string
+          message?: string | null
+          proposed_price?: number
+          provider_id?: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_proposals_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "job_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      job_requests: {
+        Row: {
+          accepted_provider_id: string | null
+          additional_requirements: string | null
+          base_price: number
+          completed_at: string | null
+          created_at: string | null
+          customer_id: string
+          customer_offer: number | null
+          description: string | null
+          final_price: number | null
+          id: string
+          lawn_size: string | null
+          location: string
+          payment_status: string | null
+          platform_fee: number | null
+          preferred_date: string | null
+          preferred_time: string | null
+          provider_payout: number | null
+          status: string | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          accepted_provider_id?: string | null
+          additional_requirements?: string | null
+          base_price?: number
+          completed_at?: string | null
+          created_at?: string | null
+          customer_id: string
+          customer_offer?: number | null
+          description?: string | null
+          final_price?: number | null
+          id?: string
+          lawn_size?: string | null
+          location: string
+          payment_status?: string | null
+          platform_fee?: number | null
+          preferred_date?: string | null
+          preferred_time?: string | null
+          provider_payout?: number | null
+          status?: string | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          accepted_provider_id?: string | null
+          additional_requirements?: string | null
+          base_price?: number
+          completed_at?: string | null
+          created_at?: string | null
+          customer_id?: string
+          customer_offer?: number | null
+          description?: string | null
+          final_price?: number | null
+          id?: string
+          lawn_size?: string | null
+          location?: string
+          payment_status?: string | null
+          platform_fee?: number | null
+          preferred_date?: string | null
+          preferred_time?: string | null
+          provider_payout?: number | null
+          status?: string | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
+          address: string | null
           avatar_url: string | null
           company_name: string | null
           created_at: string | null
           full_name: string | null
           id: string
+          phone_number: string | null
           updated_at: string | null
+          user_role: string
         }
         Insert: {
+          address?: string | null
           avatar_url?: string | null
           company_name?: string | null
           created_at?: string | null
           full_name?: string | null
           id: string
+          phone_number?: string | null
           updated_at?: string | null
+          user_role?: string
         }
         Update: {
+          address?: string | null
           avatar_url?: string | null
           company_name?: string | null
           created_at?: string | null
           full_name?: string | null
           id?: string
+          phone_number?: string | null
           updated_at?: string | null
+          user_role?: string
         }
         Relationships: []
       }
-      services: {
+      reviews: {
         Row: {
+          comment: string | null
           created_at: string | null
-          description: string | null
           id: string
-          price: number
-          status: string | null
-          title: string
-          updated_at: string | null
-          user_id: string
+          job_id: string
+          rating: number
+          reviewee_id: string
+          reviewer_id: string
         }
         Insert: {
+          comment?: string | null
           created_at?: string | null
-          description?: string | null
           id?: string
-          price?: number
-          status?: string | null
-          title: string
-          updated_at?: string | null
-          user_id: string
+          job_id: string
+          rating: number
+          reviewee_id: string
+          reviewer_id: string
         }
         Update: {
+          comment?: string | null
           created_at?: string | null
-          description?: string | null
           id?: string
-          price?: number
-          status?: string | null
-          title?: string
-          updated_at?: string | null
-          user_id?: string
+          job_id?: string
+          rating?: number
+          reviewee_id?: string
+          reviewer_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "reviews_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "job_requests"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
