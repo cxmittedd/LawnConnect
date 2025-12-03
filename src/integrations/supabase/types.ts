@@ -14,6 +14,38 @@ export type Database = {
   }
   public: {
     Tables: {
+      job_completion_photos: {
+        Row: {
+          created_at: string
+          id: string
+          job_id: string
+          photo_url: string
+          uploaded_by: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          job_id: string
+          photo_url: string
+          uploaded_by: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          job_id?: string
+          photo_url?: string
+          uploaded_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_completion_photos_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "job_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       job_photos: {
         Row: {
           created_at: string | null
