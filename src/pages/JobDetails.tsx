@@ -11,7 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { MapPin, Calendar, DollarSign, Clock, ArrowLeft, Check, X, User } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
-import { LynkPaymentCard } from '@/components/LynkPaymentCard';
+import { TestPaymentCard } from '@/components/TestPaymentCard';
 import { JobCompletionCard } from '@/components/JobCompletionCard';
 import { JobReviewCard } from '@/components/JobReviewCard';
 import { JobChat } from '@/components/JobChat';
@@ -386,18 +386,16 @@ export default function JobDetails() {
               </CardContent>
             </Card>
 
-            {/* Lynk Payment Card - shown after proposal accepted */}
+            {/* Payment Card - shown after proposal accepted */}
             {showPaymentCard && acceptedProposal && job.final_price && job.accepted_provider_id && (
-              <LynkPaymentCard
+              <TestPaymentCard
                 jobId={job.id}
                 jobTitle={job.title}
                 amount={job.final_price}
                 providerId={job.accepted_provider_id}
                 customerId={job.customer_id}
-                providerLynkId={acceptedProposal.provider_lynk_id}
                 providerName={acceptedProposal.provider_name || 'Provider'}
                 paymentStatus={job.payment_status || 'pending'}
-                paymentReference={job.payment_reference}
                 isCustomer={isCustomer}
                 isProvider={isProvider}
                 onPaymentUpdate={loadJobDetails}
