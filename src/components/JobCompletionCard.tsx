@@ -4,7 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { CheckCircle, Clock, Flag, PartyPopper, Star, Camera, Upload, X, Image } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { CheckCircle, Clock, Flag, PartyPopper, Star, Camera, Upload, X, Image, AlertTriangle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -14,6 +15,7 @@ interface JobCompletionCardProps {
   jobId: string;
   jobTitle: string;
   customerId: string;
+  providerId: string;
   status: string;
   providerCompletedAt: string | null;
   completedAt: string | null;
@@ -29,10 +31,18 @@ interface CompletionPhoto {
   created_at: string;
 }
 
+interface Dispute {
+  id: string;
+  reason: string;
+  status: string;
+  created_at: string;
+}
+
 export function JobCompletionCard({
   jobId,
   jobTitle,
   customerId,
+  providerId,
   status,
   providerCompletedAt,
   completedAt,
@@ -44,22 +54,23 @@ export function JobCompletionCard({
   const [submitting, setSubmitting] = useState(false);
   const [providerCompleteDialog, setProviderCompleteDialog] = useState(false);
   const [customerConfirmDialog, setCustomerConfirmDialog] = useState(false);
+  const [disputeDialog, setDisputeDialog] = useState(false);
+  const [disputeReason, setDisputeReason] = useState('');
   const [completionPhotos, setCompletionPhotos] = useState<CompletionPhoto[]>([]);
   const [uploadingPhotos, setUploadingPhotos] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
+  const [activeDispute, setActiveDispute] = useState<Dispute | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     loadCompletionPhotos();
+    loadActiveDispute();
   }, [jobId]);
 
   useEffect(() => {
-    // Create preview URLs for selected files
     const urls = selectedFiles.map(file => URL.createObjectURL(file));
     setPreviewUrls(urls);
-    
-    // Cleanup
     return () => urls.forEach(url => URL.revokeObjectURL(url));
   }, [selectedFiles]);
 
@@ -71,12 +82,11 @@ export function JobCompletionCard({
       .order('created_at', { ascending: true });
 
     if (!error && data) {
-      // Get signed URLs for each photo
       const photosWithUrls = await Promise.all(
         data.map(async (photo) => {
           const { data: signedUrlData } = await supabase.storage
             .from('completion-photos')
-            .createSignedUrl(photo.photo_url, 3600); // 1 hour expiry
+            .createSignedUrl(photo.photo_url, 3600);
           return {
             ...photo,
             photo_url: signedUrlData?.signedUrl || photo.photo_url
@@ -84,6 +94,19 @@ export function JobCompletionCard({
         })
       );
       setCompletionPhotos(photosWithUrls);
+    }
+  };
+
+  const loadActiveDispute = async () => {
+    const { data, error } = await supabase
+      .from('job_disputes')
+      .select('*')
+      .eq('job_id', jobId)
+      .eq('status', 'open')
+      .maybeSingle();
+
+    if (!error && data) {
+      setActiveDispute(data);
     }
   };
 
@@ -115,14 +138,12 @@ export function JobCompletionCard({
         const fileExt = file.name.split('.').pop();
         const fileName = `${jobId}/${crypto.randomUUID()}.${fileExt}`;
 
-        // Upload to storage
         const { error: uploadError } = await supabase.storage
           .from('completion-photos')
           .upload(fileName, file);
 
         if (uploadError) throw uploadError;
 
-        // Save reference to database
         const { error: dbError } = await supabase
           .from('job_completion_photos')
           .insert({
@@ -146,7 +167,6 @@ export function JobCompletionCard({
   };
 
   const handleProviderMarkComplete = async () => {
-    // First upload photos
     const uploaded = await uploadPhotos();
     if (!uploaded) return;
 
@@ -162,7 +182,18 @@ export function JobCompletionCard({
 
       if (error) throw error;
 
-      // Notify customer that provider marked job complete
+      // If there was an active dispute, resolve it
+      if (activeDispute) {
+        await supabase
+          .from('job_disputes')
+          .update({
+            status: 'resolved',
+            resolved_at: new Date().toISOString()
+          })
+          .eq('id', activeDispute.id);
+        setActiveDispute(null);
+      }
+
       sendNotification({
         type: 'job_completed',
         recipientId: customerId,
@@ -203,7 +234,51 @@ export function JobCompletionCard({
     }
   };
 
-  // Only show for in_progress or pending_completion jobs
+  const handleDisputeSubmit = async () => {
+    if (!disputeReason.trim()) {
+      toast.error('Please provide a reason for the dispute');
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
+      // Create dispute
+      const { error: disputeError } = await supabase
+        .from('job_disputes')
+        .insert({
+          job_id: jobId,
+          customer_id: user.id,
+          reason: disputeReason.trim()
+        });
+
+      if (disputeError) throw disputeError;
+
+      // Update job status back to in_progress
+      const { error: jobError } = await supabase
+        .from('job_requests')
+        .update({
+          status: 'in_progress',
+          provider_completed_at: null
+        })
+        .eq('id', jobId);
+
+      if (jobError) throw jobError;
+
+      toast.success('Dispute submitted. The provider will be notified to address your concerns.');
+      setDisputeDialog(false);
+      setDisputeReason('');
+      await loadActiveDispute();
+      onStatusUpdate();
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to submit dispute');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   if (status !== 'in_progress' && status !== 'pending_completion' && status !== 'completed') {
     return null;
   }
@@ -244,25 +319,49 @@ export function JobCompletionCard({
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
+          {/* Active Dispute Alert */}
+          {activeDispute && (
+            <Alert className="border-destructive/50 bg-destructive/10">
+              <AlertTriangle className="h-4 w-4 text-destructive" />
+              <AlertDescription>
+                <strong>Dispute Active</strong>
+                <p className="mt-1 text-sm">
+                  {isCustomer 
+                    ? `You disputed this job on ${format(new Date(activeDispute.created_at), 'MMMM dd, yyyy')}.`
+                    : `The customer disputed the completion on ${format(new Date(activeDispute.created_at), 'MMMM dd, yyyy')}.`
+                  }
+                </p>
+                <p className="mt-1 text-sm font-medium">Reason: {activeDispute.reason}</p>
+                {isProvider && (
+                  <p className="mt-2 text-sm">
+                    Please address the customer's concerns and upload new completion photos.
+                  </p>
+                )}
+              </AlertDescription>
+            </Alert>
+          )}
+
           {/* Provider View - In Progress */}
           {isProvider && status === 'in_progress' && (
             <div className="space-y-4">
-              <Alert>
-                <Clock className="h-4 w-4" />
-                <AlertDescription>
-                  <strong>Job is in progress</strong>
-                  <p className="mt-1 text-sm">
-                    Once you've completed the lawn service, upload photos of the finished work and mark the job as complete.
-                  </p>
-                </AlertDescription>
-              </Alert>
+              {!activeDispute && (
+                <Alert>
+                  <Clock className="h-4 w-4" />
+                  <AlertDescription>
+                    <strong>Job is in progress</strong>
+                    <p className="mt-1 text-sm">
+                      Once you've completed the lawn service, upload photos of the finished work and mark the job as complete.
+                    </p>
+                  </AlertDescription>
+                </Alert>
+              )}
 
               <Button 
                 onClick={() => setProviderCompleteDialog(true)} 
                 className="w-full"
               >
                 <CheckCircle className="h-4 w-4 mr-2" />
-                Mark Job as Complete
+                {activeDispute ? 'Upload New Photos & Resubmit' : 'Mark Job as Complete'}
               </Button>
             </div>
           )}
@@ -284,7 +383,6 @@ export function JobCompletionCard({
                 </AlertDescription>
               </Alert>
 
-              {/* Show uploaded completion photos */}
               {completionPhotos.length > 0 && (
                 <div className="space-y-2">
                   <p className="text-sm font-medium flex items-center gap-2">
@@ -322,7 +420,6 @@ export function JobCompletionCard({
                 </AlertDescription>
               </Alert>
 
-              {/* Show completion photos */}
               {completionPhotos.length > 0 && (
                 <div className="space-y-2">
                   <p className="text-sm font-medium flex items-center gap-2">
@@ -373,7 +470,6 @@ export function JobCompletionCard({
                 </AlertDescription>
               </Alert>
 
-              {/* Show completion photos for customer to review */}
               {completionPhotos.length > 0 && (
                 <div className="space-y-2">
                   <p className="text-sm font-medium flex items-center gap-2">
@@ -393,13 +489,23 @@ export function JobCompletionCard({
                 </div>
               )}
 
-              <Button 
-                onClick={() => setCustomerConfirmDialog(true)} 
-                className="w-full"
-              >
-                <CheckCircle className="h-4 w-4 mr-2" />
-                Confirm Job Completion
-              </Button>
+              <div className="flex gap-2">
+                <Button 
+                  onClick={() => setCustomerConfirmDialog(true)} 
+                  className="flex-1"
+                >
+                  <CheckCircle className="h-4 w-4 mr-2" />
+                  Confirm Completion
+                </Button>
+                <Button 
+                  variant="destructive"
+                  onClick={() => setDisputeDialog(true)} 
+                  className="flex-1"
+                >
+                  <AlertTriangle className="h-4 w-4 mr-2" />
+                  Dispute
+                </Button>
+              </div>
             </div>
           )}
 
@@ -420,7 +526,6 @@ export function JobCompletionCard({
                 </AlertDescription>
               </Alert>
 
-              {/* Show completion photos */}
               {completionPhotos.length > 0 && (
                 <div className="space-y-2">
                   <p className="text-sm font-medium flex items-center gap-2">
@@ -448,14 +553,18 @@ export function JobCompletionCard({
       <Dialog open={providerCompleteDialog} onOpenChange={setProviderCompleteDialog}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Mark Job as Complete</DialogTitle>
+            <DialogTitle>
+              {activeDispute ? 'Resubmit Completion' : 'Mark Job as Complete'}
+            </DialogTitle>
             <DialogDescription>
-              Please upload photos of the completed lawn work. These photos will only be visible to you and the customer.
+              {activeDispute 
+                ? 'Please upload new photos addressing the customer\'s concerns. These photos will only be visible to you and the customer.'
+                : 'Please upload photos of the completed lawn work. These photos will only be visible to you and the customer.'
+              }
             </DialogDescription>
           </DialogHeader>
           
           <div className="space-y-4">
-            {/* Photo upload section */}
             <div className="space-y-2">
               <label className="text-sm font-medium">
                 Upload Completion Photos (Required)
@@ -469,7 +578,6 @@ export function JobCompletionCard({
                 className="hidden"
               />
               
-              {/* Preview selected files */}
               {previewUrls.length > 0 && (
                 <div className="grid grid-cols-3 gap-2 mb-2">
                   {previewUrls.map((url, index) => (
@@ -542,6 +650,48 @@ export function JobCompletionCard({
             </Button>
             <Button onClick={handleCustomerConfirmCompletion} disabled={submitting}>
               {submitting ? 'Confirming...' : 'Yes, I\'m Satisfied'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dispute Dialog */}
+      <Dialog open={disputeDialog} onOpenChange={setDisputeDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Dispute Job Completion</DialogTitle>
+            <DialogDescription>
+              If you're not satisfied with the work, please explain what's wrong. The provider will be notified to address your concerns and upload new photos.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">
+                What's the issue with the completed work?
+              </label>
+              <Textarea
+                value={disputeReason}
+                onChange={(e) => setDisputeReason(e.target.value)}
+                placeholder="Please describe what needs to be fixed or improved..."
+                rows={4}
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              setDisputeDialog(false);
+              setDisputeReason('');
+            }}>
+              Cancel
+            </Button>
+            <Button 
+              variant="destructive"
+              onClick={handleDisputeSubmit} 
+              disabled={submitting || !disputeReason.trim()}
+            >
+              {submitting ? 'Submitting...' : 'Submit Dispute'}
             </Button>
           </DialogFooter>
         </DialogContent>

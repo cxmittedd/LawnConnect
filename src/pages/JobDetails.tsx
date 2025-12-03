@@ -410,6 +410,7 @@ export default function JobDetails() {
                 jobId={job.id}
                 jobTitle={job.title}
                 customerId={job.customer_id}
+                providerId={job.accepted_provider_id!}
                 status={job.status}
                 providerCompletedAt={job.provider_completed_at}
                 completedAt={job.completed_at}
