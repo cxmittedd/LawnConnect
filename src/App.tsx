@@ -14,6 +14,7 @@ import JobDetails from "./pages/JobDetails";
 import Profile from "./pages/Profile";
 import ProviderEarnings from "./pages/ProviderEarnings";
 import ProviderProfile from "./pages/ProviderProfile";
+import AdminDisputes from "./pages/AdminDisputes";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
 import Install from "./pages/Install";
@@ -95,6 +96,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <ProviderProfile />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/disputes"
+              element={
+                <ProtectedRoute>
+                  <AdminDisputes />
                 </ProtectedRoute>
               }
             />
