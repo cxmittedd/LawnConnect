@@ -176,7 +176,7 @@ export default function Dashboard() {
           <>
             <div className="grid gap-6 md:grid-cols-3 mb-8 mt-8">
               <Card 
-                className="hover:shadow-lg transition-shadow cursor-pointer"
+                className="hover:shadow-lg hover:scale-[1.02] hover:border-primary/50 transition-all duration-200 cursor-pointer"
                 onClick={() => navigate('/earnings')}
               >
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -190,7 +190,7 @@ export default function Dashboard() {
               </Card>
 
               <Card 
-                className="hover:shadow-lg transition-shadow cursor-pointer"
+                className="hover:shadow-lg hover:scale-[1.02] hover:border-primary/50 transition-all duration-200 cursor-pointer"
                 onClick={() => navigate('/my-jobs')}
               >
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
