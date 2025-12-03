@@ -13,6 +13,7 @@ import MyJobs from "./pages/MyJobs";
 import JobDetails from "./pages/JobDetails";
 import Profile from "./pages/Profile";
 import ProviderEarnings from "./pages/ProviderEarnings";
+import ProviderProfile from "./pages/ProviderProfile";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
 import NotFound from "./pages/NotFound";
@@ -84,6 +85,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <ProviderEarnings />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/provider/:id"
+              element={
+                <ProtectedRoute>
+                  <ProviderProfile />
                 </ProtectedRoute>
               }
             />
