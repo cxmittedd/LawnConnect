@@ -16,6 +16,7 @@ interface Job {
   title: string;
   description: string | null;
   location: string;
+  parish: string;
   lawn_size: string | null;
   preferred_date: string | null;
   status: string;
@@ -210,6 +211,9 @@ export default function MyJobs() {
           )}
 
           <div className="flex flex-wrap gap-2">
+            {job.parish && (
+              <Badge variant="outline">{job.parish}</Badge>
+            )}
             {job.lawn_size && (
               <Badge variant="secondary">{job.lawn_size}</Badge>
             )}
@@ -274,6 +278,9 @@ export default function MyJobs() {
           )}
 
           <div className="flex flex-wrap gap-2">
+            {proposal.job.parish && (
+              <Badge variant="outline">{proposal.job.parish}</Badge>
+            )}
             {proposal.job.lawn_size && (
               <Badge variant="secondary">{proposal.job.lawn_size}</Badge>
             )}
