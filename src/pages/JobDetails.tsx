@@ -463,9 +463,12 @@ export default function JobDetails() {
                       <div className="flex-1">
                         <div className="flex justify-between items-start">
                           <div>
-                            <p className="font-semibold">
+                            <button
+                              onClick={() => navigate(`/provider/${proposal.provider_id}`)}
+                              className="font-semibold hover:text-primary hover:underline text-left"
+                            >
                               {proposal.provider_name || 'Provider'}
-                            </p>
+                            </button>
                             {proposal.status === 'accepted' && proposal.provider_phone && (
                               <p className="text-sm text-muted-foreground">
                                 {proposal.provider_phone}
