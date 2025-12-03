@@ -175,7 +175,10 @@ export default function Dashboard() {
         {isProvider && (
           <>
             <div className="grid gap-6 md:grid-cols-3 mb-8 mt-8">
-              <Card className="hover:shadow-lg transition-shadow">
+              <Card 
+                className="hover:shadow-lg transition-shadow cursor-pointer"
+                onClick={() => navigate('/earnings')}
+              >
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Total Earnings</CardTitle>
                   <DollarSign className="h-5 w-5 text-success" />
@@ -186,7 +189,10 @@ export default function Dashboard() {
                 </CardContent>
               </Card>
 
-              <Card className="hover:shadow-lg transition-shadow">
+              <Card 
+                className="hover:shadow-lg transition-shadow cursor-pointer"
+                onClick={() => navigate('/my-jobs')}
+              >
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Pending Proposals</CardTitle>
                   <Scissors className="h-5 w-5 text-warning" />
