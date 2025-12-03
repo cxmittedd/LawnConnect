@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/integrations/supabase/client';
-import { User, Phone, MapPin, Building, Smartphone, Save, AlertCircle } from 'lucide-react';
+import { User, Phone, MapPin, Building, Save } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface ProfileData {
@@ -16,7 +16,6 @@ interface ProfileData {
   phone_number: string | null;
   address: string | null;
   company_name: string | null;
-  lynk_id: string | null;
   user_role: string;
 }
 
@@ -27,7 +26,6 @@ export default function Profile() {
     phone_number: '',
     address: '',
     company_name: '',
-    lynk_id: '',
     user_role: 'customer',
   });
   const [loading, setLoading] = useState(true);
@@ -55,7 +53,6 @@ export default function Profile() {
           phone_number: data.phone_number || '',
           address: data.address || '',
           company_name: data.company_name || '',
-          lynk_id: data.lynk_id || '',
           user_role: data.user_role || 'customer',
         });
       }
@@ -78,7 +75,6 @@ export default function Profile() {
           phone_number: profile.phone_number || null,
           address: profile.address || null,
           company_name: profile.company_name || null,
-          lynk_id: profile.lynk_id || null,
         })
         .eq('id', user.id);
 
@@ -187,67 +183,6 @@ export default function Profile() {
               )}
             </CardContent>
           </Card>
-
-          {/* Lynk Payment Settings - Only for Providers */}
-          {isProvider && (
-            <Card className="border-primary/20">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="flex items-center gap-2">
-                      <Smartphone className="h-5 w-5 text-primary" />
-                      Lynk Payment Settings
-                    </CardTitle>
-                    <CardDescription>
-                      Set up your Lynk ID to receive payments from customers
-                    </CardDescription>
-                  </div>
-                  <Badge variant="outline">Provider</Badge>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {!profile.lynk_id && (
-                  <Alert variant="destructive">
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertDescription>
-                      <strong>Important:</strong> You need to set up your Lynk ID to receive payments. Customers won't be able to pay you without it.
-                    </AlertDescription>
-                  </Alert>
-                )}
-
-                <div className="space-y-2">
-                  <Label htmlFor="lynk_id">Lynk ID / Phone Number</Label>
-                  <div className="relative">
-                    <Smartphone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="lynk_id"
-                      placeholder="Your Lynk ID (e.g., 876-555-1234)"
-                      className="pl-10"
-                      value={profile.lynk_id || ''}
-                      onChange={(e) => setProfile({ ...profile, lynk_id: e.target.value })}
-                    />
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    This is the phone number or ID linked to your Lynk account where customers will send payments.
-                  </p>
-                </div>
-
-                <Alert>
-                  <Smartphone className="h-4 w-4" />
-                  <AlertDescription>
-                    <strong>How it works:</strong>
-                    <ol className="list-decimal list-inside mt-2 space-y-1 text-sm">
-                      <li>When your proposal is accepted, the customer sees your Lynk ID</li>
-                      <li>Customer pays you directly via the Lynk app</li>
-                      <li>Customer enters the transaction reference</li>
-                      <li>You confirm receipt in LawnConnect</li>
-                      <li>Job starts - you keep 90%, platform fee is 10%</li>
-                    </ol>
-                  </AlertDescription>
-                </Alert>
-              </CardContent>
-            </Card>
-          )}
 
           {/* Account Info */}
           <Card>
