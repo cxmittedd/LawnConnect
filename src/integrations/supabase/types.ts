@@ -46,6 +46,44 @@ export type Database = {
           },
         ]
       }
+      job_disputes: {
+        Row: {
+          created_at: string
+          customer_id: string
+          id: string
+          job_id: string
+          reason: string
+          resolved_at: string | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          customer_id: string
+          id?: string
+          job_id: string
+          reason: string
+          resolved_at?: string | null
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          customer_id?: string
+          id?: string
+          job_id?: string
+          reason?: string
+          resolved_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_disputes_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "job_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       job_photos: {
         Row: {
           created_at: string | null
