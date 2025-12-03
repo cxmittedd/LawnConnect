@@ -40,22 +40,7 @@ export const JobChat = ({ jobId, customerId, providerId, isCustomer }: JobChatPr
   const [otherParticipant, setOtherParticipant] = useState<ParticipantInfo | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  const markMessageAsRead = async (messageId: string) => {
-    await supabase
-      .from('messages')
-      .update({ read_at: new Date().toISOString() })
-      .eq('id', messageId);
-  };
-
-  const markAllUnreadAsRead = async () => {
-    if (!user) return;
-    await supabase
-      .from('messages')
-      .update({ read_at: new Date().toISOString() })
-      .eq('job_id', jobId)
-      .neq('sender_id', user.id)
-      .is('read_at', null);
-  };
+  // Read receipts disabled
 
   useEffect(() => {
     loadMessages();
@@ -75,10 +60,6 @@ export const JobChat = ({ jobId, customerId, providerId, isCustomer }: JobChatPr
         (payload) => {
           const newMsg = payload.new as Message;
           setMessages(prev => [...prev, newMsg]);
-          // Mark as read if not from current user
-          if (newMsg.sender_id !== user?.id) {
-            markMessageAsRead(newMsg.id);
-          }
         }
       )
       .subscribe();
@@ -104,8 +85,6 @@ export const JobChat = ({ jobId, customerId, providerId, isCustomer }: JobChatPr
 
     if (!error && data) {
       setMessages(data);
-      // Mark all unread messages as read when chat is opened
-      markAllUnreadAsRead();
     }
     setLoading(false);
   };
