@@ -92,6 +92,21 @@ export default function BrowseJobs() {
     setSubmitting(true);
 
     try {
+      // Check if provider already has 5 pending proposals
+      const { count, error: countError } = await supabase
+        .from('job_proposals')
+        .select('*', { count: 'exact', head: true })
+        .eq('provider_id', user!.id)
+        .eq('status', 'pending');
+
+      if (countError) throw countError;
+
+      if (count !== null && count >= 5) {
+        toast.error('You can only have 5 active proposals at a time. Wait for a response or withdraw existing proposals.');
+        setSubmitting(false);
+        return;
+      }
+
       const { error } = await supabase.from('job_proposals').insert({
         job_id: selectedJob!.id,
         provider_id: user!.id,
