@@ -98,6 +98,7 @@ export type Database = {
           id: string
           lawn_size: string | null
           location: string
+          parish: string
           payment_confirmed_at: string | null
           payment_confirmed_by: string | null
           payment_reference: string | null
@@ -124,6 +125,7 @@ export type Database = {
           id?: string
           lawn_size?: string | null
           location: string
+          parish?: string
           payment_confirmed_at?: string | null
           payment_confirmed_by?: string | null
           payment_reference?: string | null
@@ -150,6 +152,7 @@ export type Database = {
           id?: string
           lawn_size?: string | null
           location?: string
+          parish?: string
           payment_confirmed_at?: string | null
           payment_confirmed_by?: string | null
           payment_reference?: string | null

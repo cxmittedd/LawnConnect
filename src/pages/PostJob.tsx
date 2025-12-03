@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/integrations/supabase/client';
 import { Upload, X } from 'lucide-react';
@@ -12,10 +13,28 @@ import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { z } from 'zod';
 
+const JAMAICA_PARISHES = [
+  'Kingston',
+  'St. Andrew',
+  'St. Thomas',
+  'Portland',
+  'St. Mary',
+  'St. Ann',
+  'Trelawny',
+  'St. James',
+  'Hanover',
+  'Westmoreland',
+  'St. Elizabeth',
+  'Manchester',
+  'Clarendon',
+  'St. Catherine',
+] as const;
+
 const jobSchema = z.object({
   title: z.string().trim().min(1, 'Title is required').max(200),
   description: z.string().trim().max(1000).optional(),
   location: z.string().trim().min(1, 'Location is required').max(300),
+  parish: z.string().min(1, 'Parish is required'),
   lawn_size: z.string().trim().max(100).optional(),
   preferred_date: z.string().optional(),
   preferred_time: z.string().trim().max(50).optional(),
@@ -32,6 +51,7 @@ export default function PostJob() {
     title: '',
     description: '',
     location: '',
+    parish: '',
     lawn_size: '',
     preferred_date: '',
     preferred_time: '',
@@ -78,6 +98,7 @@ export default function PostJob() {
           title: formData.title,
           description: formData.description || null,
           location: formData.location,
+          parish: formData.parish,
           lawn_size: formData.lawn_size || null,
           preferred_date: formData.preferred_date || null,
           preferred_time: formData.preferred_time || null,
@@ -150,15 +171,36 @@ export default function PostJob() {
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="location">Location</Label>
-                  <Input
-                    id="location"
-                    placeholder="Street address or neighborhood"
-                    value={formData.location}
-                    onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                    required
-                  />
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="parish">Parish *</Label>
+                    <Select
+                      value={formData.parish}
+                      onValueChange={(value) => setFormData({ ...formData, parish: value })}
+                      required
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select parish" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {JAMAICA_PARISHES.map((parish) => (
+                          <SelectItem key={parish} value={parish}>
+                            {parish}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="location">Location *</Label>
+                    <Input
+                      id="location"
+                      placeholder="Street address or neighborhood"
+                      value={formData.location}
+                      onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                      required
+                    />
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
