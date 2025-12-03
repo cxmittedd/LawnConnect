@@ -123,13 +123,10 @@ export default function PostJob() {
 
           if (uploadError) throw uploadError;
 
-          const { data: { publicUrl } } = supabase.storage
-            .from('job-photos')
-            .getPublicUrl(fileName);
-
+          // Store file path, not public URL - bucket is private
           await supabase.from('job_photos').insert({
             job_id: job.id,
-            photo_url: publicUrl,
+            photo_url: fileName,
           });
         }
       }
