@@ -22,6 +22,7 @@ interface JobDetails {
   title: string;
   description: string | null;
   location: string;
+  parish: string;
   lawn_size: string | null;
   preferred_date: string | null;
   preferred_time: string | null;
@@ -303,7 +304,7 @@ export default function JobDetails() {
                     <CardTitle className="text-2xl">{job.title}</CardTitle>
                     <CardDescription className="flex items-center gap-2 mt-2">
                       <MapPin className="h-4 w-4" />
-                      {job.location}
+                      {job.location}, {job.parish}
                     </CardDescription>
                   </div>
                   <Badge className={getStatusColor(job.status)}>

@@ -24,6 +24,7 @@ interface Job {
   title: string;
   description: string | null;
   location: string;
+  parish: string;
   lawn_size: string | null;
   preferred_date: string | null;
   preferred_time: string | null;
@@ -156,7 +157,7 @@ export default function BrowseJobs() {
                       <CardTitle className="text-lg">{job.title}</CardTitle>
                       <CardDescription className="flex items-center gap-2 mt-1">
                         <MapPin className="h-3 w-3" />
-                        {job.location}
+                        {job.location}, {job.parish}
                       </CardDescription>
                     </div>
                     <Badge variant="default">Open</Badge>
