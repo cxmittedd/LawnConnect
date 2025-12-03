@@ -14,6 +14,7 @@ import { format } from 'date-fns';
 import { LynkPaymentCard } from '@/components/LynkPaymentCard';
 import { JobCompletionCard } from '@/components/JobCompletionCard';
 import { JobReviewCard } from '@/components/JobReviewCard';
+import { JobChat } from '@/components/JobChat';
 import { sendNotification } from '@/lib/notifications';
 
 interface JobDetails {
@@ -430,6 +431,16 @@ export default function JobDetails() {
                 isCustomer={isCustomer}
                 isProvider={isProvider}
                 onReviewSubmit={loadJobDetails}
+              />
+            )}
+
+            {/* Chat - shown when provider is accepted */}
+            {job.accepted_provider_id && (isCustomer || isProvider) && (
+              <JobChat
+                jobId={job.id}
+                customerId={job.customer_id}
+                providerId={job.accepted_provider_id}
+                isCustomer={isCustomer}
               />
             )}
           </div>
