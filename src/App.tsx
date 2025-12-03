@@ -16,6 +16,7 @@ import ProviderEarnings from "./pages/ProviderEarnings";
 import ProviderProfile from "./pages/ProviderProfile";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
+import Install from "./pages/Install";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -32,6 +33,7 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/about" element={<About />} />
             <Route path="/contact" element={<Contact />} />
+            <Route path="/install" element={<Install />} />
             <Route
               path="/dashboard"
               element={
