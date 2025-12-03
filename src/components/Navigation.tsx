@@ -12,9 +12,12 @@ import {
   Menu,
   X,
   User,
+  MessageSquare,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useUnreadMessages } from '@/hooks/useUnreadMessages';
+import { Badge } from '@/components/ui/badge';
 
 export function Navigation() {
   const { user, signOut } = useAuth();
@@ -22,6 +25,7 @@ export function Navigation() {
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userRole, setUserRole] = useState<string>('customer');
+  const unreadCount = useUnreadMessages();
 
   useEffect(() => {
     if (user) {
@@ -49,17 +53,17 @@ export function Navigation() {
 
   const navItems = user
     ? [
-        { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-        ...(isCustomer ? [{ path: '/post-job', label: 'Post Job', icon: Plus }] : []),
-        ...(isProvider ? [{ path: '/browse-jobs', label: 'Browse Jobs', icon: Scissors }] : []),
-        { path: '/my-jobs', label: 'My Jobs', icon: Briefcase },
-        { path: '/profile', label: 'Profile', icon: User },
-        { path: '/about', label: 'About', icon: Info },
-        { path: '/contact', label: 'Contact', icon: Mail },
+        { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, badge: 0 },
+        ...(isCustomer ? [{ path: '/post-job', label: 'Post Job', icon: Plus, badge: 0 }] : []),
+        ...(isProvider ? [{ path: '/browse-jobs', label: 'Browse Jobs', icon: Scissors, badge: 0 }] : []),
+        { path: '/my-jobs', label: 'My Jobs', icon: Briefcase, badge: unreadCount },
+        { path: '/profile', label: 'Profile', icon: User, badge: 0 },
+        { path: '/about', label: 'About', icon: Info, badge: 0 },
+        { path: '/contact', label: 'Contact', icon: Mail, badge: 0 },
       ]
     : [
-        { path: '/about', label: 'About', icon: Info },
-        { path: '/contact', label: 'Contact', icon: Mail },
+        { path: '/about', label: 'About', icon: Info, badge: 0 },
+        { path: '/contact', label: 'Contact', icon: Mail, badge: 0 },
       ];
 
   return (
@@ -82,12 +86,17 @@ export function Navigation() {
                 <Link
                   key={item.path}
                   to={item.path}
-                  className={`flex items-center gap-2 text-sm font-medium transition-colors hover:text-primary ${
+                  className={`flex items-center gap-2 text-sm font-medium transition-colors hover:text-primary relative ${
                     isActive ? 'text-primary' : 'text-muted-foreground'
                   }`}
                 >
                   <Icon className="h-4 w-4" />
                   {item.label}
+                  {item.badge > 0 && (
+                    <Badge variant="destructive" className="h-5 min-w-5 px-1.5 text-xs">
+                      {item.badge > 99 ? '99+' : item.badge}
+                    </Badge>
+                  )}
                 </Link>
               );
             })}
@@ -136,6 +145,11 @@ export function Navigation() {
                 >
                   <Icon className="h-4 w-4" />
                   {item.label}
+                  {item.badge > 0 && (
+                    <Badge variant="destructive" className="h-5 min-w-5 px-1.5 text-xs ml-auto">
+                      {item.badge > 99 ? '99+' : item.badge}
+                    </Badge>
+                  )}
                 </Link>
               );
             })}
