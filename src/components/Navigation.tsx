@@ -13,6 +13,7 @@ import {
   X,
   User,
   MessageSquare,
+  Shield,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
@@ -25,11 +26,13 @@ export function Navigation() {
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userRole, setUserRole] = useState<string>('customer');
+  const [isAdmin, setIsAdmin] = useState(false);
   const unreadCount = useUnreadMessages();
 
   useEffect(() => {
     if (user) {
       loadUserRole();
+      checkAdminRole();
     }
   }, [user]);
 
@@ -41,6 +44,17 @@ export function Navigation() {
       .eq('id', user.id)
       .single();
     if (data) setUserRole(data.user_role);
+  };
+
+  const checkAdminRole = async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id)
+      .eq('role', 'admin')
+      .maybeSingle();
+    setIsAdmin(!!data);
   };
 
   const handleSignOut = async () => {
@@ -58,6 +72,7 @@ export function Navigation() {
         ...(isProvider ? [{ path: '/browse-jobs', label: 'Browse Jobs', icon: Scissors, badge: 0 }] : []),
         { path: '/my-jobs', label: 'My Jobs', icon: Briefcase, badge: unreadCount },
         { path: '/profile', label: 'Profile', icon: User, badge: 0 },
+        ...(isAdmin ? [{ path: '/admin/disputes', label: 'Admin', icon: Shield, badge: 0 }] : []),
         { path: '/about', label: 'About', icon: Info, badge: 0 },
         { path: '/contact', label: 'Contact', icon: Mail, badge: 0 },
       ]
