@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useAuth } from '@/lib/auth';
 import { Scissors, Users, DollarSign, CheckCircle, ArrowRight } from 'lucide-react';
+import InstallBanner from '@/components/InstallBanner';
 
 const Index = () => {
   const { user } = useAuth();
@@ -106,6 +107,7 @@ const Index = () => {
           </CardContent>
         </Card>
       </main>
+      <InstallBanner />
     </div>
   );
 };
