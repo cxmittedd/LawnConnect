@@ -1,15 +1,19 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useAuth } from '@/lib/auth';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Scissors } from 'lucide-react';
 import { z } from 'zod';
+import { TERMS_VERSION } from './TermsOfService';
+import { PRIVACY_VERSION } from './PrivacyPolicy';
 
 const signInSchema = z.object({
   email: z.string().trim().email({ message: 'Invalid email address' }),
@@ -22,6 +26,9 @@ const signUpSchema = z.object({
   password: z.string().min(6, { message: 'Password must be at least 6 characters' }),
   confirmPassword: z.string(),
   userRole: z.enum(['customer', 'provider']),
+  acceptedTerms: z.literal(true, { 
+    errorMap: () => ({ message: 'You must accept the Terms of Service and Privacy Policy' })
+  }),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
   path: ['confirmPassword'],
@@ -38,6 +45,7 @@ export default function Auth() {
     password: '',
     confirmPassword: '',
     userRole: 'customer' as 'customer' | 'provider',
+    acceptedTerms: false,
   });
 
   useEffect(() => {
@@ -81,19 +89,44 @@ export default function Auth() {
     }
 
     setLoading(true);
-    const { error } = await signUp(signUpData.email, signUpData.password, signUpData.fullName, signUpData.userRole);
-    setLoading(false);
-
+    const { error, data } = await signUp(signUpData.email, signUpData.password, signUpData.fullName, signUpData.userRole);
+    
     if (error) {
+      setLoading(false);
       if (error.message.includes('already registered')) {
         toast.error('This email is already registered');
       } else {
         toast.error(error.message);
       }
-    } else {
-      toast.success('Account created successfully!');
-      navigate('/dashboard');
+      return;
     }
+
+    // Record consent for GDPR/JDPA compliance
+    if (data?.user) {
+      try {
+        await supabase.from('user_consents').insert([
+          {
+            user_id: data.user.id,
+            consent_type: 'terms_of_service',
+            consent_version: TERMS_VERSION,
+            user_agent: navigator.userAgent,
+          },
+          {
+            user_id: data.user.id,
+            consent_type: 'privacy_policy',
+            consent_version: PRIVACY_VERSION,
+            user_agent: navigator.userAgent,
+          }
+        ]);
+      } catch (consentError) {
+        console.error('Failed to record consent:', consentError);
+        // Don't block signup if consent recording fails
+      }
+    }
+
+    setLoading(false);
+    toast.success('Account created successfully!');
+    navigate('/dashboard');
   };
 
   return (
@@ -214,6 +247,40 @@ export default function Auth() {
                       </Label>
                     </div>
                   </RadioGroup>
+                </div>
+
+                {/* GDPR/JDPA Compliant Consent Checkbox - NOT pre-checked */}
+                <div className="flex items-start space-x-2 pt-2">
+                  <Checkbox
+                    id="terms"
+                    checked={signUpData.acceptedTerms}
+                    onCheckedChange={(checked) =>
+                      setSignUpData({ ...signUpData, acceptedTerms: checked === true })
+                    }
+                    className="mt-1"
+                  />
+                  <Label htmlFor="terms" className="font-normal text-sm leading-relaxed cursor-pointer">
+                    I have read and agree to the{' '}
+                    <Link 
+                      to="/terms" 
+                      target="_blank" 
+                      className="text-primary underline hover:text-primary/80"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      Terms of Service
+                    </Link>{' '}
+                    and{' '}
+                    <Link 
+                      to="/privacy" 
+                      target="_blank" 
+                      className="text-primary underline hover:text-primary/80"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      Privacy Policy
+                    </Link>
+                    . I understand how my personal data will be processed in accordance with the 
+                    Jamaica Data Protection Act and GDPR.
+                  </Label>
                 </div>
                 <Button type="submit" className="w-full" disabled={loading}>
                   {loading ? 'Creating account...' : 'Create Account'}
