@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Star, MapPin, Building, CheckCircle, ArrowLeft } from "lucide-react";
+import { Star, Building, CheckCircle, ArrowLeft } from "lucide-react";
 import { format } from "date-fns";
 
 interface ProviderData {
@@ -27,21 +27,13 @@ interface Review {
   reviewer_name: string | null;
 }
 
-interface CompletedJob {
-  id: string;
-  title: string;
-  location: string;
-  completed_at: string;
-  final_price: number | null;
-}
-
 export default function ProviderProfile() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
   const [provider, setProvider] = useState<ProviderData | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);
-  const [completedJobs, setCompletedJobs] = useState<CompletedJob[]>([]);
+  const [completedJobsCount, setCompletedJobsCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [averageRating, setAverageRating] = useState(0);
 
@@ -93,23 +85,11 @@ export default function ProviderProfile() {
         setAverageRating(avg);
       }
 
-      // Load completed jobs for this provider (only if user is the provider themselves or has an active job with them)
-      // The RLS policy now restricts completed job visibility to participants only
-      if (user?.id === id) {
-        const { data: jobsData, error: jobsError } = await supabase
-          .from("job_requests")
-          .select("id, title, location, completed_at, final_price")
-          .eq("accepted_provider_id", id)
-          .eq("status", "completed")
-          .order("completed_at", { ascending: false })
-          .limit(10);
-
-        if (jobsError) throw jobsError;
-        setCompletedJobs(jobsData || []);
-      } else {
-        // For other users, we can only show count from reviews, not job details
-        setCompletedJobs([]);
-      }
+      // Get completed jobs count using secure function
+      const { data: countData } = await supabase
+        .rpc("get_provider_completed_jobs_count", { provider_id: id });
+      
+      setCompletedJobsCount(countData || 0);
     } catch (error) {
       console.error("Error loading provider data:", error);
     } finally {
@@ -217,7 +197,7 @@ export default function ProviderProfile() {
                   </div>
                   <Badge variant="secondary">
                     <CheckCircle className="h-3 w-3 mr-1" />
-                    {completedJobs.length} jobs completed
+                    {completedJobsCount} jobs completed
                   </Badge>
                 </div>
               </div>
@@ -225,80 +205,39 @@ export default function ProviderProfile() {
           </CardContent>
         </Card>
 
-        <div className="grid md:grid-cols-2 gap-6">
-          {/* Reviews Section */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Reviews</CardTitle>
-              <CardDescription>
-                What customers are saying about this provider
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {reviews.length === 0 ? (
-                <p className="text-muted-foreground text-center py-8">
-                  No reviews yet
-                </p>
-              ) : (
-                <div className="space-y-4">
-                  {reviews.map((review) => (
-                    <div key={review.id} className="border-b last:border-0 pb-4 last:pb-0">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="font-medium">{review.reviewer_name}</span>
-                        {renderStars(review.rating)}
-                      </div>
-                      {review.comment && (
-                        <p className="text-muted-foreground text-sm">{review.comment}</p>
-                      )}
-                      <p className="text-xs text-muted-foreground mt-2">
-                        {format(new Date(review.created_at), "MMM d, yyyy")}
-                      </p>
+        {/* Reviews Section */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Reviews</CardTitle>
+            <CardDescription>
+              What customers are saying about this provider
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {reviews.length === 0 ? (
+              <p className="text-muted-foreground text-center py-8">
+                No reviews yet
+              </p>
+            ) : (
+              <div className="space-y-4">
+                {reviews.map((review) => (
+                  <div key={review.id} className="border-b last:border-0 pb-4 last:pb-0">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-medium">{review.reviewer_name}</span>
+                      {renderStars(review.rating)}
                     </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Completed Jobs Portfolio */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Completed Jobs</CardTitle>
-              <CardDescription>
-                Recent work completed by this provider
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {completedJobs.length === 0 ? (
-                <p className="text-muted-foreground text-center py-8">
-                  No completed jobs yet
-                </p>
-              ) : (
-                <div className="space-y-4">
-                  {completedJobs.map((job) => (
-                    <div key={job.id} className="border-b last:border-0 pb-4 last:pb-0">
-                      <h4 className="font-medium">{job.title}</h4>
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
-                        <MapPin className="h-3 w-3" />
-                        {job.location}
-                      </div>
-                      <div className="flex items-center justify-between mt-2">
-                        <span className="text-xs text-muted-foreground">
-                          {job.completed_at && format(new Date(job.completed_at), "MMM d, yyyy")}
-                        </span>
-                        {job.final_price && (
-                          <Badge variant="outline">
-                            J${job.final_price.toLocaleString()}
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+                    {review.comment && (
+                      <p className="text-muted-foreground text-sm">{review.comment}</p>
+                    )}
+                    <p className="text-xs text-muted-foreground mt-2">
+                      {format(new Date(review.created_at), "MMM d, yyyy")}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </main>
     </div>
   );

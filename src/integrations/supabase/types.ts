@@ -451,6 +451,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_provider_completed_jobs_count: {
+        Args: { provider_id: string }
+        Returns: number
+      }
       get_provider_job_listings: {
         Args: never
         Returns: {
