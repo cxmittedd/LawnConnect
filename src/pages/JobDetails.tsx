@@ -4,7 +4,7 @@ import { Navigation } from '@/components/Navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/integrations/supabase/client';
@@ -49,6 +49,8 @@ interface Proposal {
   provider_id: string;
   provider_name: string | null;
   provider_phone: string | null;
+  provider_avatar: string | null;
+  provider_bio: string | null;
 }
 
 export default function JobDetails() {
@@ -116,7 +118,7 @@ export default function JobDetails() {
         const providerIds = proposalData.map(p => p.provider_id);
         const { data: profiles } = await supabase
           .from('profiles')
-          .select('id, full_name, phone_number')
+          .select('id, full_name, phone_number, avatar_url, bio')
           .in('id', providerIds);
 
         const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
@@ -125,6 +127,8 @@ export default function JobDetails() {
           ...proposal,
           provider_name: profileMap.get(proposal.provider_id)?.full_name || null,
           provider_phone: profileMap.get(proposal.provider_id)?.phone_number || null,
+          provider_avatar: profileMap.get(proposal.provider_id)?.avatar_url || null,
+          provider_bio: profileMap.get(proposal.provider_id)?.bio || null,
         }));
 
         setProposals(enrichedProposals);
@@ -464,7 +468,10 @@ export default function JobDetails() {
                 <Card key={proposal.id} className={proposal.status === 'accepted' ? 'border-success' : ''}>
                   <CardContent className="pt-6">
                     <div className="flex items-start gap-4">
-                      <Avatar>
+                      <Avatar className="h-12 w-12">
+                        {proposal.provider_avatar && (
+                          <AvatarImage src={proposal.provider_avatar} alt={proposal.provider_name || 'Provider'} />
+                        )}
                         <AvatarFallback>
                           {proposal.provider_name?.charAt(0) || 'P'}
                         </AvatarFallback>
@@ -478,6 +485,11 @@ export default function JobDetails() {
                             >
                               {proposal.provider_name || 'Provider'}
                             </button>
+                            {proposal.provider_bio && (
+                              <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
+                                {proposal.provider_bio}
+                              </p>
+                            )}
                             {proposal.status === 'accepted' && proposal.provider_phone && (
                               <p className="text-sm text-muted-foreground">
                                 {proposal.provider_phone}
