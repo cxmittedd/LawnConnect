@@ -1,13 +1,15 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Navigation } from '@/components/Navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Textarea } from '@/components/ui/textarea';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/integrations/supabase/client';
-import { User, Phone, MapPin, Building, Save } from 'lucide-react';
+import { User, Phone, MapPin, Building, Save, Camera } from 'lucide-react';
 import { toast } from 'sonner';
 import { ProviderVerification } from '@/components/ProviderVerification';
 
@@ -17,19 +19,26 @@ interface ProfileData {
   address: string | null;
   company_name: string | null;
   user_role: string;
+  avatar_url: string | null;
+  bio: string | null;
 }
 
 export default function Profile() {
   const { user } = useAuth();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [profile, setProfile] = useState<ProfileData>({
     full_name: '',
     phone_number: '',
     address: '',
     company_name: '',
     user_role: 'customer',
+    avatar_url: null,
+    bio: null,
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
 
   useEffect(() => {
     loadProfile();
@@ -54,7 +63,10 @@ export default function Profile() {
           address: data.address || '',
           company_name: data.company_name || '',
           user_role: data.user_role || 'customer',
+          avatar_url: data.avatar_url || null,
+          bio: (data as any).bio || null,
         });
+        setAvatarPreview(data.avatar_url || null);
       }
     } catch (error) {
       console.error('Error loading profile:', error);
@@ -63,11 +75,57 @@ export default function Profile() {
     }
   };
 
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please upload an image file');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image must be less than 5MB');
+      return;
+    }
+
+    setAvatarFile(file);
+    setAvatarPreview(URL.createObjectURL(file));
+  };
+
   const handleSave = async () => {
     if (!user) return;
 
     setSaving(true);
     try {
+      let uploadedAvatarUrl = profile.avatar_url;
+
+      // Upload avatar if new file selected
+      if (avatarFile) {
+        const fileExt = avatarFile.name.split('.').pop();
+        const fileName = `${user.id}/avatar.${fileExt}`;
+
+        // Remove old avatars
+        await supabase.storage.from('avatars').remove([
+          `${user.id}/avatar.jpg`,
+          `${user.id}/avatar.png`,
+          `${user.id}/avatar.jpeg`,
+          `${user.id}/avatar.webp`,
+        ]);
+
+        const { error: uploadError } = await supabase.storage
+          .from('avatars')
+          .upload(fileName, avatarFile, { upsert: true });
+
+        if (uploadError) throw uploadError;
+
+        const { data: urlData } = supabase.storage
+          .from('avatars')
+          .getPublicUrl(fileName);
+
+        uploadedAvatarUrl = urlData.publicUrl;
+      }
+
       const { error } = await supabase
         .from('profiles')
         .update({
@@ -75,11 +133,15 @@ export default function Profile() {
           phone_number: profile.phone_number || null,
           address: profile.address || null,
           company_name: profile.company_name || null,
+          avatar_url: uploadedAvatarUrl,
+          bio: profile.bio || null,
         })
         .eq('id', user.id);
 
       if (error) throw error;
 
+      setProfile(prev => ({ ...prev, avatar_url: uploadedAvatarUrl }));
+      setAvatarFile(null);
       toast.success('Profile updated successfully!');
     } catch (error: any) {
       toast.error(error.message || 'Failed to update profile');
@@ -116,6 +178,58 @@ export default function Profile() {
         </div>
 
         <div className="space-y-6">
+          {/* Profile Photo - Required for Providers */}
+          {isProvider && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Camera className="h-5 w-5" />
+                  Profile Photo
+                  <Badge variant="destructive" className="text-xs">Required</Badge>
+                </CardTitle>
+                <CardDescription>
+                  Upload a clear face photo to help customers recognize you
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center gap-6">
+                  <Avatar className="h-24 w-24">
+                    <AvatarImage src={avatarPreview || undefined} alt="Profile photo" />
+                    <AvatarFallback className="text-2xl">
+                      <User className="h-10 w-10" />
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 space-y-2">
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      capture="user"
+                      className="hidden"
+                      onChange={handleAvatarChange}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      <Camera className="h-4 w-4 mr-2" />
+                      {avatarPreview ? 'Change Photo' : 'Upload Photo'}
+                    </Button>
+                    <p className="text-xs text-muted-foreground">
+                      Max 5MB. JPG, PNG, or WebP format.
+                    </p>
+                    {!profile.avatar_url && !avatarFile && (
+                      <p className="text-xs text-destructive">
+                        A profile photo is required to apply for jobs
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Basic Info */}
           <Card>
             <CardHeader>
@@ -183,6 +297,40 @@ export default function Profile() {
               )}
             </CardContent>
           </Card>
+
+          {/* Provider Bio - Required for Providers */}
+          {isProvider && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  About You
+                  <Badge variant="destructive" className="text-xs">Required</Badge>
+                </CardTitle>
+                <CardDescription>
+                  Tell customers about yourself and your lawn care experience
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <Textarea
+                  id="bio"
+                  placeholder="Tell customers about yourself, your experience with lawn care, equipment you use, and why they should choose you..."
+                  value={profile.bio || ''}
+                  onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
+                  rows={5}
+                  className="resize-none"
+                />
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>{(profile.bio?.length || 0)}/500 characters</span>
+                  <span>Minimum 20 characters</span>
+                </div>
+                {!profile.bio && (
+                  <p className="text-xs text-destructive">
+                    A bio is required to apply for jobs
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          )}
 
           {/* Account Info */}
           <Card>
