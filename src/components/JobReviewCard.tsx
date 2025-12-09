@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Star, MessageSquare } from 'lucide-react';
@@ -25,7 +24,6 @@ interface JobReviewCardProps {
 interface Review {
   id: string;
   rating: number;
-  comment: string | null;
   reviewer_id: string;
   reviewee_id: string;
   created_at: string | null;
@@ -47,7 +45,6 @@ export function JobReviewCard({
   const [submitting, setSubmitting] = useState(false);
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
-  const [comment, setComment] = useState('');
 
   const currentUserId = isCustomer ? customerId : providerId;
   const otherUserId = isCustomer ? providerId : customerId;
@@ -92,7 +89,6 @@ export function JobReviewCard({
           reviewer_id: currentUserId,
           reviewee_id: otherUserId,
           rating,
-          comment: comment.trim() || null,
         });
 
       if (error) throw error;
@@ -108,7 +104,6 @@ export function JobReviewCard({
 
       toast.success('Review submitted successfully!');
       setRating(0);
-      setComment('');
       loadReviews();
       onReviewSubmit();
     } catch (error: any) {
@@ -180,11 +175,6 @@ export function JobReviewCard({
               )}
             </div>
             {renderStars(theirReview.rating)}
-            {theirReview.comment && (
-              <p className="text-sm text-muted-foreground mt-2">
-                "{theirReview.comment}"
-              </p>
-            )}
           </div>
         )}
 
@@ -200,11 +190,6 @@ export function JobReviewCard({
               )}
             </div>
             {renderStars(myReview.rating)}
-            {myReview.comment && (
-              <p className="text-sm text-muted-foreground mt-2">
-                "{myReview.comment}"
-              </p>
-            )}
           </div>
         )}
 
@@ -221,21 +206,6 @@ export function JobReviewCard({
             <div className="space-y-2">
               <Label>Rating</Label>
               {renderStars(rating, true)}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="review-comment">Comment (optional)</Label>
-              <Textarea
-                id="review-comment"
-                placeholder="Share details about your experience..."
-                value={comment}
-                onChange={(e) => setComment(e.target.value)}
-                maxLength={500}
-                rows={3}
-              />
-              <p className="text-xs text-muted-foreground text-right">
-                {comment.length}/500
-              </p>
             </div>
 
             <Button
