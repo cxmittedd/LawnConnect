@@ -315,6 +315,7 @@ export type Database = {
       provider_verifications: {
         Row: {
           created_at: string
+          document_back_url: string | null
           document_type: Database["public"]["Enums"]["id_document_type"]
           document_url: string
           id: string
@@ -328,6 +329,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          document_back_url?: string | null
           document_type: Database["public"]["Enums"]["id_document_type"]
           document_url: string
           id?: string
@@ -341,6 +343,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          document_back_url?: string | null
           document_type?: Database["public"]["Enums"]["id_document_type"]
           document_url?: string
           id?: string

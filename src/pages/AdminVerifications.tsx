@@ -24,6 +24,7 @@ interface Verification {
   provider_id: string;
   document_type: DocumentType;
   document_url: string;
+  document_back_url: string | null;
   status: VerificationStatus;
   submitted_at: string;
   reviewed_at: string | null;
@@ -44,6 +45,7 @@ export default function AdminVerifications() {
   const [rejectionReason, setRejectionReason] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [documentUrl, setDocumentUrl] = useState<string | null>(null);
+  const [documentBackUrl, setDocumentBackUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -109,8 +111,10 @@ export default function AdminVerifications() {
 
   const handleViewDocument = async (verification: Verification) => {
     setSelectedVerification(verification);
+    setDocumentUrl(null);
+    setDocumentBackUrl(null);
     
-    // Get signed URL for the document
+    // Get signed URL for the front document
     const { data, error } = await supabase.storage
       .from('id-documents')
       .createSignedUrl(verification.document_url, 300); // 5 min expiry
@@ -121,6 +125,18 @@ export default function AdminVerifications() {
     }
 
     setDocumentUrl(data.signedUrl);
+
+    // Get signed URL for back document if it exists (driver's license)
+    if (verification.document_back_url) {
+      const { data: backData, error: backError } = await supabase.storage
+        .from('id-documents')
+        .createSignedUrl(verification.document_back_url, 300);
+
+      if (!backError && backData) {
+        setDocumentBackUrl(backData.signedUrl);
+      }
+    }
+
     setViewDialogOpen(true);
   };
 
@@ -399,17 +415,43 @@ export default function AdminVerifications() {
           
           {documentUrl && (
             <div className="space-y-4">
-              <div className="border rounded-lg overflow-hidden">
-                {documentUrl.includes('.pdf') ? (
-                  <iframe src={documentUrl} className="w-full h-96" />
-                ) : (
-                  <img 
-                    src={documentUrl} 
-                    alt="ID Document" 
-                    className="w-full max-h-96 object-contain bg-muted"
-                  />
-                )}
+              <div className="space-y-3">
+                <Label className="text-sm font-medium">
+                  {selectedVerification?.document_type === 'drivers_license' 
+                    ? "Front of Driver's License" 
+                    : selectedVerification?.document_type === 'passport'
+                    ? "Passport Photo Page"
+                    : "Front of National ID"}
+                </Label>
+                <div className="border rounded-lg overflow-hidden">
+                  {documentUrl.includes('.pdf') ? (
+                    <iframe src={documentUrl} className="w-full h-64" />
+                  ) : (
+                    <img 
+                      src={documentUrl} 
+                      alt="ID Document Front" 
+                      className="w-full max-h-64 object-contain bg-muted"
+                    />
+                  )}
+                </div>
               </div>
+
+              {documentBackUrl && (
+                <div className="space-y-3">
+                  <Label className="text-sm font-medium">Back of Driver's License</Label>
+                  <div className="border rounded-lg overflow-hidden">
+                    {documentBackUrl.includes('.pdf') ? (
+                      <iframe src={documentBackUrl} className="w-full h-64" />
+                    ) : (
+                      <img 
+                        src={documentBackUrl} 
+                        alt="ID Document Back" 
+                        className="w-full max-h-64 object-contain bg-muted"
+                      />
+                    )}
+                  </div>
+                </div>
+              )}
 
               {selectedVerification?.status === 'rejected' && selectedVerification.rejection_reason && (
                 <Alert variant="destructive">

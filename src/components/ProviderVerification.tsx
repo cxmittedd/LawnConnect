@@ -17,6 +17,7 @@ interface VerificationData {
   id: string;
   document_type: DocumentType;
   document_url: string;
+  document_back_url: string | null;
   status: VerificationStatus;
   submitted_at: string;
   rejection_reason: string | null;
@@ -28,7 +29,8 @@ export function ProviderVerification() {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [documentType, setDocumentType] = useState<DocumentType>('national_id');
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [frontFile, setFrontFile] = useState<File | null>(null);
+  const [backFile, setBackFile] = useState<File | null>(null);
 
   useEffect(() => {
     loadVerification();
@@ -53,38 +55,86 @@ export function ProviderVerification() {
     }
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const validateFile = (file: File): boolean => {
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('File size must be less than 5MB');
+      return false;
+    }
+    if (!['image/jpeg', 'image/png', 'image/webp', 'application/pdf'].includes(file.type)) {
+      toast.error('Only JPG, PNG, WebP or PDF files are allowed');
+      return false;
+    }
+    return true;
+  };
+
+  const handleFrontFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
-      if (file.size > 5 * 1024 * 1024) {
-        toast.error('File size must be less than 5MB');
-        return;
+      if (validateFile(file)) {
+        setFrontFile(file);
       }
-      if (!['image/jpeg', 'image/png', 'image/webp', 'application/pdf'].includes(file.type)) {
-        toast.error('Only JPG, PNG, WebP or PDF files are allowed');
-        return;
+    }
+  };
+
+  const handleBackFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      if (validateFile(file)) {
+        setBackFile(file);
       }
-      setSelectedFile(file);
+    }
+  };
+
+  const requiresBackImage = documentType === 'drivers_license';
+
+  const canSubmit = () => {
+    if (!frontFile) return false;
+    if (requiresBackImage && !backFile) return false;
+    return true;
+  };
+
+  const getUploadLabel = () => {
+    switch (documentType) {
+      case 'drivers_license':
+        return { front: "Front of Driver's License", back: "Back of Driver's License" };
+      case 'passport':
+        return { front: 'Passport Photo Page', back: null };
+      case 'national_id':
+        return { front: 'Front of National ID', back: null };
     }
   };
 
   const handleSubmit = async () => {
-    if (!user || !selectedFile) return;
+    if (!user || !frontFile) return;
+    if (requiresBackImage && !backFile) {
+      toast.error("Please upload both front and back of your driver's license");
+      return;
+    }
 
     setUploading(true);
     try {
-      const fileExt = selectedFile.name.split('.').pop();
-      const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+      // Upload front document
+      const frontExt = frontFile.name.split('.').pop();
+      const frontFileName = `${user.id}/${Date.now()}_front.${frontExt}`;
 
-      const { error: uploadError } = await supabase.storage
+      const { error: frontUploadError } = await supabase.storage
         .from('id-documents')
-        .upload(fileName, selectedFile);
+        .upload(frontFileName, frontFile);
 
-      if (uploadError) throw uploadError;
+      if (frontUploadError) throw frontUploadError;
 
-      const { data: { publicUrl } } = supabase.storage
-        .from('id-documents')
-        .getPublicUrl(fileName);
+      // Upload back document if required
+      let backFileName: string | null = null;
+      if (requiresBackImage && backFile) {
+        const backExt = backFile.name.split('.').pop();
+        backFileName = `${user.id}/${Date.now()}_back.${backExt}`;
+
+        const { error: backUploadError } = await supabase.storage
+          .from('id-documents')
+          .upload(backFileName, backFile);
+
+        if (backUploadError) throw backUploadError;
+      }
 
       // For rejected verifications, update; otherwise insert
       if (verification?.status === 'rejected') {
@@ -92,7 +142,8 @@ export function ProviderVerification() {
           .from('provider_verifications')
           .update({
             document_type: documentType,
-            document_url: fileName,
+            document_url: frontFileName,
+            document_back_url: backFileName,
             status: 'pending',
             submitted_at: new Date().toISOString(),
             rejection_reason: null,
@@ -106,14 +157,16 @@ export function ProviderVerification() {
           .insert({
             provider_id: user.id,
             document_type: documentType,
-            document_url: fileName,
+            document_url: frontFileName,
+            document_back_url: backFileName,
           });
 
         if (error) throw error;
       }
 
-      toast.success('ID document submitted for verification!');
-      setSelectedFile(null);
+      toast.success('ID document(s) submitted for verification!');
+      setFrontFile(null);
+      setBackFile(null);
       loadVerification();
     } catch (error: any) {
       toast.error(error.message || 'Failed to submit document');
@@ -121,6 +174,12 @@ export function ProviderVerification() {
       setUploading(false);
     }
   };
+
+  // Reset files when document type changes
+  useEffect(() => {
+    setFrontFile(null);
+    setBackFile(null);
+  }, [documentType]);
 
   if (loading) {
     return (
@@ -152,6 +211,8 @@ export function ProviderVerification() {
       case 'national_id': return 'National ID';
     }
   };
+
+  const labels = getUploadLabel();
 
   // Show existing verification status
   if (verification && verification.status !== 'rejected') {
@@ -225,7 +286,7 @@ export function ProviderVerification() {
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>
             You must verify your identity before you can browse available jobs. 
-            Upload a clear photo of your ID document.
+            Upload clear photo(s) of your ID document.
           </AlertDescription>
         </Alert>
 
@@ -243,20 +304,21 @@ export function ProviderVerification() {
           </Select>
         </div>
 
+        {/* Front/Main document upload */}
         <div className="space-y-2">
-          <Label htmlFor="id_document">Upload Document</Label>
+          <Label htmlFor="id_document_front">{labels.front}</Label>
           <div className="border-2 border-dashed rounded-lg p-6 text-center hover:border-primary transition-colors">
             <input
-              id="id_document"
+              id="id_document_front"
               type="file"
               accept="image/jpeg,image/png,image/webp,application/pdf"
-              onChange={handleFileChange}
+              onChange={handleFrontFileChange}
               className="hidden"
             />
-            <label htmlFor="id_document" className="cursor-pointer">
+            <label htmlFor="id_document_front" className="cursor-pointer">
               <Upload className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-              {selectedFile ? (
-                <p className="text-sm text-primary font-medium">{selectedFile.name}</p>
+              {frontFile ? (
+                <p className="text-sm text-primary font-medium">{frontFile.name}</p>
               ) : (
                 <>
                   <p className="text-sm text-muted-foreground">Click to upload or drag and drop</p>
@@ -267,9 +329,36 @@ export function ProviderVerification() {
           </div>
         </div>
 
+        {/* Back document upload - only for driver's license */}
+        {requiresBackImage && (
+          <div className="space-y-2">
+            <Label htmlFor="id_document_back">{labels.back}</Label>
+            <div className="border-2 border-dashed rounded-lg p-6 text-center hover:border-primary transition-colors">
+              <input
+                id="id_document_back"
+                type="file"
+                accept="image/jpeg,image/png,image/webp,application/pdf"
+                onChange={handleBackFileChange}
+                className="hidden"
+              />
+              <label htmlFor="id_document_back" className="cursor-pointer">
+                <Upload className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+                {backFile ? (
+                  <p className="text-sm text-primary font-medium">{backFile.name}</p>
+                ) : (
+                  <>
+                    <p className="text-sm text-muted-foreground">Click to upload or drag and drop</p>
+                    <p className="text-xs text-muted-foreground mt-1">JPG, PNG, WebP or PDF (max 5MB)</p>
+                  </>
+                )}
+              </label>
+            </div>
+          </div>
+        )}
+
         <Button 
           onClick={handleSubmit} 
-          disabled={!selectedFile || uploading}
+          disabled={!canSubmit() || uploading}
           className="w-full"
         >
           {uploading ? 'Uploading...' : 'Submit for Verification'}
