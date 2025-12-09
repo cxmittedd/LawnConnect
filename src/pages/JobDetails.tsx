@@ -8,7 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/integrations/supabase/client';
-import { MapPin, Calendar, DollarSign, Clock, ArrowLeft, Check, X, User } from 'lucide-react';
+import { MapPin, Calendar, DollarSign, Clock, ArrowLeft, Check, X, User, Star } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { TestPaymentCard } from '@/components/TestPaymentCard';
@@ -50,6 +50,8 @@ interface Proposal {
   provider_name: string | null;
   provider_avatar: string | null;
   provider_bio: string | null;
+  provider_rating: number | null;
+  provider_review_count: number;
 }
 
 export default function JobDetails() {
@@ -112,22 +114,45 @@ export default function JobDetails() {
 
       if (proposalError) throw proposalError;
 
-      // Fetch provider profiles separately
+      // Fetch provider profiles and ratings separately
       if (proposalData && proposalData.length > 0) {
         const providerIds = proposalData.map(p => p.provider_id);
+        
+        // Fetch profiles
         const { data: profiles } = await supabase
           .from('profiles')
           .select('id, full_name, avatar_url, bio')
           .in('id', providerIds);
 
+        // Fetch reviews for rating calculation
+        const { data: reviews } = await supabase
+          .from('reviews')
+          .select('reviewee_id, rating')
+          .in('reviewee_id', providerIds);
+
         const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
         
-        const enrichedProposals = proposalData.map(proposal => ({
-          ...proposal,
-          provider_name: profileMap.get(proposal.provider_id)?.full_name || null,
-          provider_avatar: profileMap.get(proposal.provider_id)?.avatar_url || null,
-          provider_bio: profileMap.get(proposal.provider_id)?.bio || null,
-        }));
+        // Calculate average ratings per provider
+        const ratingsMap = new Map<string, { total: number; count: number }>();
+        reviews?.forEach(review => {
+          const existing = ratingsMap.get(review.reviewee_id) || { total: 0, count: 0 };
+          ratingsMap.set(review.reviewee_id, {
+            total: existing.total + review.rating,
+            count: existing.count + 1,
+          });
+        });
+        
+        const enrichedProposals = proposalData.map(proposal => {
+          const ratingData = ratingsMap.get(proposal.provider_id);
+          return {
+            ...proposal,
+            provider_name: profileMap.get(proposal.provider_id)?.full_name || null,
+            provider_avatar: profileMap.get(proposal.provider_id)?.avatar_url || null,
+            provider_bio: profileMap.get(proposal.provider_id)?.bio || null,
+            provider_rating: ratingData ? ratingData.total / ratingData.count : null,
+            provider_review_count: ratingData?.count || 0,
+          };
+        });
 
         setProposals(enrichedProposals);
       } else {
@@ -483,6 +508,18 @@ export default function JobDetails() {
                             >
                               {proposal.provider_name || 'Provider'}
                             </button>
+                            {proposal.provider_rating !== null && (
+                              <div className="flex items-center gap-1 mt-1">
+                                <Star className="h-3.5 w-3.5 fill-warning text-warning" />
+                                <span className="text-sm font-medium">{proposal.provider_rating.toFixed(1)}</span>
+                                <span className="text-xs text-muted-foreground">
+                                  ({proposal.provider_review_count} {proposal.provider_review_count === 1 ? 'review' : 'reviews'})
+                                </span>
+                              </div>
+                            )}
+                            {proposal.provider_rating === null && (
+                              <span className="text-xs text-muted-foreground mt-1">No reviews yet</span>
+                            )}
                             {proposal.provider_bio && (
                               <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
                                 {proposal.provider_bio}
