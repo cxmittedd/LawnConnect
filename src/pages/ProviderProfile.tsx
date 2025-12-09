@@ -94,17 +94,23 @@ export default function ProviderProfile() {
         setAverageRating(avg);
       }
 
-      // Load completed jobs for this provider
-      const { data: jobsData, error: jobsError } = await supabase
-        .from("job_requests")
-        .select("id, title, location, completed_at, final_price")
-        .eq("accepted_provider_id", id)
-        .eq("status", "completed")
-        .order("completed_at", { ascending: false })
-        .limit(10);
+      // Load completed jobs for this provider (only if user is the provider themselves or has an active job with them)
+      // The RLS policy now restricts completed job visibility to participants only
+      if (user?.id === id) {
+        const { data: jobsData, error: jobsError } = await supabase
+          .from("job_requests")
+          .select("id, title, location, completed_at, final_price")
+          .eq("accepted_provider_id", id)
+          .eq("status", "completed")
+          .order("completed_at", { ascending: false })
+          .limit(10);
 
-      if (jobsError) throw jobsError;
-      setCompletedJobs(jobsData || []);
+        if (jobsError) throw jobsError;
+        setCompletedJobs(jobsData || []);
+      } else {
+        // For other users, we can only show count from reviews, not job details
+        setCompletedJobs([]);
+      }
     } catch (error) {
       console.error("Error loading provider data:", error);
     } finally {

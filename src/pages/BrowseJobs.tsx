@@ -60,11 +60,8 @@ export default function BrowseJobs() {
 
   const loadJobs = async () => {
     try {
-      const { data, error } = await supabase
-        .from('job_requests')
-        .select('*')
-        .in('status', ['open', 'in_negotiation'])
-        .order('created_at', { ascending: false });
+      // Use secure function that doesn't expose customer_id
+      const { data, error } = await supabase.rpc('get_provider_job_listings');
 
       if (error) throw error;
       setJobs(data || []);

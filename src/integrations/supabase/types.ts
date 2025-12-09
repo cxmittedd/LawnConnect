@@ -451,6 +451,24 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_provider_job_listings: {
+        Args: never
+        Returns: {
+          additional_requirements: string
+          base_price: number
+          created_at: string
+          customer_offer: number
+          description: string
+          id: string
+          lawn_size: string
+          location: string
+          parish: string
+          preferred_date: string
+          preferred_time: string
+          status: string
+          title: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
