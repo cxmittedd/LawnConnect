@@ -124,7 +124,7 @@ export default function AdminDisputes() {
   };
 
   const handleResolveDispute = async () => {
-    if (!selectedDispute) return;
+    if (!selectedDispute || !user) return;
 
     setSubmitting(true);
     try {
@@ -137,6 +137,21 @@ export default function AdminDisputes() {
         .eq('id', selectedDispute.id);
 
       if (error) throw error;
+
+      // Log admin action
+      await supabase.from('admin_audit_logs').insert({
+        admin_id: user.id,
+        action: 'resolve_dispute',
+        entity_type: 'job_dispute',
+        entity_id: selectedDispute.id,
+        details: {
+          job_id: selectedDispute.job_id,
+          job_title: selectedDispute.job_title,
+          customer_name: selectedDispute.customer_name,
+          provider_name: selectedDispute.provider_name,
+          reason: selectedDispute.reason,
+        },
+      });
 
       toast.success('Dispute marked as resolved');
       setResolveDialogOpen(false);

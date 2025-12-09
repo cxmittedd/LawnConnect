@@ -141,7 +141,7 @@ export default function AdminVerifications() {
   };
 
   const handleApprove = async () => {
-    if (!selectedVerification) return;
+    if (!selectedVerification || !user) return;
 
     setSubmitting(true);
     try {
@@ -150,11 +150,24 @@ export default function AdminVerifications() {
         .update({
           status: 'approved',
           reviewed_at: new Date().toISOString(),
-          reviewed_by: user?.id,
+          reviewed_by: user.id,
         })
         .eq('id', selectedVerification.id);
 
       if (error) throw error;
+
+      // Log admin action
+      await supabase.from('admin_audit_logs').insert({
+        admin_id: user.id,
+        action: 'approve_verification',
+        entity_type: 'provider_verification',
+        entity_id: selectedVerification.id,
+        details: {
+          provider_id: selectedVerification.provider_id,
+          provider_name: selectedVerification.provider_name,
+          document_type: selectedVerification.document_type,
+        },
+      });
 
       toast.success('Provider verified successfully');
       setViewDialogOpen(false);
@@ -168,7 +181,7 @@ export default function AdminVerifications() {
   };
 
   const handleReject = async () => {
-    if (!selectedVerification || !rejectionReason.trim()) {
+    if (!selectedVerification || !rejectionReason.trim() || !user) {
       toast.error('Please provide a reason for rejection');
       return;
     }
@@ -180,12 +193,26 @@ export default function AdminVerifications() {
         .update({
           status: 'rejected',
           reviewed_at: new Date().toISOString(),
-          reviewed_by: user?.id,
+          reviewed_by: user.id,
           rejection_reason: rejectionReason.trim(),
         })
         .eq('id', selectedVerification.id);
 
       if (error) throw error;
+
+      // Log admin action
+      await supabase.from('admin_audit_logs').insert({
+        admin_id: user.id,
+        action: 'reject_verification',
+        entity_type: 'provider_verification',
+        entity_id: selectedVerification.id,
+        details: {
+          provider_id: selectedVerification.provider_id,
+          provider_name: selectedVerification.provider_name,
+          document_type: selectedVerification.document_type,
+          rejection_reason: rejectionReason.trim(),
+        },
+      });
 
       toast.success('Verification rejected');
       setRejectDialogOpen(false);
