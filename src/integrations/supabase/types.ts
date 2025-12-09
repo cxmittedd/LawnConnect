@@ -312,6 +312,48 @@ export type Database = {
         }
         Relationships: []
       }
+      provider_verifications: {
+        Row: {
+          created_at: string
+          document_type: Database["public"]["Enums"]["id_document_type"]
+          document_url: string
+          id: string
+          provider_id: string
+          rejection_reason: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: Database["public"]["Enums"]["verification_status"]
+          submitted_at: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          document_type: Database["public"]["Enums"]["id_document_type"]
+          document_url: string
+          id?: string
+          provider_id: string
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["verification_status"]
+          submitted_at?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          document_type?: Database["public"]["Enums"]["id_document_type"]
+          document_url?: string
+          id?: string
+          provider_id?: string
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["verification_status"]
+          submitted_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       reviews: {
         Row: {
           comment: string | null
@@ -417,6 +459,8 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "user"
+      id_document_type: "drivers_license" | "passport" | "national_id"
+      verification_status: "pending" | "approved" | "rejected"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -545,6 +589,8 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "user"],
+      id_document_type: ["drivers_license", "passport", "national_id"],
+      verification_status: ["pending", "approved", "rejected"],
     },
   },
 } as const

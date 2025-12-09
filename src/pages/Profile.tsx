@@ -5,11 +5,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/integrations/supabase/client';
 import { User, Phone, MapPin, Building, Save } from 'lucide-react';
 import { toast } from 'sonner';
+import { ProviderVerification } from '@/components/ProviderVerification';
 
 interface ProfileData {
   full_name: string | null;
@@ -202,6 +202,9 @@ export default function Profile() {
               </div>
             </CardContent>
           </Card>
+
+          {/* Provider Verification */}
+          {isProvider && <ProviderVerification />}
 
           {/* Save Button */}
           <Button onClick={handleSave} disabled={saving} className="w-full" size="lg">
