@@ -448,7 +448,33 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      provider_public_profiles: {
+        Row: {
+          avatar_url: string | null
+          bio: string | null
+          company_name: string | null
+          full_name: string | null
+          id: string | null
+          user_role: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          bio?: string | null
+          company_name?: string | null
+          full_name?: string | null
+          id?: string | null
+          user_role?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          bio?: string | null
+          company_name?: string | null
+          full_name?: string | null
+          id?: string | null
+          user_role?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       get_provider_completed_jobs_count: {
