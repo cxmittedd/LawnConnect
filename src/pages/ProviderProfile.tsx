@@ -22,7 +22,6 @@ interface ProviderData {
 interface Review {
   id: string;
   rating: number;
-  comment: string | null;
   created_at: string;
   reviewer_name: string | null;
 }
@@ -59,7 +58,7 @@ export default function ProviderProfile() {
       // Load reviews for this provider
       const { data: reviewsData, error: reviewsError } = await supabase
         .from("reviews")
-        .select("id, rating, comment, created_at, reviewer_id")
+        .select("id, rating, created_at, reviewer_id")
         .eq("reviewee_id", id)
         .order("created_at", { ascending: false });
 
@@ -226,9 +225,6 @@ export default function ProviderProfile() {
                       <span className="font-medium">{review.reviewer_name}</span>
                       {renderStars(review.rating)}
                     </div>
-                    {review.comment && (
-                      <p className="text-muted-foreground text-sm">{review.comment}</p>
-                    )}
                     <p className="text-xs text-muted-foreground mt-2">
                       {format(new Date(review.created_at), "MMM d, yyyy")}
                     </p>
