@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "https://esm.sh/resend@2.0.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.86.0";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
@@ -9,18 +10,21 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-interface NotificationRequest {
-  type: 'proposal_received' | 'proposal_accepted' | 'payment_submitted' | 'payment_confirmed' | 'job_completed' | 'review_received';
-  recipientId: string;
-  jobTitle: string;
-  jobId: string;
-  additionalData?: {
-    providerName?: string;
-    customerName?: string;
-    amount?: number;
-    rating?: number;
-  };
-}
+// Zod schema for input validation
+const notificationSchema = z.object({
+  type: z.enum(['proposal_received', 'proposal_accepted', 'payment_submitted', 'payment_confirmed', 'job_completed', 'review_received']),
+  recipientId: z.string().uuid(),
+  jobTitle: z.string().min(1).max(200),
+  jobId: z.string().uuid(),
+  additionalData: z.object({
+    providerName: z.string().max(100).optional(),
+    customerName: z.string().max(100).optional(),
+    amount: z.number().positive().optional(),
+    rating: z.number().min(1).max(5).optional(),
+  }).optional(),
+});
+
+type NotificationRequest = z.infer<typeof notificationSchema>;
 
 const getEmailContent = (type: string, jobTitle: string, additionalData?: NotificationRequest['additionalData']) => {
   const baseStyles = `
@@ -182,7 +186,19 @@ serve(async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { type, recipientId, jobTitle, jobId, additionalData }: NotificationRequest = await req.json();
+    // Parse and validate request body with zod
+    const body = await req.json();
+    const parseResult = notificationSchema.safeParse(body);
+    
+    if (!parseResult.success) {
+      console.error("Invalid request body:", parseResult.error.format());
+      return new Response(
+        JSON.stringify({ error: "Invalid request", details: parseResult.error.format() }),
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    const { type, recipientId, jobTitle, jobId, additionalData } = parseResult.data;
 
     console.log(`Processing ${type} notification for recipient ${recipientId}, job: ${jobTitle}`);
 
