@@ -56,7 +56,6 @@ export default function PrivacyPolicy() {
                 <li>Phone number (optional)</li>
                 <li>Physical address for service locations</li>
                 <li>Company name (for Service Providers)</li>
-                <li>Payment information (Lynk ID)</li>
                 <li>Photos of properties for job requests</li>
                 <li>Messages and communications on the platform</li>
               </ul>

@@ -49,7 +49,6 @@ interface Proposal {
   provider_id: string;
   provider_name: string | null;
   provider_phone: string | null;
-  provider_lynk_id: string | null;
 }
 
 export default function JobDetails() {
@@ -117,7 +116,7 @@ export default function JobDetails() {
         const providerIds = proposalData.map(p => p.provider_id);
         const { data: profiles } = await supabase
           .from('profiles')
-          .select('id, full_name, phone_number, lynk_id')
+          .select('id, full_name, phone_number')
           .in('id', providerIds);
 
         const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
@@ -126,7 +125,6 @@ export default function JobDetails() {
           ...proposal,
           provider_name: profileMap.get(proposal.provider_id)?.full_name || null,
           provider_phone: profileMap.get(proposal.provider_id)?.phone_number || null,
-          provider_lynk_id: profileMap.get(proposal.provider_id)?.lynk_id || null,
         }));
 
         setProposals(enrichedProposals);

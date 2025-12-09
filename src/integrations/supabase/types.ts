@@ -282,7 +282,6 @@ export type Database = {
           created_at: string | null
           full_name: string | null
           id: string
-          lynk_id: string | null
           phone_number: string | null
           updated_at: string | null
           user_role: string
@@ -295,7 +294,6 @@ export type Database = {
           created_at?: string | null
           full_name?: string | null
           id: string
-          lynk_id?: string | null
           phone_number?: string | null
           updated_at?: string | null
           user_role?: string
@@ -308,7 +306,6 @@ export type Database = {
           created_at?: string | null
           full_name?: string | null
           id?: string
-          lynk_id?: string | null
           phone_number?: string | null
           updated_at?: string | null
           user_role?: string
@@ -470,6 +467,17 @@ export type Database = {
           preferred_time: string
           status: string
           title: string
+        }[]
+      }
+      get_public_provider_profile: {
+        Args: { provider_id: string }
+        Returns: {
+          avatar_url: string
+          bio: string
+          company_name: string
+          full_name: string
+          id: string
+          user_role: string
         }[]
       }
       has_role: {
