@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -119,6 +120,8 @@ export default function Auth() {
   const { user, signIn, signUp } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState('');
   const [signInData, setSignInData] = useState({ email: '', password: '' });
   const [signUpData, setSignUpData] = useState({
     fullName: '',
@@ -211,6 +214,7 @@ export default function Auth() {
   };
 
   return (
+    <>
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-primary/5 p-4">
       <Card className="w-full max-w-md shadow-xl">
         <CardHeader className="text-center space-y-4">
@@ -256,6 +260,13 @@ export default function Auth() {
                 <Button type="submit" className="w-full" disabled={loading}>
                   {loading ? 'Signing in...' : 'Sign In'}
                 </Button>
+                <button
+                  type="button"
+                  onClick={() => setShowForgotPassword(true)}
+                  className="w-full text-sm text-primary hover:underline"
+                >
+                  Forgot password?
+                </button>
               </form>
             </TabsContent>
             
@@ -365,5 +376,100 @@ export default function Auth() {
         </CardContent>
       </Card>
     </div>
+
+    {/* Forgot Password Dialog */}
+    <ForgotPasswordDialog 
+      open={showForgotPassword} 
+      onOpenChange={setShowForgotPassword}
+      initialEmail={signInData.email}
+    />
+    </>
+  );
+}
+
+function ForgotPasswordDialog({ 
+  open, 
+  onOpenChange,
+  initialEmail 
+}: { 
+  open: boolean; 
+  onOpenChange: (open: boolean) => void;
+  initialEmail?: string;
+}) {
+  const [email, setEmail] = useState(initialEmail || '');
+  const [loading, setLoading] = useState(false);
+  const [sent, setSent] = useState(false);
+
+  useEffect(() => {
+    if (open && initialEmail) {
+      setEmail(initialEmail);
+    }
+    if (!open) {
+      setSent(false);
+    }
+  }, [open, initialEmail]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!email.trim()) {
+      toast.error('Please enter your email address');
+      return;
+    }
+
+    setLoading(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    setLoading(false);
+
+    if (error) {
+      toast.error(error.message);
+    } else {
+      setSent(true);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>{sent ? 'Check your email' : 'Reset password'}</DialogTitle>
+          <DialogDescription>
+            {sent 
+              ? "We've sent you a password reset link. Please check your inbox and spam folder."
+              : "Enter your email address and we'll send you a link to reset your password."
+            }
+          </DialogDescription>
+        </DialogHeader>
+        {!sent ? (
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="reset-email">Email</Label>
+              <Input
+                id="reset-email"
+                type="email"
+                placeholder="your@email.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+            </div>
+            <div className="flex gap-2">
+              <Button type="button" variant="outline" className="flex-1" onClick={() => onOpenChange(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" className="flex-1" disabled={loading}>
+                {loading ? 'Sending...' : 'Send reset link'}
+              </Button>
+            </div>
+          </form>
+        ) : (
+          <Button onClick={() => onOpenChange(false)} className="w-full">
+            Back to sign in
+          </Button>
+        )}
+      </DialogContent>
+    </Dialog>
   );
 }
