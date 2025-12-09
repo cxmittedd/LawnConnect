@@ -7,16 +7,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Star, MapPin, Phone, Building, CheckCircle, ArrowLeft } from "lucide-react";
+import { Star, MapPin, Building, CheckCircle, ArrowLeft } from "lucide-react";
 import { format } from "date-fns";
 
 interface ProviderData {
   id: string;
   full_name: string | null;
   company_name: string | null;
-  phone_number: string | null;
-  address: string | null;
   avatar_url: string | null;
+  bio: string | null;
+  user_role: string | null;
 }
 
 interface Review {
@@ -55,15 +55,14 @@ export default function ProviderProfile() {
     if (!id) return;
 
     try {
-      // Load provider profile
+      // Load provider profile using secure RPC function (only returns public info)
       const { data: profileData, error: profileError } = await supabase
-        .from("profiles")
-        .select("id, full_name, company_name, phone_number, address, avatar_url")
-        .eq("id", id)
-        .maybeSingle();
+        .rpc("get_public_provider_profile", { provider_id: id });
 
       if (profileError) throw profileError;
-      setProvider(profileData);
+      // RPC returns an array, get the first result
+      const profile = Array.isArray(profileData) ? profileData[0] : profileData;
+      setProvider(profile || null);
 
       // Load reviews for this provider
       const { data: reviewsData, error: reviewsError } = await supabase
@@ -205,11 +204,10 @@ export default function ProviderProfile() {
                     {provider.company_name}
                   </div>
                 )}
-                {provider.address && (
-                  <div className="flex items-center gap-2 text-muted-foreground mt-1">
-                    <MapPin className="h-4 w-4" />
-                    {provider.address}
-                  </div>
+                {provider.bio && (
+                  <p className="text-muted-foreground mt-2 text-sm">
+                    {provider.bio}
+                  </p>
                 )}
                 <div className="flex items-center gap-4 mt-4">
                   <div className="flex items-center gap-2">
