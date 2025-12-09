@@ -10,8 +10,9 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Scissors } from 'lucide-react';
+import { Scissors, Check, X } from 'lucide-react';
 import { z } from 'zod';
+import { useMemo } from 'react';
 import { TERMS_VERSION } from './TermsOfService';
 import { PRIVACY_VERSION } from './PrivacyPolicy';
 
@@ -38,6 +39,81 @@ const signUpSchema = z.object({
   message: "Passwords don't match",
   path: ['confirmPassword'],
 });
+
+// Password strength indicator component
+function PasswordStrengthField({ value, onChange }: { value: string; onChange: (value: string) => void }) {
+  const checks = useMemo(() => ({
+    minLength: value.length >= 8,
+    hasUppercase: /[A-Z]/.test(value),
+    hasLowercase: /[a-z]/.test(value),
+    hasNumber: /[0-9]/.test(value),
+    hasSpecial: /[^A-Za-z0-9]/.test(value),
+  }), [value]);
+
+  const strength = useMemo(() => {
+    const passedChecks = Object.values(checks).filter(Boolean).length;
+    if (passedChecks === 0) return { level: 0, label: '', color: '' };
+    if (passedChecks <= 2) return { level: 1, label: 'Weak', color: 'bg-destructive' };
+    if (passedChecks <= 3) return { level: 2, label: 'Fair', color: 'bg-orange-500' };
+    if (passedChecks <= 4) return { level: 3, label: 'Good', color: 'bg-yellow-500' };
+    return { level: 4, label: 'Strong', color: 'bg-green-500' };
+  }, [checks]);
+
+  const CheckItem = ({ passed, label }: { passed: boolean; label: string }) => (
+    <div className="flex items-center gap-1.5 text-xs">
+      {passed ? (
+        <Check className="h-3 w-3 text-green-500" />
+      ) : (
+        <X className="h-3 w-3 text-muted-foreground/50" />
+      )}
+      <span className={passed ? 'text-green-600' : 'text-muted-foreground'}>{label}</span>
+    </div>
+  );
+
+  return (
+    <div className="space-y-2">
+      <Label htmlFor="signup-password">Password</Label>
+      <Input
+        id="signup-password"
+        type="password"
+        placeholder="••••••••"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        required
+      />
+      {value && (
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <div className="flex-1 flex gap-1">
+              {[1, 2, 3, 4].map((i) => (
+                <div
+                  key={i}
+                  className={`h-1.5 flex-1 rounded-full transition-colors ${
+                    i <= strength.level ? strength.color : 'bg-muted'
+                  }`}
+                />
+              ))}
+            </div>
+            <span className={`text-xs font-medium ${
+              strength.level <= 1 ? 'text-destructive' : 
+              strength.level === 2 ? 'text-orange-500' : 
+              strength.level === 3 ? 'text-yellow-600' : 'text-green-500'
+            }`}>
+              {strength.label}
+            </span>
+          </div>
+          <div className="grid grid-cols-2 gap-1">
+            <CheckItem passed={checks.minLength} label="8+ characters" />
+            <CheckItem passed={checks.hasUppercase} label="Uppercase" />
+            <CheckItem passed={checks.hasLowercase} label="Lowercase" />
+            <CheckItem passed={checks.hasNumber} label="Number" />
+            <CheckItem passed={checks.hasSpecial} label="Special char" />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function Auth() {
   const { user, signIn, signUp } = useAuth();
@@ -207,20 +283,10 @@ export default function Auth() {
                     required
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="signup-password">Password</Label>
-                  <Input
-                    id="signup-password"
-                    type="password"
-                    placeholder="••••••••"
-                    value={signUpData.password}
-                    onChange={(e) => setSignUpData({ ...signUpData, password: e.target.value })}
-                    required
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Min 8 characters with uppercase, lowercase, number & special character
-                  </p>
-                </div>
+                <PasswordStrengthField 
+                  value={signUpData.password}
+                  onChange={(value) => setSignUpData({ ...signUpData, password: value })}
+                />
                 <div className="space-y-2">
                   <Label htmlFor="signup-confirm">Confirm Password</Label>
                   <Input
