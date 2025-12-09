@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Navigation } from '@/components/Navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -7,12 +8,14 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/integrations/supabase/client';
-import { MapPin, Calendar, DollarSign, Image, Scissors } from 'lucide-react';
+import { MapPin, Calendar, DollarSign, Scissors, Shield, Clock, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { z } from 'zod';
+import { useProviderVerification } from '@/hooks/useProviderVerification';
 
 const proposalSchema = z.object({
   proposed_price: z.number().min(7000, 'Minimum price is J$7000'),
@@ -36,6 +39,7 @@ interface Job {
 
 export default function BrowseJobs() {
   const { user } = useAuth();
+  const { isVerified, isPending, needsVerification, loading: verificationLoading } = useProviderVerification();
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
@@ -47,8 +51,12 @@ export default function BrowseJobs() {
   });
 
   useEffect(() => {
-    loadJobs();
-  }, []);
+    if (!verificationLoading && isVerified) {
+      loadJobs();
+    } else if (!verificationLoading) {
+      setLoading(false);
+    }
+  }, [verificationLoading, isVerified]);
 
   const loadJobs = async () => {
     try {
@@ -132,16 +140,70 @@ export default function BrowseJobs() {
     }
   };
 
-  if (loading) {
+  if (loading || verificationLoading) {
     return (
       <>
         <Navigation />
         <div className="flex h-[calc(100vh-4rem)] items-center justify-center">
           <div className="text-center">
             <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto mb-4"></div>
-            <p className="text-muted-foreground">Loading jobs...</p>
+            <p className="text-muted-foreground">Loading...</p>
           </div>
         </div>
+      </>
+    );
+  }
+
+  // Show verification required message for unverified providers
+  if (needsVerification) {
+    return (
+      <>
+        <Navigation />
+        <main className="container mx-auto px-4 py-8">
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-foreground mb-2">Browse Jobs</h1>
+            <p className="text-muted-foreground">Find lawn cutting opportunities near you</p>
+          </div>
+
+          <Card className="max-w-lg mx-auto">
+            <CardHeader className="text-center">
+              <div className="mx-auto w-16 h-16 rounded-full bg-warning/20 flex items-center justify-center mb-4">
+                <Shield className="h-8 w-8 text-warning" />
+              </div>
+              <CardTitle>ID Verification Required</CardTitle>
+              <CardDescription>
+                {isPending 
+                  ? 'Your ID verification is pending review'
+                  : 'You must verify your identity to browse jobs'}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {isPending ? (
+                <Alert>
+                  <Clock className="h-4 w-4" />
+                  <AlertDescription>
+                    Your ID document is currently under review. This typically takes 1-2 business days.
+                    You'll receive access to job listings once approved.
+                  </AlertDescription>
+                </Alert>
+              ) : (
+                <Alert>
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertDescription>
+                    To protect our customers and ensure trust on the platform, all service providers 
+                    must verify their identity before accessing job listings.
+                  </AlertDescription>
+                </Alert>
+              )}
+              
+              <Button asChild className="w-full">
+                <Link to="/profile">
+                  {isPending ? 'View Verification Status' : 'Verify Your ID Now'}
+                </Link>
+              </Button>
+            </CardContent>
+          </Card>
+        </main>
       </>
     );
   }
