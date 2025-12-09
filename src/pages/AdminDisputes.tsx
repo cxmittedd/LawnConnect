@@ -183,12 +183,24 @@ export default function AdminDisputes() {
     <div className="min-h-screen bg-background">
       <Navigation />
       <div className="container mx-auto px-4 py-8">
-        <div className="flex items-center gap-3 mb-6">
-          <Shield className="h-8 w-8 text-primary" />
-          <div>
-            <h1 className="text-3xl font-bold">Admin Panel</h1>
-            <p className="text-muted-foreground">Manage disputes across the platform</p>
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <Shield className="h-8 w-8 text-primary" />
+            <div>
+              <h1 className="text-3xl font-bold">Admin Panel</h1>
+              <p className="text-muted-foreground">Manage disputes across the platform</p>
+            </div>
           </div>
+        </div>
+
+        {/* Admin Navigation */}
+        <div className="flex gap-2 mb-6">
+          <Button variant="default" size="sm">
+            <AlertTriangle className="h-4 w-4 mr-1" /> Disputes
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => navigate('/admin/verifications')}>
+            <Shield className="h-4 w-4 mr-1" /> ID Verifications
+          </Button>
         </div>
 
         {/* Stats Cards */}

@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { AlertTriangle } from 'lucide-react';
 import { Shield, CheckCircle, Clock, XCircle, Eye, FileText } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/auth';
@@ -224,12 +225,24 @@ export default function AdminVerifications() {
     <div className="min-h-screen bg-background">
       <Navigation />
       <div className="container mx-auto px-4 py-8">
-        <div className="flex items-center gap-3 mb-6">
-          <Shield className="h-8 w-8 text-primary" />
-          <div>
-            <h1 className="text-3xl font-bold">ID Verifications</h1>
-            <p className="text-muted-foreground">Review and approve provider ID documents</p>
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <Shield className="h-8 w-8 text-primary" />
+            <div>
+              <h1 className="text-3xl font-bold">Admin Panel</h1>
+              <p className="text-muted-foreground">Review and approve provider ID documents</p>
+            </div>
           </div>
+        </div>
+
+        {/* Admin Navigation */}
+        <div className="flex gap-2 mb-6">
+          <Button variant="outline" size="sm" onClick={() => navigate('/admin/disputes')}>
+            <AlertTriangle className="h-4 w-4 mr-1" /> Disputes
+          </Button>
+          <Button variant="default" size="sm">
+            <Shield className="h-4 w-4 mr-1" /> ID Verifications
+          </Button>
         </div>
 
         {/* Stats */}
