@@ -16,6 +16,8 @@ import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { z } from 'zod';
 import { useProviderVerification } from '@/hooks/useProviderVerification';
+import { useProviderProfileCompletion } from '@/hooks/useProviderProfileCompletion';
+import { ProfileCompletionDialog } from '@/components/ProfileCompletionDialog';
 
 const proposalSchema = z.object({
   proposed_price: z.number().min(7000, 'Minimum price is J$7000'),
@@ -40,10 +42,12 @@ interface Job {
 export default function BrowseJobs() {
   const { user } = useAuth();
   const { isVerified, isPending, needsVerification, loading: verificationLoading } = useProviderVerification();
+  const { isComplete, hasAvatar, hasBio, avatarUrl, bio, loading: profileLoading, refetch: refetchProfile } = useProviderProfileCompletion();
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [proposalOpen, setProposalOpen] = useState(false);
+  const [profileDialogOpen, setProfileDialogOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [proposalData, setProposalData] = useState({
     proposed_price: '',
@@ -73,12 +77,31 @@ export default function BrowseJobs() {
   };
 
   const handleOpenProposal = (job: Job) => {
+    // Check if profile is complete before allowing proposal
+    if (!isComplete) {
+      setSelectedJob(job);
+      setProfileDialogOpen(true);
+      return;
+    }
+
     setSelectedJob(job);
     setProposalData({
       proposed_price: job.customer_offer?.toString() || job.base_price.toString(),
       message: '',
     });
     setProposalOpen(true);
+  };
+
+  const handleProfileComplete = () => {
+    refetchProfile();
+    // After profile is complete, open the proposal dialog
+    if (selectedJob) {
+      setProposalData({
+        proposed_price: selectedJob.customer_offer?.toString() || selectedJob.base_price.toString(),
+        message: '',
+      });
+      setProposalOpen(true);
+    }
   };
 
   const handleSubmitProposal = async (e: React.FormEvent) => {
@@ -137,7 +160,7 @@ export default function BrowseJobs() {
     }
   };
 
-  if (loading || verificationLoading) {
+  if (loading || verificationLoading || profileLoading) {
     return (
       <>
         <Navigation />
@@ -330,11 +353,22 @@ export default function BrowseJobs() {
                 <Button type="submit" disabled={submitting}>
                   {submitting ? 'Submitting...' : 'Submit Proposal'}
                 </Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
-      </main>
-    </>
-  );
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+
+    {/* Profile Completion Dialog */}
+    <ProfileCompletionDialog
+      open={profileDialogOpen}
+      onOpenChange={setProfileDialogOpen}
+      hasAvatar={hasAvatar}
+      hasBio={hasBio}
+      currentAvatarUrl={avatarUrl}
+      currentBio={bio}
+      onComplete={handleProfileComplete}
+    />
+  </main>
+</>
+);
 }
