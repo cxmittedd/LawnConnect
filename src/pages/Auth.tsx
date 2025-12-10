@@ -23,7 +23,8 @@ const signInSchema = z.object({
 });
 
 const signUpSchema = z.object({
-  fullName: z.string().trim().min(1, { message: 'Full name is required' }).max(100),
+  firstName: z.string().trim().min(1, { message: 'First name is required' }).max(50),
+  lastName: z.string().trim().min(1, { message: 'Last name is required' }).max(50),
   email: z.string().trim().email({ message: 'Invalid email address' }),
   password: z.string()
     .min(8, { message: 'Password must be at least 8 characters' })
@@ -124,7 +125,8 @@ export default function Auth() {
   const [forgotEmail, setForgotEmail] = useState('');
   const [signInData, setSignInData] = useState({ email: '', password: '' });
   const [signUpData, setSignUpData] = useState({
-    fullName: '',
+    firstName: '',
+    lastName: '',
     email: '',
     password: '',
     confirmPassword: '',
@@ -173,7 +175,8 @@ export default function Auth() {
     }
 
     setLoading(true);
-    const { error, data } = await signUp(signUpData.email, signUpData.password, signUpData.fullName, signUpData.userRole);
+    const fullName = `${signUpData.firstName} ${signUpData.lastName}`.trim();
+    const { error, data } = await signUp(signUpData.email, signUpData.password, fullName, signUpData.userRole);
     
     if (error) {
       setLoading(false);
@@ -272,16 +275,29 @@ export default function Auth() {
             
             <TabsContent value="signup">
               <form onSubmit={handleSignUp} className="space-y-4 mt-4">
-                <div className="space-y-2">
-                  <Label htmlFor="signup-name">Full Name</Label>
-                  <Input
-                    id="signup-name"
-                    type="text"
-                    placeholder="John Doe"
-                    value={signUpData.fullName}
-                    onChange={(e) => setSignUpData({ ...signUpData, fullName: e.target.value })}
-                    required
-                  />
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-first-name">First Name</Label>
+                    <Input
+                      id="signup-first-name"
+                      type="text"
+                      placeholder="John"
+                      value={signUpData.firstName}
+                      onChange={(e) => setSignUpData({ ...signUpData, firstName: e.target.value })}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-last-name">Last Name</Label>
+                    <Input
+                      id="signup-last-name"
+                      type="text"
+                      placeholder="Doe"
+                      value={signUpData.lastName}
+                      onChange={(e) => setSignUpData({ ...signUpData, lastName: e.target.value })}
+                      required
+                    />
+                  </div>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="signup-email">Email</Label>
