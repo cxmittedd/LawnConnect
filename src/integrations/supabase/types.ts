@@ -353,6 +353,7 @@ export type Database = {
           rejection_reason: string | null
           reviewed_at: string | null
           reviewed_by: string | null
+          selfie_url: string | null
           status: Database["public"]["Enums"]["verification_status"]
           submitted_at: string
           updated_at: string
@@ -367,6 +368,7 @@ export type Database = {
           rejection_reason?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
+          selfie_url?: string | null
           status?: Database["public"]["Enums"]["verification_status"]
           submitted_at?: string
           updated_at?: string
@@ -381,6 +383,7 @@ export type Database = {
           rejection_reason?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
+          selfie_url?: string | null
           status?: Database["public"]["Enums"]["verification_status"]
           submitted_at?: string
           updated_at?: string

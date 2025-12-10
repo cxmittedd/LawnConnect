@@ -18,6 +18,7 @@ interface VerificationData {
   document_type: DocumentType;
   document_url: string;
   document_back_url: string | null;
+  selfie_url: string | null;
   status: VerificationStatus;
   submitted_at: string;
   rejection_reason: string | null;
@@ -31,6 +32,7 @@ export function ProviderVerification() {
   const [documentType, setDocumentType] = useState<DocumentType>('national_id');
   const [frontFile, setFrontFile] = useState<File | null>(null);
   const [backFile, setBackFile] = useState<File | null>(null);
+  const [selfieFile, setSelfieFile] = useState<File | null>(null);
 
   useEffect(() => {
     loadVerification();
@@ -55,14 +57,21 @@ export function ProviderVerification() {
     }
   };
 
-  const validateFile = (file: File): boolean => {
+  const validateFile = (file: File, isImage: boolean = false): boolean => {
     if (file.size > 5 * 1024 * 1024) {
       toast.error('File size must be less than 5MB');
       return false;
     }
-    if (!['image/jpeg', 'image/png', 'image/webp', 'application/pdf'].includes(file.type)) {
-      toast.error('Only JPG, PNG, WebP or PDF files are allowed');
-      return false;
+    if (isImage) {
+      if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+        toast.error('Only JPG, PNG, or WebP image files are allowed for selfie');
+        return false;
+      }
+    } else {
+      if (!['image/jpeg', 'image/png', 'image/webp', 'application/pdf'].includes(file.type)) {
+        toast.error('Only JPG, PNG, WebP or PDF files are allowed');
+        return false;
+      }
     }
     return true;
   };
@@ -85,11 +94,21 @@ export function ProviderVerification() {
     }
   };
 
+  const handleSelfieFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      if (validateFile(file, true)) {
+        setSelfieFile(file);
+      }
+    }
+  };
+
   const requiresBackImage = documentType === 'drivers_license';
 
   const canSubmit = () => {
     if (!frontFile) return false;
     if (requiresBackImage && !backFile) return false;
+    if (!selfieFile) return false;
     return true;
   };
 
@@ -105,7 +124,7 @@ export function ProviderVerification() {
   };
 
   const handleSubmit = async () => {
-    if (!user || !frontFile) return;
+    if (!user || !frontFile || !selfieFile) return;
     if (requiresBackImage && !backFile) {
       toast.error("Please upload both front and back of your driver's license");
       return;
@@ -136,6 +155,16 @@ export function ProviderVerification() {
         if (backUploadError) throw backUploadError;
       }
 
+      // Upload selfie
+      const selfieExt = selfieFile.name.split('.').pop();
+      const selfieFileName = `${user.id}/${Date.now()}_selfie.${selfieExt}`;
+
+      const { error: selfieUploadError } = await supabase.storage
+        .from('id-documents')
+        .upload(selfieFileName, selfieFile);
+
+      if (selfieUploadError) throw selfieUploadError;
+
       // For rejected verifications, update; otherwise insert
       if (verification?.status === 'rejected') {
         const { error } = await supabase
@@ -144,6 +173,7 @@ export function ProviderVerification() {
             document_type: documentType,
             document_url: frontFileName,
             document_back_url: backFileName,
+            selfie_url: selfieFileName,
             status: 'pending',
             submitted_at: new Date().toISOString(),
             rejection_reason: null,
@@ -159,23 +189,25 @@ export function ProviderVerification() {
             document_type: documentType,
             document_url: frontFileName,
             document_back_url: backFileName,
+            selfie_url: selfieFileName,
           });
 
         if (error) throw error;
       }
 
-      toast.success('ID document(s) submitted for verification!');
+      toast.success('Documents submitted for verification!');
       setFrontFile(null);
       setBackFile(null);
+      setSelfieFile(null);
       loadVerification();
     } catch (error: any) {
-      toast.error(error.message || 'Failed to submit document');
+      toast.error(error.message || 'Failed to submit documents');
     } finally {
       setUploading(false);
     }
   };
 
-  // Reset files when document type changes
+  // Reset ID files when document type changes (keep selfie)
   useEffect(() => {
     setFrontFile(null);
     setBackFile(null);
@@ -286,7 +318,7 @@ export function ProviderVerification() {
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>
             You must verify your identity before you can browse available jobs. 
-            Upload clear photo(s) of your ID document.
+            Upload clear photo(s) of your ID document and a selfie for live verification.
           </AlertDescription>
         </Alert>
 
@@ -355,6 +387,34 @@ export function ProviderVerification() {
             </div>
           </div>
         )}
+
+        {/* Selfie upload for live verification */}
+        <div className="space-y-2">
+          <Label htmlFor="selfie_upload">Selfie for Live Verification</Label>
+          <p className="text-xs text-muted-foreground mb-2">
+            Take a clear photo of yourself to verify you match your ID document
+          </p>
+          <div className="border-2 border-dashed rounded-lg p-6 text-center hover:border-primary transition-colors">
+            <input
+              id="selfie_upload"
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              onChange={handleSelfieFileChange}
+              className="hidden"
+            />
+            <label htmlFor="selfie_upload" className="cursor-pointer">
+              <Upload className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+              {selfieFile ? (
+                <p className="text-sm text-primary font-medium">{selfieFile.name}</p>
+              ) : (
+                <>
+                  <p className="text-sm text-muted-foreground">Click to upload your selfie</p>
+                  <p className="text-xs text-muted-foreground mt-1">JPG, PNG, or WebP only (max 5MB)</p>
+                </>
+              )}
+            </label>
+          </div>
+        </div>
 
         <Button 
           onClick={handleSubmit} 
