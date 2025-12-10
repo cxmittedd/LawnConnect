@@ -129,14 +129,9 @@ export default function Profile() {
         uploadedAvatarUrl = urlData.publicUrl;
       }
 
-      const fullName = [profile.first_name, profile.last_name].filter(Boolean).join(' ');
-      
       const { error } = await supabase
         .from('profiles')
         .update({
-          full_name: fullName || null,
-          first_name: profile.first_name || null,
-          last_name: profile.last_name || null,
           phone_number: profile.phone_number || null,
           address: profile.address || null,
           company_name: profile.company_name || null,
@@ -251,24 +246,35 @@ export default function Profile() {
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="first_name">First Name</Label>
+                  <Label htmlFor="first_name" className="flex items-center gap-2">
+                    First Name
+                    <Badge variant="secondary" className="text-xs font-normal">Locked</Badge>
+                  </Label>
                   <Input
                     id="first_name"
-                    placeholder="Enter your first name"
                     value={profile.first_name || ''}
-                    onChange={(e) => setProfile({ ...profile, first_name: e.target.value })}
+                    readOnly
+                    disabled
+                    className="bg-muted cursor-not-allowed"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="last_name">Last Name</Label>
+                  <Label htmlFor="last_name" className="flex items-center gap-2">
+                    Last Name
+                    <Badge variant="secondary" className="text-xs font-normal">Locked</Badge>
+                  </Label>
                   <Input
                     id="last_name"
-                    placeholder="Enter your last name"
                     value={profile.last_name || ''}
-                    onChange={(e) => setProfile({ ...profile, last_name: e.target.value })}
+                    readOnly
+                    disabled
+                    className="bg-muted cursor-not-allowed"
                   />
                 </div>
               </div>
+              <p className="text-xs text-muted-foreground">
+                Your name is set during signup and cannot be changed as it must match your legal ID documents for verification.
+              </p>
 
               <div className="space-y-2">
                 <Label htmlFor="phone_number">Phone Number</Label>
