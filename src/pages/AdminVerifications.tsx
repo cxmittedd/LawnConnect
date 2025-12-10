@@ -25,6 +25,7 @@ interface Verification {
   document_type: DocumentType;
   document_url: string;
   document_back_url: string | null;
+  selfie_url: string | null;
   status: VerificationStatus;
   submitted_at: string;
   reviewed_at: string | null;
@@ -46,6 +47,7 @@ export default function AdminVerifications() {
   const [submitting, setSubmitting] = useState(false);
   const [documentUrl, setDocumentUrl] = useState<string | null>(null);
   const [documentBackUrl, setDocumentBackUrl] = useState<string | null>(null);
+  const [selfieUrl, setSelfieUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -113,6 +115,7 @@ export default function AdminVerifications() {
     setSelectedVerification(verification);
     setDocumentUrl(null);
     setDocumentBackUrl(null);
+    setSelfieUrl(null);
     
     // Get signed URL for the front document
     const { data, error } = await supabase.storage
@@ -134,6 +137,17 @@ export default function AdminVerifications() {
 
       if (!backError && backData) {
         setDocumentBackUrl(backData.signedUrl);
+      }
+    }
+
+    // Get signed URL for selfie if it exists
+    if (verification.selfie_url) {
+      const { data: selfieData, error: selfieError } = await supabase.storage
+        .from('id-documents')
+        .createSignedUrl(verification.selfie_url, 300);
+
+      if (!selfieError && selfieData) {
+        setSelfieUrl(selfieData.signedUrl);
       }
     }
 
@@ -477,6 +491,22 @@ export default function AdminVerifications() {
                       />
                     )}
                   </div>
+                </div>
+              )}
+
+              {selfieUrl && (
+                <div className="space-y-3">
+                  <Label className="text-sm font-medium">Selfie (Live Verification)</Label>
+                  <div className="border rounded-lg overflow-hidden border-primary">
+                    <img 
+                      src={selfieUrl} 
+                      alt="Provider Selfie" 
+                      className="w-full max-h-64 object-contain bg-muted"
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Compare this selfie with the photo on the ID document to verify identity
+                  </p>
                 </div>
               )}
 
