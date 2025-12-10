@@ -7,8 +7,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/integrations/supabase/client';
-import { Shield, Upload, CheckCircle, Clock, XCircle, AlertTriangle } from 'lucide-react';
+import { Shield, Upload, CheckCircle, Clock, XCircle, AlertTriangle, Camera } from 'lucide-react';
 import { toast } from 'sonner';
+import { CameraCapture } from './CameraCapture';
 
 type DocumentType = 'drivers_license' | 'passport' | 'national_id';
 type VerificationStatus = 'pending' | 'approved' | 'rejected';
@@ -33,6 +34,7 @@ export function ProviderVerification() {
   const [frontFile, setFrontFile] = useState<File | null>(null);
   const [backFile, setBackFile] = useState<File | null>(null);
   const [selfieFile, setSelfieFile] = useState<File | null>(null);
+  const [showCamera, setShowCamera] = useState(false);
 
   useEffect(() => {
     loadVerification();
@@ -101,6 +103,11 @@ export function ProviderVerification() {
         setSelfieFile(file);
       }
     }
+  };
+
+  const handleCameraCapture = (file: File) => {
+    setSelfieFile(file);
+    setShowCamera(false);
   };
 
   const requiresBackImage = documentType === 'drivers_license';
@@ -390,30 +397,51 @@ export function ProviderVerification() {
 
         {/* Selfie upload for live verification */}
         <div className="space-y-2">
-          <Label htmlFor="selfie_upload">Selfie for Live Verification</Label>
+          <Label>Selfie for Live Verification</Label>
           <p className="text-xs text-muted-foreground mb-2">
-            Take a clear photo of yourself to verify you match your ID document
+            Take a live photo of yourself to verify you match your ID document
           </p>
-          <div className="border-2 border-dashed rounded-lg p-6 text-center hover:border-primary transition-colors">
-            <input
-              id="selfie_upload"
-              type="file"
-              accept="image/jpeg,image/png,image/webp"
-              onChange={handleSelfieFileChange}
-              className="hidden"
-            />
-            <label htmlFor="selfie_upload" className="cursor-pointer">
-              <Upload className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-              {selfieFile ? (
-                <p className="text-sm text-primary font-medium">{selfieFile.name}</p>
-              ) : (
-                <>
-                  <p className="text-sm text-muted-foreground">Click to upload your selfie</p>
-                  <p className="text-xs text-muted-foreground mt-1">JPG, PNG, or WebP only (max 5MB)</p>
-                </>
-              )}
-            </label>
-          </div>
+          
+          {showCamera ? (
+            <div className="border-2 rounded-lg p-4 border-primary">
+              <CameraCapture 
+                onCapture={handleCameraCapture} 
+                onCancel={() => setShowCamera(false)} 
+              />
+            </div>
+          ) : selfieFile ? (
+            <div className="border-2 rounded-lg p-4 border-primary bg-primary/5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <CheckCircle className="h-5 w-5 text-primary" />
+                  <span className="text-sm font-medium">{selfieFile.name}</span>
+                </div>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => {
+                    setSelfieFile(null);
+                    setShowCamera(true);
+                  }}
+                  className="gap-2"
+                >
+                  <Camera className="h-4 w-4" />
+                  Retake
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="border-2 border-dashed rounded-lg p-6 text-center">
+              <Camera className="h-8 w-8 mx-auto text-muted-foreground mb-3" />
+              <p className="text-sm text-muted-foreground mb-4">
+                Use your camera to take a live selfie
+              </p>
+              <Button onClick={() => setShowCamera(true)} className="gap-2">
+                <Camera className="h-4 w-4" />
+                Open Camera
+              </Button>
+            </div>
+          )}
         </div>
 
         <Button 
