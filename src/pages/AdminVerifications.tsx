@@ -446,7 +446,7 @@ export default function AdminVerifications() {
 
       {/* View Document Dialog */}
       <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Review ID Document</DialogTitle>
             <DialogDescription>
@@ -455,58 +455,119 @@ export default function AdminVerifications() {
           </DialogHeader>
           
           {documentUrl && (
-            <div className="space-y-4">
-              <div className="space-y-3">
-                <Label className="text-sm font-medium">
-                  {selectedVerification?.document_type === 'drivers_license' 
-                    ? "Front of Driver's License" 
-                    : selectedVerification?.document_type === 'passport'
-                    ? "Passport Photo Page"
-                    : "Front of National ID"}
-                </Label>
-                <div className="border rounded-lg overflow-hidden">
-                  {documentUrl.includes('.pdf') ? (
-                    <iframe src={documentUrl} className="w-full h-64" />
-                  ) : (
-                    <img 
-                      src={documentUrl} 
-                      alt="ID Document Front" 
-                      className="w-full max-h-64 object-contain bg-muted"
-                    />
-                  )}
+            <div className="space-y-6">
+              {/* Side-by-side comparison: Selfie vs ID Document */}
+              {selfieUrl && (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <div className="h-px flex-1 bg-border" />
+                    <span className="text-sm font-semibold text-primary px-2">Identity Comparison</span>
+                    <div className="h-px flex-1 bg-border" />
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Selfie */}
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium flex items-center gap-2">
+                        <span className="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs">1</span>
+                        Live Selfie
+                      </Label>
+                      <div className="border-2 rounded-lg overflow-hidden border-primary bg-muted aspect-square flex items-center justify-center">
+                        <img 
+                          src={selfieUrl} 
+                          alt="Provider Selfie" 
+                          className="max-w-full max-h-full object-contain"
+                        />
+                      </div>
+                    </div>
+                    
+                    {/* ID Document */}
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium flex items-center gap-2">
+                        <span className="w-6 h-6 rounded-full bg-secondary text-secondary-foreground flex items-center justify-center text-xs">2</span>
+                        {selectedVerification?.document_type === 'drivers_license' 
+                          ? "Driver's License (Front)" 
+                          : selectedVerification?.document_type === 'passport'
+                          ? "Passport Photo"
+                          : "National ID (Front)"}
+                      </Label>
+                      <div className="border-2 rounded-lg overflow-hidden border-secondary bg-muted aspect-square flex items-center justify-center">
+                        {documentUrl.includes('.pdf') ? (
+                          <iframe src={documentUrl} className="w-full h-full" />
+                        ) : (
+                          <img 
+                            src={documentUrl} 
+                            alt="ID Document" 
+                            className="max-w-full max-h-full object-contain"
+                          />
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <Alert className="bg-primary/5 border-primary/20">
+                    <Eye className="h-4 w-4 text-primary" />
+                    <AlertDescription className="text-sm">
+                      <strong>Verification checklist:</strong> Compare the selfie face with the ID photo. Check that facial features match and the person appears to be the same individual.
+                    </AlertDescription>
+                  </Alert>
                 </div>
-              </div>
+              )}
 
+              {/* Back of license if applicable */}
               {documentBackUrl && (
                 <div className="space-y-3">
-                  <Label className="text-sm font-medium">Back of Driver's License</Label>
-                  <div className="border rounded-lg overflow-hidden">
-                    {documentBackUrl.includes('.pdf') ? (
-                      <iframe src={documentBackUrl} className="w-full h-64" />
-                    ) : (
-                      <img 
-                        src={documentBackUrl} 
-                        alt="ID Document Back" 
-                        className="w-full max-h-64 object-contain bg-muted"
-                      />
-                    )}
+                  <div className="flex items-center gap-2">
+                    <div className="h-px flex-1 bg-border" />
+                    <span className="text-sm font-semibold px-2">Additional Document</span>
+                    <div className="h-px flex-1 bg-border" />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Back of Driver's License</Label>
+                    <div className="border rounded-lg overflow-hidden bg-muted max-w-md">
+                      {documentBackUrl.includes('.pdf') ? (
+                        <iframe src={documentBackUrl} className="w-full h-48" />
+                      ) : (
+                        <img 
+                          src={documentBackUrl} 
+                          alt="ID Document Back" 
+                          className="w-full max-h-48 object-contain"
+                        />
+                      )}
+                    </div>
                   </div>
                 </div>
               )}
 
-              {selfieUrl && (
+              {/* Show ID document only if no selfie (fallback view) */}
+              {!selfieUrl && (
                 <div className="space-y-3">
-                  <Label className="text-sm font-medium">Selfie (Live Verification)</Label>
-                  <div className="border rounded-lg overflow-hidden border-primary">
-                    <img 
-                      src={selfieUrl} 
-                      alt="Provider Selfie" 
-                      className="w-full max-h-64 object-contain bg-muted"
-                    />
+                  <Label className="text-sm font-medium">
+                    {selectedVerification?.document_type === 'drivers_license' 
+                      ? "Front of Driver's License" 
+                      : selectedVerification?.document_type === 'passport'
+                      ? "Passport Photo Page"
+                      : "Front of National ID"}
+                  </Label>
+                  <div className="border rounded-lg overflow-hidden">
+                    {documentUrl.includes('.pdf') ? (
+                      <iframe src={documentUrl} className="w-full h-64" />
+                    ) : (
+                      <img 
+                        src={documentUrl} 
+                        alt="ID Document Front" 
+                        className="w-full max-h-64 object-contain bg-muted"
+                      />
+                    )}
                   </div>
-                  <p className="text-xs text-muted-foreground">
-                    Compare this selfie with the photo on the ID document to verify identity
-                  </p>
+                  
+                  <Alert variant="destructive">
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertDescription>
+                      No selfie provided for live verification. Consider requiring the provider to resubmit with a selfie.
+                    </AlertDescription>
+                  </Alert>
                 </div>
               )}
 
