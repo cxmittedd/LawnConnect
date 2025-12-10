@@ -310,8 +310,10 @@ export type Database = {
           bio: string | null
           company_name: string | null
           created_at: string | null
+          first_name: string | null
           full_name: string | null
           id: string
+          last_name: string | null
           phone_number: string | null
           updated_at: string | null
           user_role: string
@@ -322,8 +324,10 @@ export type Database = {
           bio?: string | null
           company_name?: string | null
           created_at?: string | null
+          first_name?: string | null
           full_name?: string | null
           id: string
+          last_name?: string | null
           phone_number?: string | null
           updated_at?: string | null
           user_role?: string
@@ -334,8 +338,10 @@ export type Database = {
           bio?: string | null
           company_name?: string | null
           created_at?: string | null
+          first_name?: string | null
           full_name?: string | null
           id?: string
+          last_name?: string | null
           phone_number?: string | null
           updated_at?: string | null
           user_role?: string
@@ -483,6 +489,7 @@ export type Database = {
           avatar_url: string | null
           bio: string | null
           company_name: string | null
+          first_name: string | null
           full_name: string | null
           id: string | null
           user_role: string | null
@@ -491,6 +498,7 @@ export type Database = {
           avatar_url?: string | null
           bio?: string | null
           company_name?: string | null
+          first_name?: string | null
           full_name?: string | null
           id?: string | null
           user_role?: string | null
@@ -499,6 +507,7 @@ export type Database = {
           avatar_url?: string | null
           bio?: string | null
           company_name?: string | null
+          first_name?: string | null
           full_name?: string | null
           id?: string | null
           user_role?: string | null
@@ -534,6 +543,7 @@ export type Database = {
           avatar_url: string
           bio: string
           company_name: string
+          first_name: string
           full_name: string
           id: string
           user_role: string

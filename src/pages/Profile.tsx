@@ -14,7 +14,8 @@ import { toast } from 'sonner';
 import { ProviderVerification } from '@/components/ProviderVerification';
 
 interface ProfileData {
-  full_name: string | null;
+  first_name: string | null;
+  last_name: string | null;
   phone_number: string | null;
   address: string | null;
   company_name: string | null;
@@ -27,7 +28,8 @@ export default function Profile() {
   const { user } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [profile, setProfile] = useState<ProfileData>({
-    full_name: '',
+    first_name: '',
+    last_name: '',
     phone_number: '',
     address: '',
     company_name: '',
@@ -58,7 +60,8 @@ export default function Profile() {
 
       if (data) {
         setProfile({
-          full_name: data.full_name || '',
+          first_name: (data as any).first_name || '',
+          last_name: (data as any).last_name || '',
           phone_number: data.phone_number || '',
           address: data.address || '',
           company_name: data.company_name || '',
@@ -126,10 +129,14 @@ export default function Profile() {
         uploadedAvatarUrl = urlData.publicUrl;
       }
 
+      const fullName = [profile.first_name, profile.last_name].filter(Boolean).join(' ');
+      
       const { error } = await supabase
         .from('profiles')
         .update({
-          full_name: profile.full_name || null,
+          full_name: fullName || null,
+          first_name: profile.first_name || null,
+          last_name: profile.last_name || null,
           phone_number: profile.phone_number || null,
           address: profile.address || null,
           company_name: profile.company_name || null,
@@ -242,14 +249,25 @@ export default function Profile() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="full_name">Full Name</Label>
-                <Input
-                  id="full_name"
-                  placeholder="Enter your full name"
-                  value={profile.full_name || ''}
-                  onChange={(e) => setProfile({ ...profile, full_name: e.target.value })}
-                />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="first_name">First Name</Label>
+                  <Input
+                    id="first_name"
+                    placeholder="Enter your first name"
+                    value={profile.first_name || ''}
+                    onChange={(e) => setProfile({ ...profile, first_name: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="last_name">Last Name</Label>
+                  <Input
+                    id="last_name"
+                    placeholder="Enter your last name"
+                    value={profile.last_name || ''}
+                    onChange={(e) => setProfile({ ...profile, last_name: e.target.value })}
+                  />
+                </div>
               </div>
 
               <div className="space-y-2">
