@@ -1,6 +1,8 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Camera, RotateCcw, Check, X } from 'lucide-react';
+import { Camera, RotateCcw, Check, X, Loader2, AlertCircle } from 'lucide-react';
+import { detectFaces } from '@/lib/faceDetection';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface CameraCaptureProps {
   onCapture: (file: File) => void;
@@ -14,10 +16,13 @@ export function CameraCapture({ onCapture, onCancel }: CameraCaptureProps) {
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isStarting, setIsStarting] = useState(false);
+  const [isValidating, setIsValidating] = useState(false);
+  const [faceError, setFaceError] = useState<string | null>(null);
 
   const startCamera = useCallback(async () => {
     setIsStarting(true);
     setError(null);
+    setFaceError(null);
     try {
       const mediaStream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: 'user', width: { ideal: 720 }, height: { ideal: 720 } },
@@ -67,24 +72,47 @@ export function CameraCapture({ onCapture, onCancel }: CameraCaptureProps) {
     
     const imageData = canvas.toDataURL('image/jpeg', 0.9);
     setCapturedImage(imageData);
+    setFaceError(null);
     stopCamera();
   }, [stopCamera]);
 
   const retake = useCallback(() => {
     setCapturedImage(null);
+    setFaceError(null);
     startCamera();
   }, [startCamera]);
 
-  const confirmCapture = useCallback(() => {
-    if (!capturedImage) return;
+  const confirmCapture = useCallback(async () => {
+    if (!capturedImage || !canvasRef.current) return;
 
-    // Convert base64 to blob
-    fetch(capturedImage)
-      .then(res => res.blob())
-      .then(blob => {
-        const file = new File([blob], `selfie_${Date.now()}.jpg`, { type: 'image/jpeg' });
-        onCapture(file);
-      });
+    setIsValidating(true);
+    setFaceError(null);
+
+    try {
+      // Detect face in the captured image
+      const hasFace = await detectFaces(canvasRef.current);
+      
+      if (!hasFace) {
+        setFaceError('No face detected. Please ensure your face is clearly visible and try again.');
+        setIsValidating(false);
+        return;
+      }
+
+      // Convert base64 to blob
+      const res = await fetch(capturedImage);
+      const blob = await res.blob();
+      const file = new File([blob], `selfie_${Date.now()}.jpg`, { type: 'image/jpeg' });
+      onCapture(file);
+    } catch (err) {
+      console.error('Validation error:', err);
+      // Allow submission if face detection fails due to technical issues
+      const res = await fetch(capturedImage);
+      const blob = await res.blob();
+      const file = new File([blob], `selfie_${Date.now()}.jpg`, { type: 'image/jpeg' });
+      onCapture(file);
+    } finally {
+      setIsValidating(false);
+    }
   }, [capturedImage, onCapture]);
 
   const handleCancel = useCallback(() => {
@@ -93,9 +121,14 @@ export function CameraCapture({ onCapture, onCancel }: CameraCaptureProps) {
   }, [stopCamera, onCancel]);
 
   // Start camera on mount
-  useState(() => {
+  useEffect(() => {
     startCamera();
-  });
+    return () => {
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, []);
 
   return (
     <div className="space-y-4">
@@ -118,16 +151,39 @@ export function CameraCapture({ onCapture, onCancel }: CameraCaptureProps) {
           <div className="relative aspect-square max-w-sm mx-auto rounded-lg overflow-hidden border-2 border-primary">
             <img src={capturedImage} alt="Captured selfie" className="w-full h-full object-cover" />
           </div>
+          
+          {faceError && (
+            <Alert variant="destructive" className="max-w-sm mx-auto">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{faceError}</AlertDescription>
+            </Alert>
+          )}
+          
           <div className="flex gap-2 justify-center">
-            <Button variant="outline" onClick={retake} className="gap-2">
+            <Button variant="outline" onClick={retake} disabled={isValidating} className="gap-2">
               <RotateCcw className="h-4 w-4" />
               Retake
             </Button>
-            <Button onClick={confirmCapture} className="gap-2">
-              <Check className="h-4 w-4" />
-              Use Photo
+            <Button onClick={confirmCapture} disabled={isValidating} className="gap-2">
+              {isValidating ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Verifying...
+                </>
+              ) : (
+                <>
+                  <Check className="h-4 w-4" />
+                  Use Photo
+                </>
+              )}
             </Button>
           </div>
+          
+          {isValidating && (
+            <p className="text-xs text-center text-muted-foreground">
+              Checking for face in photo...
+            </p>
+          )}
         </div>
       ) : (
         <div className="space-y-4">
@@ -146,6 +202,9 @@ export function CameraCapture({ onCapture, onCancel }: CameraCaptureProps) {
               </div>
             )}
           </div>
+          <p className="text-xs text-center text-muted-foreground">
+            Position your face clearly in the frame
+          </p>
           <div className="flex gap-2 justify-center">
             <Button variant="outline" onClick={handleCancel} className="gap-2">
               <X className="h-4 w-4" />
