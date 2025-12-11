@@ -290,19 +290,22 @@ export default function Profile() {
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="address">Address</Label>
-                <div className="relative">
-                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="address"
-                    placeholder="Your address"
-                    className="pl-10"
-                    value={profile.address || ''}
-                    onChange={(e) => setProfile({ ...profile, address: e.target.value })}
-                  />
+              {/* Address field only shown for customers - providers don't need to share their address */}
+              {!isProvider && (
+                <div className="space-y-2">
+                  <Label htmlFor="address">Address</Label>
+                  <div className="relative">
+                    <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="address"
+                      placeholder="Your address"
+                      className="pl-10"
+                      value={profile.address || ''}
+                      onChange={(e) => setProfile({ ...profile, address: e.target.value })}
+                    />
+                  </div>
                 </div>
-              </div>
+              )}
 
               {isProvider && (
                 <div className="space-y-2">
