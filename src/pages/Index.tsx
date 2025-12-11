@@ -40,7 +40,7 @@ const Index = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
+    <div className="min-h-screen bg-page-pattern">
       <nav className="border-b border-border bg-card/50 backdrop-blur-sm">
         <div className="container mx-auto px-4">
           <div className="flex h-16 items-center justify-between">

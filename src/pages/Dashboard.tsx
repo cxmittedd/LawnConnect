@@ -99,7 +99,7 @@ export default function Dashboard() {
   const isProvider = userRole === 'provider' || userRole === 'both';
 
   return (
-    <>
+    <div className="min-h-screen bg-page-gradient">
       <Navigation />
       <main className="container mx-auto px-4 py-8">
         <div className="mb-8">
@@ -250,6 +250,6 @@ export default function Dashboard() {
         )}
       </main>
       <InstallBanner />
-    </>
+    </div>
   );
 }
