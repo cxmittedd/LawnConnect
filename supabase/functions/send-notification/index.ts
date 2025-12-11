@@ -12,7 +12,7 @@ const corsHeaders = {
 
 // Zod schema for input validation
 const notificationSchema = z.object({
-  type: z.enum(['proposal_received', 'proposal_accepted', 'payment_submitted', 'payment_confirmed', 'job_completed', 'review_received']),
+  type: z.enum(['proposal_received', 'proposal_accepted', 'payment_submitted', 'payment_confirmed', 'job_completed', 'review_received', 'late_completion_warning', 'late_completion_apology']),
   recipientId: z.string().uuid(),
   jobTitle: z.string().min(1).max(200),
   jobId: z.string().uuid(),
@@ -21,6 +21,8 @@ const notificationSchema = z.object({
     customerName: z.string().max(100).optional(),
     amount: z.number().positive().optional(),
     rating: z.number().min(1).max(5).optional(),
+    lateJobsThisMonth: z.number().optional(),
+    preferredDate: z.string().optional(),
   }).optional(),
 });
 
@@ -166,6 +168,65 @@ const getEmailContent = (type: string, jobTitle: string, additionalData?: Notifi
             </div>
             <div class="footer">
               <p>LawnConnect - Connecting Jamaica's Lawn Care Community</p>
+            </div>
+          </div>
+        `
+      };
+
+    case 'late_completion_warning':
+      return {
+        subject: `Late Completion Warning: "${jobTitle}"`,
+        html: `
+          ${baseStyles}
+          <div class="container">
+            <div class="header" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
+              <h1>⚠️ Late Completion Warning</h1>
+            </div>
+            <div class="content">
+              <p>You have completed the following job after its preferred date:</p>
+              <h2>${jobTitle}</h2>
+              ${additionalData?.preferredDate ? `<p><strong>Original Due Date:</strong> ${additionalData.preferredDate}</p>` : ''}
+              ${additionalData?.lateJobsThisMonth ? `<p><strong>Late jobs this month:</strong> ${additionalData.lateJobsThisMonth}/3</p>` : ''}
+              <p style="background: #fef3c7; padding: 15px; border-radius: 8px; margin-top: 15px;">
+                <strong>⚠️ Important:</strong> If you accumulate 3 or more late completions in a calendar month, you may lose certain benefits including:
+                <ul style="margin-top: 10px;">
+                  <li>Priority listing in search results</li>
+                  <li>Featured provider badge</li>
+                  <li>Reduced platform fees</li>
+                </ul>
+              </p>
+              <p style="margin-top: 15px;">Please try to complete jobs by their preferred date to maintain your standing.</p>
+            </div>
+            <div class="footer">
+              <p>LawnConnect - Connecting Jamaica's Lawn Care Community</p>
+            </div>
+          </div>
+        `
+      };
+
+    case 'late_completion_apology':
+      return {
+        subject: `Apology: Your Job "${jobTitle}" Was Completed Late`,
+        html: `
+          ${baseStyles}
+          <div class="container">
+            <div class="header" style="background: linear-gradient(135deg, #6366f1, #4f46e5);">
+              <h1>📝 We Apologize</h1>
+            </div>
+            <div class="content">
+              <p>We sincerely apologize that your job was completed after the preferred date:</p>
+              <h2>${jobTitle}</h2>
+              ${additionalData?.preferredDate ? `<p><strong>Your Preferred Date:</strong> ${additionalData.preferredDate}</p>` : ''}
+              ${additionalData?.providerName ? `<p><strong>Provider:</strong> ${additionalData.providerName}</p>` : ''}
+              <p style="background: #e0e7ff; padding: 15px; border-radius: 8px; margin-top: 15px;">
+                We understand the inconvenience this may have caused and we're taking steps to ensure our providers meet their commitments on time.
+              </p>
+              <p style="margin-top: 15px;">We value your business and hope you'll continue using LawnConnect. If you have any concerns, please don't hesitate to contact us.</p>
+              <p style="margin-top: 10px;">Thank you for your patience and understanding.</p>
+            </div>
+            <div class="footer">
+              <p>LawnConnect - Connecting Jamaica's Lawn Care Community</p>
+              <p style="margin-top: 5px;">Contact us: support@lawnconnect.jm</p>
             </div>
           </div>
         `

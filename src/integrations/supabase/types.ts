@@ -196,6 +196,7 @@ export type Database = {
           description: string | null
           final_price: number | null
           id: string
+          is_late_completion: boolean | null
           lawn_size: string | null
           location: string
           parish: string
@@ -223,6 +224,7 @@ export type Database = {
           description?: string | null
           final_price?: number | null
           id?: string
+          is_late_completion?: boolean | null
           lawn_size?: string | null
           location: string
           parish?: string
@@ -250,6 +252,7 @@ export type Database = {
           description?: string | null
           final_price?: number | null
           id?: string
+          is_late_completion?: boolean | null
           lawn_size?: string | null
           location?: string
           parish?: string
@@ -550,6 +553,10 @@ export type Database = {
           status: string
           title: string
         }[]
+      }
+      get_provider_late_jobs_this_month: {
+        Args: { provider_id: string }
+        Returns: number
       }
       get_public_provider_profile: {
         Args: { provider_id: string }
