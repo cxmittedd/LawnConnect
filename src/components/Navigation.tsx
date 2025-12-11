@@ -14,14 +14,18 @@ import {
   User,
   MessageSquare,
   Shield,
+  Sun,
+  Moon,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useUnreadMessages } from '@/hooks/useUnreadMessages';
+import { useTheme } from '@/hooks/useTheme';
 import { Badge } from '@/components/ui/badge';
 
 export function Navigation() {
   const { user, signOut } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -115,6 +119,17 @@ export function Navigation() {
                 </Link>
               );
             })}
+            <button
+              onClick={toggleTheme}
+              className="p-2 rounded-md hover:bg-muted transition-colors"
+              aria-label="Toggle theme"
+            >
+              {theme === 'light' ? (
+                <Moon className="h-5 w-5 text-muted-foreground" />
+              ) : (
+                <Sun className="h-5 w-5 text-muted-foreground" />
+              )}
+            </button>
             {user ? (
               <Button onClick={handleSignOut} variant="outline" size="sm">
                 <LogOut className="h-4 w-4 mr-2" />
@@ -168,6 +183,22 @@ export function Navigation() {
                 </Link>
               );
             })}
+            <button
+              onClick={toggleTheme}
+              className="flex items-center gap-3 px-4 py-2 rounded-md text-sm font-medium text-muted-foreground hover:bg-muted w-full"
+            >
+              {theme === 'light' ? (
+                <>
+                  <Moon className="h-4 w-4" />
+                  Dark Mode
+                </>
+              ) : (
+                <>
+                  <Sun className="h-4 w-4" />
+                  Light Mode
+                </>
+              )}
+            </button>
             {user ? (
               <button
                 onClick={() => {
