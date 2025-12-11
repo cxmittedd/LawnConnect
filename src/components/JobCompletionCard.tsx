@@ -22,6 +22,8 @@ interface JobCompletionCardProps {
   isCustomer: boolean;
   isProvider: boolean;
   providerName: string;
+  customerName: string;
+  preferredDate: string | null;
   onStatusUpdate: () => void;
 }
 
@@ -49,12 +51,16 @@ export function JobCompletionCard({
   isCustomer,
   isProvider,
   providerName,
+  customerName,
+  preferredDate,
   onStatusUpdate,
 }: JobCompletionCardProps) {
   const [submitting, setSubmitting] = useState(false);
   const [providerCompleteDialog, setProviderCompleteDialog] = useState(false);
   const [customerConfirmDialog, setCustomerConfirmDialog] = useState(false);
   const [disputeDialog, setDisputeDialog] = useState(false);
+  const [lateWarningDialog, setLateWarningDialog] = useState(false);
+  const [lateJobsCount, setLateJobsCount] = useState(0);
   const [disputeReason, setDisputeReason] = useState('');
   const [completionPhotos, setCompletionPhotos] = useState<CompletionPhoto[]>([]);
   const [uploadingPhotos, setUploadingPhotos] = useState(false);
@@ -166,17 +172,30 @@ export function JobCompletionCard({
     }
   };
 
+  const checkIfLate = (): boolean => {
+    if (!preferredDate) return false;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const dueDate = new Date(preferredDate);
+    dueDate.setHours(0, 0, 0, 0);
+    return today > dueDate;
+  };
+
   const handleProviderMarkComplete = async () => {
     const uploaded = await uploadPhotos();
     if (!uploaded) return;
 
+    const isLate = checkIfLate();
+
     setSubmitting(true);
     try {
+      // Update job with completion and late flag
       const { error } = await supabase
         .from('job_requests')
         .update({
           provider_completed_at: new Date().toISOString(),
           status: 'pending_completion',
+          is_late_completion: isLate,
         })
         .eq('id', jobId);
 
@@ -194,6 +213,7 @@ export function JobCompletionCard({
         setActiveDispute(null);
       }
 
+      // Send job completed notification to customer
       sendNotification({
         type: 'job_completed',
         recipientId: customerId,
@@ -201,8 +221,47 @@ export function JobCompletionCard({
         jobId,
       });
 
-      toast.success('Job marked as complete! Waiting for customer confirmation.');
-      setProviderCompleteDialog(false);
+      // If late, send additional notifications
+      if (isLate) {
+        // Get late jobs count for provider
+        const { data: lateCount } = await supabase
+          .rpc('get_provider_late_jobs_this_month', { provider_id: providerId });
+        
+        const lateJobsThisMonth = (lateCount || 0) + 1; // +1 for current job
+        setLateJobsCount(lateJobsThisMonth);
+
+        // Send late warning to provider
+        sendNotification({
+          type: 'late_completion_warning',
+          recipientId: providerId,
+          jobTitle,
+          jobId,
+          additionalData: {
+            lateJobsThisMonth,
+            preferredDate: preferredDate ? format(new Date(preferredDate), 'MMMM dd, yyyy') : undefined,
+          },
+        });
+
+        // Send apology to customer
+        sendNotification({
+          type: 'late_completion_apology',
+          recipientId: customerId,
+          jobTitle,
+          jobId,
+          additionalData: {
+            providerName,
+            preferredDate: preferredDate ? format(new Date(preferredDate), 'MMMM dd, yyyy') : undefined,
+          },
+        });
+
+        // Show late warning dialog to provider
+        setProviderCompleteDialog(false);
+        setLateWarningDialog(true);
+      } else {
+        toast.success('Job marked as complete! Waiting for customer confirmation.');
+        setProviderCompleteDialog(false);
+      }
+      
       onStatusUpdate();
     } catch (error: any) {
       toast.error(error.message || 'Failed to mark job as complete');
@@ -692,6 +751,52 @@ export function JobCompletionCard({
               disabled={submitting || !disputeReason.trim()}
             >
               {submitting ? 'Submitting...' : 'Submit Dispute'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Late Completion Warning Dialog */}
+      <Dialog open={lateWarningDialog} onOpenChange={setLateWarningDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-warning">
+              <AlertTriangle className="h-5 w-5" />
+              Late Completion Warning
+            </DialogTitle>
+            <DialogDescription>
+              This job was completed after the customer's preferred date of{' '}
+              <strong>{preferredDate ? format(new Date(preferredDate), 'MMMM dd, yyyy') : 'N/A'}</strong>.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <Alert className="border-warning/50 bg-warning/10">
+              <AlertTriangle className="h-4 w-4 text-warning" />
+              <AlertDescription>
+                <p className="font-medium">Late jobs this month: {lateJobsCount}/3</p>
+                <p className="mt-2 text-sm">
+                  If you accumulate 3 or more late completions in a calendar month, you may lose certain benefits including:
+                </p>
+                <ul className="mt-2 text-sm list-disc list-inside">
+                  <li>Priority listing in search results</li>
+                  <li>Featured provider badge</li>
+                  <li>Reduced platform fees</li>
+                </ul>
+              </AlertDescription>
+            </Alert>
+            
+            <p className="text-sm text-muted-foreground">
+              We've sent an apology notification to the customer on your behalf. Please try to complete future jobs by their preferred dates to maintain your standing.
+            </p>
+          </div>
+
+          <DialogFooter>
+            <Button onClick={() => {
+              setLateWarningDialog(false);
+              toast.success('Job marked as complete! Waiting for customer confirmation.');
+            }}>
+              I Understand
             </Button>
           </DialogFooter>
         </DialogContent>

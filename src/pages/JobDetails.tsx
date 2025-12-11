@@ -440,6 +440,8 @@ export default function JobDetails() {
                 isCustomer={isCustomer}
                 isProvider={isProvider}
                 providerName={acceptedProposal.provider_name || 'Provider'}
+                customerName={customerName}
+                preferredDate={job.preferred_date}
                 onStatusUpdate={loadJobDetails}
               />
             )}

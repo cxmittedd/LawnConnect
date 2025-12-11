@@ -6,7 +6,9 @@ type NotificationType =
   | 'payment_submitted'
   | 'payment_confirmed'
   | 'job_completed'
-  | 'review_received';
+  | 'review_received'
+  | 'late_completion_warning'
+  | 'late_completion_apology';
 
 interface NotificationParams {
   type: NotificationType;
@@ -18,6 +20,8 @@ interface NotificationParams {
     customerName?: string;
     amount?: number;
     rating?: number;
+    lateJobsThisMonth?: number;
+    preferredDate?: string;
   };
 }
 
