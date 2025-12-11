@@ -3,11 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useAuth } from '@/lib/auth';
-import { Scissors, Users, DollarSign, CheckCircle, ArrowRight } from 'lucide-react';
+import { useTheme } from '@/hooks/useTheme';
+import { Scissors, Users, DollarSign, CheckCircle, ArrowRight, Sun, Moon } from 'lucide-react';
 import InstallBanner from '@/components/InstallBanner';
 
 const Index = () => {
   const { user } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -50,7 +52,18 @@ const Index = () => {
               </div>
               <span className="text-xl font-bold text-foreground">LawnConnect</span>
             </div>
-            <div className="flex gap-3">
+            <div className="flex gap-3 items-center">
+              <button
+                onClick={toggleTheme}
+                className="p-2 rounded-md hover:bg-muted transition-colors"
+                aria-label="Toggle theme"
+              >
+                {theme === 'light' ? (
+                  <Moon className="h-5 w-5 text-muted-foreground" />
+                ) : (
+                  <Sun className="h-5 w-5 text-muted-foreground" />
+                )}
+              </button>
               <Button variant="outline" onClick={() => navigate('/about')}>
                 About
               </Button>
