@@ -92,14 +92,19 @@ export const JobChat = ({ jobId, customerId, providerId, isCustomer }: JobChatPr
   const loadOtherParticipant = async () => {
     const otherUserId = isCustomer ? providerId : customerId;
     
+    // Use the safe profile function that only returns phone/address for accepted job relationships
     const { data, error } = await supabase
-      .from('profiles')
-      .select('id, full_name, phone_number, address, company_name')
-      .eq('id', otherUserId)
+      .rpc('get_profile_safe', { target_user_id: otherUserId })
       .single();
 
     if (!error && data) {
-      setOtherParticipant(data);
+      setOtherParticipant({
+        id: data.id,
+        full_name: data.first_name ? `${data.first_name}${data.last_name ? ' ' + data.last_name : ''}` : null,
+        phone_number: data.phone_number,
+        address: data.address,
+        company_name: data.company_name,
+      });
     }
   };
 

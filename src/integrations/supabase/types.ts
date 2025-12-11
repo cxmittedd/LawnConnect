@@ -516,6 +516,20 @@ export type Database = {
       }
     }
     Functions: {
+      get_profile_safe: {
+        Args: { target_user_id: string }
+        Returns: {
+          address: string
+          avatar_url: string
+          bio: string
+          company_name: string
+          first_name: string
+          id: string
+          last_name: string
+          phone_number: string
+          user_role: string
+        }[]
+      }
       get_provider_completed_jobs_count: {
         Args: { provider_id: string }
         Returns: number
