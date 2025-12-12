@@ -13,6 +13,11 @@ import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { z } from 'zod';
 
+import lawnSmall from '@/assets/lawn-size-small.jpg';
+import lawnMedium from '@/assets/lawn-size-medium.jpg';
+import lawnLarge from '@/assets/lawn-size-large.jpg';
+import lawnXLarge from '@/assets/lawn-size-xlarge.jpg';
+
 const JAMAICA_PARISHES = [
   'Kingston',
   'St. Andrew',
@@ -36,6 +41,21 @@ const JOB_TYPES = [
   'Cut + Tree Trimming',
 ] as const;
 
+const LAWN_SIZES = [
+  { value: 'small', label: 'Small (Up to 1/8 acre)', description: 'Typical scheme house yard' },
+  { value: 'medium', label: 'Medium (1/8 - 1/4 acre)', description: 'Larger residential yard' },
+  { value: 'large', label: 'Large (1/4 - 1/2 acre)', description: 'Spacious property' },
+  { value: 'xlarge', label: 'Extra Large (1/2 - 1 acre)', description: 'Estate-sized lawn' },
+  { value: 'custom', label: 'Custom (specify below)', description: 'Enter your own estimate' },
+] as const;
+
+const LAWN_SIZE_IMAGES = [
+  { src: lawnSmall, label: 'Small', size: 'Up to 1/8 acre' },
+  { src: lawnMedium, label: 'Medium', size: '1/8 - 1/4 acre' },
+  { src: lawnLarge, label: 'Large', size: '1/4 - 1/2 acre' },
+  { src: lawnXLarge, label: 'Extra Large', size: '1/2 - 1 acre' },
+];
+
 const jobSchema = z.object({
   title: z.string().trim().min(1, 'Title is required').max(200),
   description: z.string().trim().max(1000).optional(),
@@ -53,6 +73,8 @@ export default function PostJob() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [photos, setPhotos] = useState<File[]>([]);
+  const [lawnSizeSelection, setLawnSizeSelection] = useState('');
+  const [customLawnSize, setCustomLawnSize] = useState('');
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -64,6 +86,22 @@ export default function PostJob() {
     additional_requirements: '',
     customer_offer: '',
   });
+
+  const handleLawnSizeChange = (value: string) => {
+    setLawnSizeSelection(value);
+    if (value !== 'custom') {
+      const selected = LAWN_SIZES.find(s => s.value === value);
+      setFormData({ ...formData, lawn_size: selected?.label || '' });
+      setCustomLawnSize('');
+    } else {
+      setFormData({ ...formData, lawn_size: customLawnSize });
+    }
+  };
+
+  const handleCustomLawnSizeChange = (value: string) => {
+    setCustomLawnSize(value);
+    setFormData({ ...formData, lawn_size: value });
+  };
 
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -218,12 +256,33 @@ export default function PostJob() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="lawn_size">Lawn Size</Label>
-                    <Input
-                      id="lawn_size"
-                      placeholder="e.g., Small, Medium, Large"
-                      value={formData.lawn_size}
-                      onChange={(e) => setFormData({ ...formData, lawn_size: e.target.value })}
-                    />
+                    <Select
+                      value={lawnSizeSelection}
+                      onValueChange={handleLawnSizeChange}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select lawn size" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {LAWN_SIZES.map((size) => (
+                          <SelectItem key={size.value} value={size.value}>
+                            <div className="flex flex-col">
+                              <span>{size.label}</span>
+                              <span className="text-xs text-muted-foreground">{size.description}</span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {lawnSizeSelection === 'custom' && (
+                      <Input
+                        id="custom_lawn_size"
+                        placeholder="Enter your lawn size estimate"
+                        value={customLawnSize}
+                        onChange={(e) => handleCustomLawnSizeChange(e.target.value)}
+                        className="mt-2"
+                      />
+                    )}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="customer_offer">Your Offer (J$)</Label>
@@ -282,41 +341,60 @@ export default function PostJob() {
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label>Photos (Optional, Max 5)</Label>
-                  <div className="flex flex-wrap gap-4">
-                    {photos.map((photo, index) => (
-                      <div key={index} className="relative">
-                        <img
-                          src={URL.createObjectURL(photo)}
-                          alt={`Preview ${index + 1}`}
-                          className="w-24 h-24 object-cover rounded-lg"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => removePhoto(index)}
-                          className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-1"
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      </div>
-                    ))}
-                    {photos.length < 5 && (
-                      <label className="w-24 h-24 border-2 border-dashed border-border rounded-lg flex items-center justify-center cursor-pointer hover:border-primary transition-colors">
-                        <Upload className="h-6 w-6 text-muted-foreground" />
-                        <input
-                          type="file"
-                          accept="image/*"
-                          multiple
-                          className="hidden"
-                          onChange={handlePhotoChange}
-                        />
-                      </label>
-                    )}
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>Photos (Optional, Max 5)</Label>
+                    <div className="flex flex-wrap gap-4">
+                      {photos.map((photo, index) => (
+                        <div key={index} className="relative">
+                          <img
+                            src={URL.createObjectURL(photo)}
+                            alt={`Preview ${index + 1}`}
+                            className="w-24 h-24 object-cover rounded-lg"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => removePhoto(index)}
+                            className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-1"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </div>
+                      ))}
+                      {photos.length < 5 && (
+                        <label className="w-24 h-24 border-2 border-dashed border-border rounded-lg flex items-center justify-center cursor-pointer hover:border-primary transition-colors">
+                          <Upload className="h-6 w-6 text-muted-foreground" />
+                          <input
+                            type="file"
+                            accept="image/*"
+                            multiple
+                            className="hidden"
+                            onChange={handlePhotoChange}
+                          />
+                        </label>
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Upload photos of your lawn to help providers understand the job
+                    </p>
                   </div>
-                  <p className="text-xs text-muted-foreground">
-                    Upload photos of your lawn to help providers understand the job
-                  </p>
+
+                  <div className="space-y-2">
+                    <Label className="text-muted-foreground text-sm">Lawn Size Reference Guide</Label>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                      {LAWN_SIZE_IMAGES.map((img) => (
+                        <div key={img.label} className="text-center space-y-1">
+                          <img
+                            src={img.src}
+                            alt={`${img.label} lawn example`}
+                            className="w-full aspect-square object-cover rounded-lg border border-border"
+                          />
+                          <p className="text-xs font-medium text-foreground">{img.label}</p>
+                          <p className="text-xs text-muted-foreground">{img.size}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 </div>
 
                 <Button type="submit" className="w-full" disabled={loading}>
