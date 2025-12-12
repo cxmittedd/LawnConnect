@@ -8,10 +8,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/integrations/supabase/client';
-import { Upload, X } from 'lucide-react';
+import { Upload, X, ArrowRight } from 'lucide-react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { z } from 'zod';
+import { JobPaymentForm } from '@/components/JobPaymentForm';
 
 import lawnSmall from '@/assets/lawn-size-small.jpg';
 import lawnMedium from '@/assets/lawn-size-medium.jpg';
@@ -80,6 +81,7 @@ export default function PostJob() {
   const [photos, setPhotos] = useState<File[]>([]);
   const [lawnSizeSelection, setLawnSizeSelection] = useState('');
   const [customLawnSize, setCustomLawnSize] = useState('');
+  const [step, setStep] = useState<'details' | 'payment'>('details');
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -125,13 +127,18 @@ export default function PostJob() {
     setPhotos(photos.filter((_, i) => i !== index));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const getPaymentAmount = () => {
+    const offer = formData.customer_offer ? parseFloat(formData.customer_offer) : 0;
+    return Math.max(offer, currentMinOffer);
+  };
+
+  const handleProceedToPayment = (e: React.FormEvent) => {
     e.preventDefault();
 
     const jobSchema = createJobSchema(currentMinOffer);
     const result = jobSchema.safeParse({
       ...formData,
-      customer_offer: formData.customer_offer ? parseFloat(formData.customer_offer) : undefined,
+      customer_offer: formData.customer_offer ? parseFloat(formData.customer_offer) : currentMinOffer,
     });
 
     if (!result.success) {
@@ -139,11 +146,32 @@ export default function PostJob() {
       return;
     }
 
+    if (!formData.title) {
+      toast.error('Please select a job type');
+      return;
+    }
+
+    if (!formData.parish) {
+      toast.error('Please select a parish');
+      return;
+    }
+
+    if (!formData.location) {
+      toast.error('Please enter a location');
+      return;
+    }
+
+    setStep('payment');
+  };
+
+  const handlePaymentSuccess = async (paymentReference: string) => {
     setLoading(true);
 
     try {
-      // Create job request
       const basePrice = currentMinOffer;
+      const paymentAmount = getPaymentAmount();
+      const platformFee = Math.round(paymentAmount * 0.1);
+      const providerPayout = paymentAmount - platformFee;
       
       const { data: job, error: jobError } = await supabase
         .from('job_requests')
@@ -157,8 +185,16 @@ export default function PostJob() {
           preferred_date: formData.preferred_date || null,
           preferred_time: formData.preferred_time || null,
           additional_requirements: formData.additional_requirements || null,
-          customer_offer: formData.customer_offer ? parseFloat(formData.customer_offer) : null,
+          customer_offer: paymentAmount,
           base_price: basePrice,
+          final_price: paymentAmount,
+          platform_fee: platformFee,
+          provider_payout: providerPayout,
+          payment_status: 'paid',
+          payment_reference: paymentReference,
+          payment_confirmed_at: new Date().toISOString(),
+          payment_confirmed_by: user!.id,
+          status: 'open',
         })
         .select()
         .single();
@@ -177,7 +213,6 @@ export default function PostJob() {
 
           if (uploadError) throw uploadError;
 
-          // Store file path, not public URL - bucket is private
           await supabase.from('job_photos').insert({
             job_id: job.id,
             photo_url: fileName,
@@ -185,7 +220,7 @@ export default function PostJob() {
         }
       }
 
-      toast.success('Job posted successfully!');
+      toast.success('Job posted successfully! Payment received.');
       navigate('/my-jobs');
     } catch (error: any) {
       toast.error(error.message || 'Failed to post job');
@@ -204,11 +239,20 @@ export default function PostJob() {
             <p className="text-muted-foreground">Tell us about your lawn cutting needs</p>
           </div>
 
-          <form onSubmit={handleSubmit}>
+          {step === 'payment' ? (
+            <JobPaymentForm
+              amount={getPaymentAmount()}
+              jobTitle={formData.title}
+              onPaymentSuccess={handlePaymentSuccess}
+              onCancel={() => setStep('details')}
+              loading={loading}
+            />
+          ) : (
+          <form onSubmit={handleProceedToPayment}>
             <Card>
               <CardHeader>
                 <CardTitle>Job Details</CardTitle>
-                <CardDescription>Minimum price: J${currentMinOffer.toLocaleString()}. Add more for larger properties.</CardDescription>
+                <CardDescription>Minimum price: J${currentMinOffer.toLocaleString()}. Pay upfront to post your job.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
@@ -409,11 +453,13 @@ export default function PostJob() {
                 </div>
 
                 <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? 'Posting Job...' : 'Post Job Request'}
+                  <span>Continue to Payment</span>
+                  <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </CardContent>
             </Card>
           </form>
+          )}
         </div>
       </main>
     </>
