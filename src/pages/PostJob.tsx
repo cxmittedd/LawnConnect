@@ -143,6 +143,8 @@ export default function PostJob() {
 
     try {
       // Create job request
+      const basePrice = currentMinOffer;
+      
       const { data: job, error: jobError } = await supabase
         .from('job_requests')
         .insert({
@@ -156,7 +158,7 @@ export default function PostJob() {
           preferred_time: formData.preferred_time || null,
           additional_requirements: formData.additional_requirements || null,
           customer_offer: formData.customer_offer ? parseFloat(formData.customer_offer) : null,
-          base_price: 7000,
+          base_price: basePrice,
         })
         .select()
         .single();
