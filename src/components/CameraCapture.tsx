@@ -31,6 +31,12 @@ export function CameraCapture({ onCapture, onCancel }: CameraCaptureProps) {
       setStream(mediaStream);
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
+        // Ensure the video starts playing
+        try {
+          await videoRef.current.play();
+        } catch (playError) {
+          console.log('Video autoplay handled by autoPlay attribute');
+        }
       }
     } catch (err: any) {
       console.error('Camera error:', err);
@@ -38,6 +44,8 @@ export function CameraCapture({ onCapture, onCancel }: CameraCaptureProps) {
         setError('Camera access denied. Please allow camera access to take a selfie.');
       } else if (err.name === 'NotFoundError') {
         setError('No camera found on this device.');
+      } else if (err.name === 'NotReadableError') {
+        setError('Camera is already in use by another application.');
       } else {
         setError('Could not access camera. Please try uploading a file instead.');
       }
@@ -123,12 +131,15 @@ export function CameraCapture({ onCapture, onCancel }: CameraCaptureProps) {
   // Start camera on mount
   useEffect(() => {
     startCamera();
+    // Cleanup function with ref to track current stream
     return () => {
-      if (stream) {
-        stream.getTracks().forEach(track => track.stop());
+      // Stop any active stream tracks
+      if (videoRef.current?.srcObject) {
+        const mediaStream = videoRef.current.srcObject as MediaStream;
+        mediaStream.getTracks().forEach(track => track.stop());
       }
     };
-  }, []);
+  }, [startCamera]);
 
   return (
     <div className="space-y-4">
@@ -188,15 +199,14 @@ export function CameraCapture({ onCapture, onCancel }: CameraCaptureProps) {
       ) : (
         <div className="space-y-4">
           <div className="relative aspect-square max-w-sm mx-auto rounded-lg overflow-hidden bg-muted">
-            {stream ? (
-              <video
-                ref={videoRef}
-                autoPlay
-                playsInline
-                muted
-                className="w-full h-full object-cover scale-x-[-1]"
-              />
-            ) : (
+            <video
+              ref={videoRef}
+              autoPlay
+              playsInline
+              muted
+              className={`w-full h-full object-cover scale-x-[-1] ${!stream ? 'hidden' : ''}`}
+            />
+            {!stream && (
               <div className="absolute inset-0 flex items-center justify-center">
                 <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
               </div>

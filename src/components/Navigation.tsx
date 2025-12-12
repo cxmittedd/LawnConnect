@@ -29,14 +29,20 @@ export function Navigation() {
   const location = useLocation();
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [userRole, setUserRole] = useState<string>('customer');
+  const [userRole, setUserRole] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [roleLoading, setRoleLoading] = useState(true);
   const unreadCount = useUnreadMessages();
 
   useEffect(() => {
     if (user) {
-      loadUserRole();
-      checkAdminRole();
+      setRoleLoading(true);
+      Promise.all([loadUserRole(), checkAdminRole()]).finally(() => {
+        setRoleLoading(false);
+      });
+    } else {
+      setUserRole(null);
+      setRoleLoading(false);
     }
   }, [user]);
 
@@ -66,8 +72,8 @@ export function Navigation() {
     navigate('/auth');
   };
 
-  const isCustomer = userRole === 'customer' || userRole === 'both';
-  const isProvider = userRole === 'provider' || userRole === 'both';
+  const isCustomer = !roleLoading && (userRole === 'customer' || userRole === 'both');
+  const isProvider = !roleLoading && (userRole === 'provider' || userRole === 'both');
 
   const navItems = user
     ? [
