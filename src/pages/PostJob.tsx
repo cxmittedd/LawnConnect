@@ -42,11 +42,11 @@ const JOB_TYPES = [
 ] as const;
 
 const LAWN_SIZES = [
-  { value: 'small', label: 'Small (Up to 1/8 acre)', description: 'Typical scheme house yard' },
-  { value: 'medium', label: 'Medium (1/8 - 1/4 acre)', description: 'Larger residential yard' },
-  { value: 'large', label: 'Large (1/4 - 1/2 acre)', description: 'Spacious property' },
-  { value: 'xlarge', label: 'Extra Large (1/2 - 1 acre)', description: 'Estate-sized lawn' },
-  { value: 'custom', label: 'Custom (specify below)', description: 'Enter your own estimate' },
+  { value: 'small', label: 'Small (Up to 1/8 acre)', description: 'Typical scheme house yard', minOffer: 7000 },
+  { value: 'medium', label: 'Medium (1/8 - 1/4 acre)', description: 'Larger residential yard', minOffer: 8000 },
+  { value: 'large', label: 'Large (1/4 - 1/2 acre)', description: 'Spacious property', minOffer: 12000 },
+  { value: 'xlarge', label: 'Extra Large (1/2 - 1 acre)', description: 'Estate-sized lawn', minOffer: 18000 },
+  { value: 'custom', label: 'Custom (specify below)', description: 'Enter your own estimate', minOffer: 7000 },
 ] as const;
 
 const LAWN_SIZE_IMAGES = [
@@ -56,7 +56,12 @@ const LAWN_SIZE_IMAGES = [
   { src: lawnXLarge, label: 'Extra Large', size: '1/2 - 1 acre' },
 ];
 
-const jobSchema = z.object({
+const getMinOffer = (lawnSize: string): number => {
+  const size = LAWN_SIZES.find(s => s.value === lawnSize);
+  return size?.minOffer || 7000;
+};
+
+const createJobSchema = (minOffer: number) => z.object({
   title: z.string().trim().min(1, 'Title is required').max(200),
   description: z.string().trim().max(1000).optional(),
   location: z.string().trim().min(1, 'Location is required').max(300),
@@ -65,7 +70,7 @@ const jobSchema = z.object({
   preferred_date: z.string().optional(),
   preferred_time: z.string().trim().max(50).optional(),
   additional_requirements: z.string().trim().max(500).optional(),
-  customer_offer: z.number().min(7000, 'Minimum offer is J$7000').optional(),
+  customer_offer: z.number().min(minOffer, `Minimum offer is J$${minOffer.toLocaleString()}`).optional(),
 });
 
 export default function PostJob() {
@@ -87,14 +92,16 @@ export default function PostJob() {
     customer_offer: '',
   });
 
+  const currentMinOffer = getMinOffer(lawnSizeSelection);
+
   const handleLawnSizeChange = (value: string) => {
     setLawnSizeSelection(value);
+    const selected = LAWN_SIZES.find(s => s.value === value);
     if (value !== 'custom') {
-      const selected = LAWN_SIZES.find(s => s.value === value);
-      setFormData({ ...formData, lawn_size: selected?.label || '' });
+      setFormData({ ...formData, lawn_size: selected?.label || '', customer_offer: '' });
       setCustomLawnSize('');
     } else {
-      setFormData({ ...formData, lawn_size: customLawnSize });
+      setFormData({ ...formData, lawn_size: customLawnSize, customer_offer: '' });
     }
   };
 
@@ -121,6 +128,7 @@ export default function PostJob() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    const jobSchema = createJobSchema(currentMinOffer);
     const result = jobSchema.safeParse({
       ...formData,
       customer_offer: formData.customer_offer ? parseFloat(formData.customer_offer) : undefined,
@@ -198,7 +206,7 @@ export default function PostJob() {
             <Card>
               <CardHeader>
                 <CardTitle>Job Details</CardTitle>
-                <CardDescription>Minimum price: J$7,000. Add more for larger properties.</CardDescription>
+                <CardDescription>Minimum price: J${currentMinOffer.toLocaleString()}. Add more for larger properties.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
@@ -289,12 +297,13 @@ export default function PostJob() {
                     <Input
                       id="customer_offer"
                       type="number"
-                      min="7000"
+                      min={currentMinOffer}
                       step="100"
-                      placeholder="7000"
+                      placeholder={currentMinOffer.toString()}
                       value={formData.customer_offer}
                       onChange={(e) => setFormData({ ...formData, customer_offer: e.target.value })}
                     />
+                    <p className="text-xs text-muted-foreground">Minimum: J${currentMinOffer.toLocaleString()}</p>
                   </div>
                 </div>
 
