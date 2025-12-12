@@ -30,6 +30,12 @@ const JAMAICA_PARISHES = [
   'St. Catherine',
 ] as const;
 
+const JOB_TYPES = [
+  'Basic Grass Cutting',
+  'Basic Grass Cutting (overgrown grass)',
+  'Cut + Tree Trimming',
+] as const;
+
 const jobSchema = z.object({
   title: z.string().trim().min(1, 'Title is required').max(200),
   description: z.string().trim().max(1000).optional(),
@@ -158,14 +164,23 @@ export default function PostJob() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="title">Job Title</Label>
-                  <Input
-                    id="title"
-                    placeholder="e.g., Regular Lawn Cutting - 2 Bedroom House"
+                  <Label htmlFor="title">Job Type *</Label>
+                  <Select
                     value={formData.title}
-                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                    onValueChange={(value) => setFormData({ ...formData, title: value })}
                     required
-                  />
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select job type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {JOB_TYPES.map((type) => (
+                        <SelectItem key={type} value={type}>
+                          {type}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
