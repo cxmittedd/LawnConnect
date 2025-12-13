@@ -442,6 +442,7 @@ export default function JobDetails() {
                 providerName={acceptedProposal.provider_name || 'Provider'}
                 customerName={customerName}
                 preferredDate={job.preferred_date}
+                finalPrice={job.final_price}
                 onStatusUpdate={loadJobDetails}
               />
             )}

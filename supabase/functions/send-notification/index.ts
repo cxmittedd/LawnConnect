@@ -12,7 +12,7 @@ const corsHeaders = {
 
 // Zod schema for input validation
 const notificationSchema = z.object({
-  type: z.enum(['proposal_received', 'proposal_accepted', 'payment_submitted', 'payment_confirmed', 'job_completed', 'review_received', 'late_completion_warning', 'late_completion_apology']),
+  type: z.enum(['proposal_received', 'proposal_accepted', 'payment_submitted', 'payment_confirmed', 'job_completed', 'review_received', 'late_completion_warning', 'late_completion_apology', 'completion_confirmation_needed', 'dispute_opened', 'dispute_response']),
   recipientId: z.string().uuid(),
   jobTitle: z.string().min(1).max(200),
   jobId: z.string().uuid(),
@@ -23,6 +23,7 @@ const notificationSchema = z.object({
     rating: z.number().min(1).max(5).optional(),
     lateJobsThisMonth: z.number().optional(),
     preferredDate: z.string().optional(),
+    disputeReason: z.string().max(500).optional(),
   }).optional(),
 });
 
@@ -227,6 +228,92 @@ const getEmailContent = (type: string, jobTitle: string, additionalData?: Notifi
             <div class="footer">
               <p>LawnConnect - Connecting Jamaica's Lawn Care Community</p>
               <p style="margin-top: 5px;">Contact us: support@lawnconnect.jm</p>
+            </div>
+          </div>
+        `
+      };
+
+    case 'completion_confirmation_needed':
+      return {
+        subject: `Please Confirm Job Completion: "${jobTitle}"`,
+        html: `
+          ${baseStyles}
+          <div class="container">
+            <div class="header" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
+              <h1>✅ Action Required</h1>
+            </div>
+            <div class="content">
+              <p>Your lawn service provider has marked the following job as complete:</p>
+              <h2>${jobTitle}</h2>
+              ${additionalData?.providerName ? `<p><strong>Provider:</strong> ${additionalData.providerName}</p>` : ''}
+              <p style="background: #fef3c7; padding: 15px; border-radius: 8px; margin-top: 15px;">
+                <strong>Please review the before and after photos and either:</strong>
+                <ul style="margin-top: 10px;">
+                  <li><strong>Confirm Completion</strong> - if you're satisfied with the work</li>
+                  <li><strong>Report an Issue</strong> - if there are problems that need addressing</li>
+                </ul>
+              </p>
+              <p style="margin-top: 15px; font-size: 14px; color: #666;">
+                If you don't respond within 30 hours, the job will be automatically marked as complete.
+              </p>
+            </div>
+            <div class="footer">
+              <p>LawnConnect - Connecting Jamaica's Lawn Care Community</p>
+            </div>
+          </div>
+        `
+      };
+
+    case 'dispute_opened':
+      return {
+        subject: `Dispute Filed: "${jobTitle}"`,
+        html: `
+          ${baseStyles}
+          <div class="container">
+            <div class="header" style="background: linear-gradient(135deg, #ef4444, #dc2626);">
+              <h1>⚠️ Dispute Filed</h1>
+            </div>
+            <div class="content">
+              <p>A customer has filed a dispute for the following job:</p>
+              <h2>${jobTitle}</h2>
+              ${additionalData?.customerName ? `<p><strong>Customer:</strong> ${additionalData.customerName}</p>` : ''}
+              ${additionalData?.disputeReason ? `<p><strong>Reason:</strong> ${additionalData.disputeReason}</p>` : ''}
+              <p style="background: #fee2e2; padding: 15px; border-radius: 8px; margin-top: 15px;">
+                <strong>What you need to do:</strong>
+                <ul style="margin-top: 10px;">
+                  <li>Review the customer's photos and explanation</li>
+                  <li>Respond with your own photos and notes</li>
+                  <li>Address any issues and re-submit completion</li>
+                </ul>
+              </p>
+              <p style="margin-top: 15px; font-size: 14px; color: #666;">
+                Note: Accumulating 3 or more disputes in a month will reduce your payout percentage from 80% to 70%.
+              </p>
+            </div>
+            <div class="footer">
+              <p>LawnConnect - Connecting Jamaica's Lawn Care Community</p>
+            </div>
+          </div>
+        `
+      };
+
+    case 'dispute_response':
+      return {
+        subject: `Provider Response to Dispute: "${jobTitle}"`,
+        html: `
+          ${baseStyles}
+          <div class="container">
+            <div class="header" style="background: linear-gradient(135deg, #6366f1, #4f46e5);">
+              <h1>💬 Dispute Response</h1>
+            </div>
+            <div class="content">
+              <p>The provider has responded to your dispute for:</p>
+              <h2>${jobTitle}</h2>
+              ${additionalData?.providerName ? `<p><strong>Provider:</strong> ${additionalData.providerName}</p>` : ''}
+              <p style="margin-top: 15px;">Please log in to LawnConnect to view their response, photos, and notes. You can then confirm completion or continue the dispute if needed.</p>
+            </div>
+            <div class="footer">
+              <p>LawnConnect - Connecting Jamaica's Lawn Care Community</p>
             </div>
           </div>
         `

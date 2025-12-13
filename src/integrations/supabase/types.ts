@@ -44,11 +44,108 @@ export type Database = {
         }
         Relationships: []
       }
+      dispute_photos: {
+        Row: {
+          created_at: string
+          dispute_id: string
+          id: string
+          photo_url: string
+          uploaded_by: string
+        }
+        Insert: {
+          created_at?: string
+          dispute_id: string
+          id?: string
+          photo_url: string
+          uploaded_by: string
+        }
+        Update: {
+          created_at?: string
+          dispute_id?: string
+          id?: string
+          photo_url?: string
+          uploaded_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dispute_photos_dispute_id_fkey"
+            columns: ["dispute_id"]
+            isOneToOne: false
+            referencedRelation: "job_disputes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dispute_response_photos: {
+        Row: {
+          created_at: string
+          id: string
+          photo_url: string
+          response_id: string
+          uploaded_by: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          photo_url: string
+          response_id: string
+          uploaded_by: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          photo_url?: string
+          response_id?: string
+          uploaded_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dispute_response_photos_response_id_fkey"
+            columns: ["response_id"]
+            isOneToOne: false
+            referencedRelation: "dispute_responses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dispute_responses: {
+        Row: {
+          created_at: string
+          dispute_id: string
+          id: string
+          provider_id: string
+          response_text: string
+        }
+        Insert: {
+          created_at?: string
+          dispute_id: string
+          id?: string
+          provider_id: string
+          response_text: string
+        }
+        Update: {
+          created_at?: string
+          dispute_id?: string
+          id?: string
+          provider_id?: string
+          response_text?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dispute_responses_dispute_id_fkey"
+            columns: ["dispute_id"]
+            isOneToOne: false
+            referencedRelation: "job_disputes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       job_completion_photos: {
         Row: {
           created_at: string
           id: string
           job_id: string
+          photo_type: string
           photo_url: string
           uploaded_by: string
         }
@@ -56,6 +153,7 @@ export type Database = {
           created_at?: string
           id?: string
           job_id: string
+          photo_type?: string
           photo_url: string
           uploaded_by: string
         }
@@ -63,6 +161,7 @@ export type Database = {
           created_at?: string
           id?: string
           job_id?: string
+          photo_type?: string
           photo_url?: string
           uploaded_by?: string
         }
@@ -534,6 +633,10 @@ export type Database = {
         }[]
       }
       get_provider_completed_jobs_count: {
+        Args: { provider_id: string }
+        Returns: number
+      }
+      get_provider_disputes_this_month: {
         Args: { provider_id: string }
         Returns: number
       }
