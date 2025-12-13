@@ -8,7 +8,10 @@ type NotificationType =
   | 'job_completed'
   | 'review_received'
   | 'late_completion_warning'
-  | 'late_completion_apology';
+  | 'late_completion_apology'
+  | 'completion_confirmation_needed'
+  | 'dispute_opened'
+  | 'dispute_response';
 
 interface NotificationParams {
   type: NotificationType;
@@ -22,6 +25,7 @@ interface NotificationParams {
     rating?: number;
     lateJobsThisMonth?: number;
     preferredDate?: string;
+    disputeReason?: string;
   };
 }
 
