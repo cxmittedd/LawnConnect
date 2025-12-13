@@ -7,12 +7,27 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Shield, AlertTriangle, CheckCircle, Clock, Eye, X } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Shield, AlertTriangle, CheckCircle, Clock, Eye, Image, MessageSquare, User, DollarSign } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/auth';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { Navigation } from '@/components/Navigation';
+
+interface DisputePhoto {
+  id: string;
+  photo_url: string;
+  created_at: string;
+}
+
+interface DisputeResponse {
+  id: string;
+  response_text: string;
+  created_at: string;
+  photos: { id: string; photo_url: string }[];
+}
 
 interface Dispute {
   id: string;
@@ -24,8 +39,14 @@ interface Dispute {
   created_at: string;
   job_title?: string;
   customer_name?: string;
+  provider_id?: string;
   provider_name?: string;
+  final_price?: number;
+  photos?: DisputePhoto[];
+  responses?: DisputeResponse[];
 }
+
+type ResolutionType = 'favor_customer' | 'favor_provider' | 'partial_refund' | 'dismiss';
 
 export default function AdminDisputes() {
   const { user, loading: authLoading } = useAuth();
@@ -37,6 +58,8 @@ export default function AdminDisputes() {
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [resolveDialogOpen, setResolveDialogOpen] = useState(false);
   const [adminNotes, setAdminNotes] = useState('');
+  const [resolutionType, setResolutionType] = useState<ResolutionType>('favor_customer');
+  const [refundPercentage, setRefundPercentage] = useState(50);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -77,24 +100,20 @@ export default function AdminDisputes() {
 
       if (error) throw error;
 
-      // Enrich with job and user details
       const enrichedDisputes = await Promise.all(
         (disputesData || []).map(async (dispute) => {
-          // Get job details
           const { data: jobData } = await supabase
             .from('job_requests')
-            .select('title, customer_id, accepted_provider_id')
+            .select('title, customer_id, accepted_provider_id, final_price')
             .eq('id', dispute.job_id)
             .maybeSingle();
 
-          // Get customer name
           const { data: customerData } = await supabase
             .from('profiles')
             .select('full_name')
             .eq('id', dispute.customer_id)
             .maybeSingle();
 
-          // Get provider name if available
           let providerName = 'N/A';
           if (jobData?.accepted_provider_id) {
             const { data: providerData } = await supabase
@@ -105,17 +124,42 @@ export default function AdminDisputes() {
             providerName = providerData?.full_name || 'Unknown';
           }
 
+          const { data: photosData } = await supabase
+            .from('dispute_photos')
+            .select('id, photo_url, created_at')
+            .eq('dispute_id', dispute.id);
+
+          const { data: responsesData } = await supabase
+            .from('dispute_responses')
+            .select('id, response_text, created_at')
+            .eq('dispute_id', dispute.id)
+            .order('created_at', { ascending: true });
+
+          const responsesWithPhotos = await Promise.all(
+            (responsesData || []).map(async (response) => {
+              const { data: responsePhotos } = await supabase
+                .from('dispute_response_photos')
+                .select('id, photo_url')
+                .eq('response_id', response.id);
+              return { ...response, photos: responsePhotos || [] };
+            })
+          );
+
           return {
             ...dispute,
             job_title: jobData?.title || 'Unknown Job',
             customer_name: customerData?.full_name || 'Unknown',
-            provider_name: providerName
+            provider_id: jobData?.accepted_provider_id,
+            provider_name: providerName,
+            final_price: jobData?.final_price,
+            photos: photosData || [],
+            responses: responsesWithPhotos,
           };
         })
       );
 
       setDisputes(enrichedDisputes);
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast.error('Failed to load disputes');
       console.error(error);
     } finally {
@@ -138,7 +182,44 @@ export default function AdminDisputes() {
 
       if (error) throw error;
 
-      // Log admin action
+      if (resolutionType === 'favor_customer') {
+        await supabase
+          .from('job_requests')
+          .update({
+            status: 'cancelled',
+            provider_payout: 0,
+            platform_fee: 0,
+          })
+          .eq('id', selectedDispute.job_id);
+      } else if (resolutionType === 'favor_provider') {
+        const payoutPercentage = 0.80;
+        const providerPayout = (selectedDispute.final_price || 0) * payoutPercentage;
+        const platformFee = (selectedDispute.final_price || 0) * (1 - payoutPercentage);
+        
+        await supabase
+          .from('job_requests')
+          .update({
+            status: 'completed',
+            completed_at: new Date().toISOString(),
+            provider_payout: providerPayout,
+            platform_fee: platformFee,
+          })
+          .eq('id', selectedDispute.job_id);
+      } else if (resolutionType === 'partial_refund') {
+        const providerPayout = (selectedDispute.final_price || 0) * (refundPercentage / 100);
+        const platformFee = (selectedDispute.final_price || 0) - providerPayout;
+        
+        await supabase
+          .from('job_requests')
+          .update({
+            status: 'completed',
+            completed_at: new Date().toISOString(),
+            provider_payout: providerPayout,
+            platform_fee: platformFee,
+          })
+          .eq('id', selectedDispute.job_id);
+      }
+
       await supabase.from('admin_audit_logs').insert({
         admin_id: user.id,
         action: 'resolve_dispute',
@@ -150,15 +231,19 @@ export default function AdminDisputes() {
           customer_name: selectedDispute.customer_name,
           provider_name: selectedDispute.provider_name,
           reason: selectedDispute.reason,
+          resolution_type: resolutionType,
+          admin_notes: adminNotes,
+          refund_percentage: resolutionType === 'partial_refund' ? refundPercentage : null,
         },
       });
 
-      toast.success('Dispute marked as resolved');
+      toast.success('Dispute resolved successfully');
       setResolveDialogOpen(false);
       setSelectedDispute(null);
       setAdminNotes('');
+      setResolutionType('favor_customer');
       loadDisputes();
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast.error('Failed to resolve dispute');
     } finally {
       setSubmitting(false);
@@ -208,7 +293,6 @@ export default function AdminDisputes() {
           </div>
         </div>
 
-        {/* Admin Navigation */}
         <div className="flex gap-2 mb-6">
           <Button variant="default" size="sm">
             <AlertTriangle className="h-4 w-4 mr-1" /> Disputes
@@ -218,7 +302,6 @@ export default function AdminDisputes() {
           </Button>
         </div>
 
-        {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
           <Card>
             <CardHeader className="pb-2">
@@ -252,7 +335,6 @@ export default function AdminDisputes() {
           </Card>
         </div>
 
-        {/* Open Disputes */}
         <Card className="mb-8">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -275,6 +357,7 @@ export default function AdminDisputes() {
                     <TableHead>Job</TableHead>
                     <TableHead>Customer</TableHead>
                     <TableHead>Provider</TableHead>
+                    <TableHead>Evidence</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Actions</TableHead>
                   </TableRow>
@@ -288,6 +371,20 @@ export default function AdminDisputes() {
                       <TableCell className="font-medium">{dispute.job_title}</TableCell>
                       <TableCell>{dispute.customer_name}</TableCell>
                       <TableCell>{dispute.provider_name}</TableCell>
+                      <TableCell>
+                        <div className="flex gap-1">
+                          {(dispute.photos?.length || 0) > 0 && (
+                            <Badge variant="outline" className="gap-1">
+                              <Image className="h-3 w-3" /> {dispute.photos?.length}
+                            </Badge>
+                          )}
+                          {(dispute.responses?.length || 0) > 0 && (
+                            <Badge variant="outline" className="gap-1">
+                              <MessageSquare className="h-3 w-3" /> {dispute.responses?.length}
+                            </Badge>
+                          )}
+                        </div>
+                      </TableCell>
                       <TableCell>{getStatusBadge(dispute.status)}</TableCell>
                       <TableCell>
                         <div className="flex gap-2">
@@ -320,7 +417,6 @@ export default function AdminDisputes() {
           </CardContent>
         </Card>
 
-        {/* Resolved Disputes */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -377,9 +473,8 @@ export default function AdminDisputes() {
         </Card>
       </div>
 
-      {/* View Dispute Dialog */}
       <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-2xl max-h-[90vh]">
           <DialogHeader>
             <DialogTitle>Dispute Details</DialogTitle>
             <DialogDescription>
@@ -388,58 +483,136 @@ export default function AdminDisputes() {
           </DialogHeader>
           
           {selectedDispute && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm text-muted-foreground">Job</p>
-                  <p className="font-medium">{selectedDispute.job_title}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Status</p>
-                  {getStatusBadge(selectedDispute.status)}
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Customer</p>
-                  <p className="font-medium">{selectedDispute.customer_name}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Provider</p>
-                  <p className="font-medium">{selectedDispute.provider_name}</p>
-                </div>
-              </div>
-              
-              <div>
-                <p className="text-sm text-muted-foreground mb-1">Reason for Dispute</p>
-                <div className="p-3 bg-muted rounded-md">
-                  <p>{selectedDispute.reason}</p>
-                </div>
-              </div>
+            <ScrollArea className="max-h-[60vh]">
+              <Tabs defaultValue="details" className="w-full">
+                <TabsList className="grid w-full grid-cols-3">
+                  <TabsTrigger value="details">Details</TabsTrigger>
+                  <TabsTrigger value="customer">Customer Evidence</TabsTrigger>
+                  <TabsTrigger value="provider">Provider Response</TabsTrigger>
+                </TabsList>
 
-              <Button 
-                variant="outline" 
-                className="w-full"
-                onClick={() => navigate(`/job/${selectedDispute.job_id}`)}
-              >
-                View Job Details
-              </Button>
-            </div>
+                <TabsContent value="details" className="space-y-4 mt-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Job</p>
+                      <p className="font-medium">{selectedDispute.job_title}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Status</p>
+                      {getStatusBadge(selectedDispute.status)}
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Customer</p>
+                      <p className="font-medium flex items-center gap-1">
+                        <User className="h-4 w-4" /> {selectedDispute.customer_name}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Provider</p>
+                      <p className="font-medium flex items-center gap-1">
+                        <User className="h-4 w-4" /> {selectedDispute.provider_name}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Job Amount</p>
+                      <p className="font-medium flex items-center gap-1">
+                        <DollarSign className="h-4 w-4" /> J${selectedDispute.final_price?.toLocaleString() || 'N/A'}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-1">Reason for Dispute</p>
+                    <div className="p-3 bg-muted rounded-md">
+                      <p>{selectedDispute.reason}</p>
+                    </div>
+                  </div>
+
+                  <Button 
+                    variant="outline" 
+                    className="w-full"
+                    onClick={() => navigate(`/job/${selectedDispute.job_id}`)}
+                  >
+                    View Full Job Details
+                  </Button>
+                </TabsContent>
+
+                <TabsContent value="customer" className="space-y-4 mt-4">
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-2">Customer's Evidence Photos</p>
+                    {selectedDispute.photos && selectedDispute.photos.length > 0 ? (
+                      <div className="grid grid-cols-2 gap-2">
+                        {selectedDispute.photos.map((photo) => (
+                          <div key={photo.id} className="relative aspect-video rounded-md overflow-hidden border">
+                            <img
+                              src={photo.photo_url}
+                              alt="Dispute evidence"
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-muted-foreground text-sm">No photos submitted by customer</p>
+                    )}
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="provider" className="space-y-4 mt-4">
+                  {selectedDispute.responses && selectedDispute.responses.length > 0 ? (
+                    selectedDispute.responses.map((response) => (
+                      <div key={response.id} className="border rounded-md p-4 space-y-3">
+                        <div className="flex justify-between items-start">
+                          <p className="text-sm text-muted-foreground">
+                            Response on {format(new Date(response.created_at), 'MMM dd, yyyy \'at\' h:mm a')}
+                          </p>
+                        </div>
+                        <p>{response.response_text}</p>
+                        {response.photos.length > 0 && (
+                          <div className="grid grid-cols-2 gap-2 mt-2">
+                            {response.photos.map((photo) => (
+                              <div key={photo.id} className="relative aspect-video rounded-md overflow-hidden border">
+                                <img
+                                  src={photo.photo_url}
+                                  alt="Provider evidence"
+                                  className="w-full h-full object-cover"
+                                />
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-muted-foreground text-sm">No response from provider yet</p>
+                  )}
+                </TabsContent>
+              </Tabs>
+            </ScrollArea>
           )}
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setViewDialogOpen(false)}>
               Close
             </Button>
+            {selectedDispute?.status === 'open' && (
+              <Button onClick={() => {
+                setViewDialogOpen(false);
+                setResolveDialogOpen(true);
+              }}>
+                Resolve Dispute
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Resolve Dispute Dialog */}
       <Dialog open={resolveDialogOpen} onOpenChange={setResolveDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>Resolve Dispute</DialogTitle>
             <DialogDescription>
-              Mark this dispute as resolved. The job will remain in its current state.
+              Choose how to resolve this dispute between {selectedDispute?.customer_name} and {selectedDispute?.provider_name}
             </DialogDescription>
           </DialogHeader>
           
@@ -449,6 +622,79 @@ export default function AdminDisputes() {
                 <p className="text-sm text-muted-foreground">Dispute Reason:</p>
                 <p className="mt-1">{selectedDispute.reason}</p>
               </div>
+
+              <div className="space-y-3">
+                <p className="text-sm font-medium">Resolution Type</p>
+                <div className="grid gap-2">
+                  <Button
+                    variant={resolutionType === 'favor_customer' ? 'default' : 'outline'}
+                    className="justify-start h-auto py-3"
+                    onClick={() => setResolutionType('favor_customer')}
+                  >
+                    <div className="text-left">
+                      <p className="font-medium">Favor Customer</p>
+                      <p className="text-xs text-muted-foreground">Cancel job, no payout to provider</p>
+                    </div>
+                  </Button>
+                  <Button
+                    variant={resolutionType === 'favor_provider' ? 'default' : 'outline'}
+                    className="justify-start h-auto py-3"
+                    onClick={() => setResolutionType('favor_provider')}
+                  >
+                    <div className="text-left">
+                      <p className="font-medium">Favor Provider</p>
+                      <p className="text-xs text-muted-foreground">Complete job, full payout (80%) to provider</p>
+                    </div>
+                  </Button>
+                  <Button
+                    variant={resolutionType === 'partial_refund' ? 'default' : 'outline'}
+                    className="justify-start h-auto py-3"
+                    onClick={() => setResolutionType('partial_refund')}
+                  >
+                    <div className="text-left">
+                      <p className="font-medium">Partial Resolution</p>
+                      <p className="text-xs text-muted-foreground">Complete job with reduced payout</p>
+                    </div>
+                  </Button>
+                  <Button
+                    variant={resolutionType === 'dismiss' ? 'default' : 'outline'}
+                    className="justify-start h-auto py-3"
+                    onClick={() => setResolutionType('dismiss')}
+                  >
+                    <div className="text-left">
+                      <p className="font-medium">Dismiss</p>
+                      <p className="text-xs text-muted-foreground">Close dispute, leave job in current state</p>
+                    </div>
+                  </Button>
+                </div>
+
+                {resolutionType === 'partial_refund' && (
+                  <div className="space-y-2">
+                    <label className="text-sm">Provider Payout Percentage: {refundPercentage}%</label>
+                    <input
+                      type="range"
+                      min="10"
+                      max="80"
+                      step="5"
+                      value={refundPercentage}
+                      onChange={(e) => setRefundPercentage(Number(e.target.value))}
+                      className="w-full"
+                    />
+                    <p className="text-sm text-muted-foreground">
+                      Provider receives: J${((selectedDispute.final_price || 0) * (refundPercentage / 100)).toLocaleString()}
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Admin Notes (optional)</label>
+                <Textarea
+                  placeholder="Add any notes about this resolution..."
+                  value={adminNotes}
+                  onChange={(e) => setAdminNotes(e.target.value)}
+                />
+              </div>
             </div>
           )}
 
@@ -456,11 +702,12 @@ export default function AdminDisputes() {
             <Button variant="outline" onClick={() => {
               setResolveDialogOpen(false);
               setAdminNotes('');
+              setResolutionType('favor_customer');
             }}>
               Cancel
             </Button>
             <Button onClick={handleResolveDispute} disabled={submitting}>
-              {submitting ? 'Resolving...' : 'Mark as Resolved'}
+              {submitting ? 'Resolving...' : 'Confirm Resolution'}
             </Button>
           </DialogFooter>
         </DialogContent>
