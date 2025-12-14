@@ -14,6 +14,34 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+
+    // Verify authorization - only allow service role calls (from cron/internal systems)
+    const authHeader = req.headers.get("authorization");
+    if (!authHeader) {
+      console.error("Missing authorization header");
+      return new Response(
+        JSON.stringify({ error: "Unauthorized" }),
+        { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    // Check if the request is using the service role key (from cron job or internal call)
+    const token = authHeader.replace("Bearer ", "");
+    if (token !== supabaseServiceKey) {
+      // For non-service-role calls, verify it's a valid anon key call from pg_net
+      // pg_net uses the anon key, so we need to allow that for cron jobs
+      const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
+      if (token !== anonKey) {
+        console.error("Invalid authorization - not service role or anon key");
+        return new Response(
+          JSON.stringify({ error: "Unauthorized" }),
+          { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        );
+      }
+      console.log("Authorized via anon key (cron job)");
+    } else {
+      console.log("Authorized via service role key");
+    }
     
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
