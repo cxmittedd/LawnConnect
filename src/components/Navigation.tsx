@@ -20,6 +20,7 @@ import {
   UserCheck,
   BarChart3,
 } from 'lucide-react';
+import lawnConnectLogo from '@/assets/lawnconnect-logo.png';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useUnreadMessages } from '@/hooks/useUnreadMessages';
@@ -112,9 +113,7 @@ export function Navigation() {
       <div className="container mx-auto px-4">
         <div className="flex h-16 items-center justify-between">
           <Link to={user ? '/dashboard' : '/'} className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
-              <Scissors className="h-5 w-5 text-primary-foreground" />
-            </div>
+            <img src={lawnConnectLogo} alt="LawnConnect" className="h-10 w-10 rounded-lg" />
             <span className="text-xl font-bold text-foreground">LawnConnect</span>
           </Link>
 
