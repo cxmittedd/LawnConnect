@@ -45,6 +45,12 @@ const AdminDashboard = () => {
     }
   }, [isAdmin, selectedMonths]);
 
+  /**
+   * Security Note: This client-side admin check is for UX optimization only.
+   * The actual security is enforced by Row Level Security (RLS) policies on all admin tables.
+   * Even if this check is bypassed, unauthorized users will see an empty UI because
+   * RLS policies (using has_role(auth.uid(), 'admin')) block all data access server-side.
+   */
   const checkAdminRole = async () => {
     if (!user) return;
     
