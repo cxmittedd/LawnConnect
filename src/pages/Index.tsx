@@ -6,6 +6,7 @@ import { useAuth } from '@/lib/auth';
 import { useTheme } from '@/hooks/useTheme';
 import { Scissors, Users, DollarSign, CheckCircle, ArrowRight, Sun, Moon } from 'lucide-react';
 import InstallBanner from '@/components/InstallBanner';
+import lawnConnectLogo from '@/assets/lawnconnect-logo.png';
 
 const Index = () => {
   const { user } = useAuth();
@@ -47,9 +48,7 @@ const Index = () => {
         <div className="container mx-auto px-4">
           <div className="flex h-16 items-center justify-between">
             <div className="flex items-center gap-2">
-              <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
-                <Scissors className="h-5 w-5 text-primary-foreground" />
-              </div>
+              <img src={lawnConnectLogo} alt="LawnConnect" className="h-12 w-12 object-contain" />
               <span className="text-xl font-bold text-foreground">LawnConnect</span>
             </div>
             <div className="flex gap-3 items-center">
