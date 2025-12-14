@@ -1,12 +1,39 @@
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useEffect } from "react";
 
+/**
+ * Security: This component handles all unrecognized routes.
+ * It does NOT log the attempted path to prevent information leakage about
+ * what routes might exist or be guessed by attackers.
+ */
 const NotFound = () => {
   const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
-    console.error("404 Error: User attempted to access non-existent route:", location.pathname);
-  }, [location.pathname]);
+    // Security: Don't log the attempted path to prevent enumeration attacks
+    // Just silently handle the 404
+    
+    // If the path contains suspicious characters often used in attacks,
+    // redirect to home immediately
+    const suspiciousPatterns = [
+      /\.\./,      // Path traversal
+      /<script/i,  // XSS attempts
+      /%3C/i,      // Encoded < 
+      /%3E/i,      // Encoded >
+      /javascript:/i, // JavaScript protocol
+      /data:/i,    // Data protocol
+      /vbscript:/i, // VBScript protocol
+    ];
+    
+    const isSuspicious = suspiciousPatterns.some(pattern => 
+      pattern.test(location.pathname) || pattern.test(location.search)
+    );
+    
+    if (isSuspicious) {
+      navigate('/', { replace: true });
+    }
+  }, [location.pathname, location.search, navigate]);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-muted">
