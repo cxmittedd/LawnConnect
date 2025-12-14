@@ -111,14 +111,14 @@ export function Navigation() {
   return (
     <nav className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
       <div className="container mx-auto px-4">
-        <div className="flex h-16 items-center justify-between">
-          <Link to={user ? '/dashboard' : '/'} className="flex items-center gap-2">
-            <img src={lawnConnectLogo} alt="LawnConnect" className="h-24 w-24 object-contain" />
-            <span className="text-xl font-bold text-foreground">LawnConnect</span>
+        <div className="flex h-20 items-center justify-between gap-4">
+          <Link to={user ? '/dashboard' : '/'} className="flex items-center gap-2 shrink-0">
+            <img src={lawnConnectLogo} alt="LawnConnect" className="h-14 w-14 object-contain" />
+            <span className="text-lg font-bold text-foreground hidden sm:block">LawnConnect</span>
           </Link>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center gap-6">
+          <div className="hidden lg:flex items-center flex-1 justify-end gap-4 xl:gap-6">
             {navItems.map((item) => {
               const Icon = item.icon;
               const isActive = location.pathname === item.path;
@@ -126,12 +126,12 @@ export function Navigation() {
                 <Link
                   key={item.path}
                   to={item.path}
-                  className={`flex items-center gap-2 text-sm font-medium transition-colors hover:text-primary relative ${
+                  className={`flex items-center gap-1.5 text-sm font-medium transition-colors hover:text-primary relative whitespace-nowrap ${
                     isActive ? 'text-primary' : 'text-muted-foreground'
                   }`}
                 >
-                  <Icon className="h-4 w-4" />
-                  {item.label}
+                  <Icon className="h-4 w-4 shrink-0" />
+                  <span className="hidden xl:inline">{item.label}</span>
                   {item.badge > 0 && (
                     <Badge variant="destructive" className="h-5 min-w-5 px-1.5 text-xs">
                       {item.badge > 99 ? '99+' : item.badge}
@@ -142,12 +142,12 @@ export function Navigation() {
             })}
             {isAdmin && (
               <DropdownMenu>
-                <DropdownMenuTrigger className={`flex items-center gap-1 text-sm font-medium transition-colors hover:text-primary ${isAdminPage ? 'text-primary' : 'text-muted-foreground'}`}>
-                  <Shield className="h-4 w-4" />
-                  Admin
+                <DropdownMenuTrigger className={`flex items-center gap-1 text-sm font-medium transition-colors hover:text-primary whitespace-nowrap ${isAdminPage ? 'text-primary' : 'text-muted-foreground'}`}>
+                  <Shield className="h-4 w-4 shrink-0" />
+                  <span className="hidden xl:inline">Admin</span>
                   <ChevronDown className="h-3 w-3" />
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
+                <DropdownMenuContent align="end" className="bg-popover z-50">
                   {adminItems.map((item) => {
                     const Icon = item.icon;
                     return (
@@ -158,6 +158,73 @@ export function Navigation() {
                         </Link>
                       </DropdownMenuItem>
                     );
+                  })}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+            <button
+              onClick={toggleTheme}
+              className="p-2 rounded-md hover:bg-muted transition-colors shrink-0"
+              aria-label="Toggle theme"
+            >
+              {theme === 'light' ? (
+                <Moon className="h-5 w-5 text-muted-foreground" />
+              ) : (
+                <Sun className="h-5 w-5 text-muted-foreground" />
+              )}
+            </button>
+            {user ? (
+              <Button onClick={handleSignOut} variant="outline" size="sm" className="shrink-0">
+                <LogOut className="h-4 w-4 lg:mr-2" />
+                <span className="hidden xl:inline">Sign Out</span>
+              </Button>
+            ) : (
+              <Button onClick={() => navigate('/auth')} size="sm" className="shrink-0">
+                Sign In
+              </Button>
+            )}
+          </div>
+
+          {/* Mobile Menu Button */}
+          <button
+            className="lg:hidden shrink-0"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            aria-label="Toggle menu"
+          >
+            {mobileMenuOpen ? (
+              <X className="h-6 w-6 text-foreground" />
+            ) : (
+              <Menu className="h-6 w-6 text-foreground" />
+            )}
+          </button>
+        </div>
+
+        {/* Mobile Navigation */}
+        {mobileMenuOpen && (
+          <div className="lg:hidden py-4 space-y-2 border-t border-border">
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = location.pathname === item.path;
+              return (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`flex items-center gap-3 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                    isActive
+                      ? 'bg-primary/10 text-primary'
+                      : 'text-muted-foreground hover:bg-muted'
+                  }`}
+                >
+                  <Icon className="h-4 w-4" />
+                  {item.label}
+                  {item.badge > 0 && (
+                    <Badge variant="destructive" className="h-5 min-w-5 px-1.5 text-xs ml-auto">
+                      {item.badge > 99 ? '99+' : item.badge}
+                    </Badge>
+                  )}
+                </Link>
+              );
             })}
             {isAdmin && (
               <>
@@ -185,73 +252,6 @@ export function Navigation() {
                 })}
               </>
             )}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
-            <button
-              onClick={toggleTheme}
-              className="p-2 rounded-md hover:bg-muted transition-colors"
-              aria-label="Toggle theme"
-            >
-              {theme === 'light' ? (
-                <Moon className="h-5 w-5 text-muted-foreground" />
-              ) : (
-                <Sun className="h-5 w-5 text-muted-foreground" />
-              )}
-            </button>
-            {user ? (
-              <Button onClick={handleSignOut} variant="outline" size="sm">
-                <LogOut className="h-4 w-4 mr-2" />
-                Sign Out
-              </Button>
-            ) : (
-              <Button onClick={() => navigate('/auth')} size="sm">
-                Sign In
-              </Button>
-            )}
-          </div>
-
-          {/* Mobile Menu Button */}
-          <button
-            className="md:hidden"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            aria-label="Toggle menu"
-          >
-            {mobileMenuOpen ? (
-              <X className="h-6 w-6 text-foreground" />
-            ) : (
-              <Menu className="h-6 w-6 text-foreground" />
-            )}
-          </button>
-        </div>
-
-        {/* Mobile Navigation */}
-        {mobileMenuOpen && (
-          <div className="md:hidden py-4 space-y-2">
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = location.pathname === item.path;
-              return (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={`flex items-center gap-3 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                    isActive
-                      ? 'bg-primary/10 text-primary'
-                      : 'text-muted-foreground hover:bg-muted'
-                  }`}
-                >
-                  <Icon className="h-4 w-4" />
-                  {item.label}
-                  {item.badge > 0 && (
-                    <Badge variant="destructive" className="h-5 min-w-5 px-1.5 text-xs ml-auto">
-                      {item.badge > 99 ? '99+' : item.badge}
-                    </Badge>
-                  )}
-                </Link>
-              );
-            })}
             <button
               onClick={toggleTheme}
               className="flex items-center gap-3 px-4 py-2 rounded-md text-sm font-medium text-muted-foreground hover:bg-muted w-full"
