@@ -2,6 +2,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 interface SendInvoiceParams {
   jobId: string;
+  customerId: string;
   customerEmail: string;
   customerName: string;
   jobTitle: string;

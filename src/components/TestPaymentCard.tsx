@@ -89,6 +89,7 @@ export function TestPaymentCard({
 
         sendInvoice({
           jobId,
+          customerId,
           customerEmail: user.email,
           customerName,
           jobTitle,

@@ -236,6 +236,7 @@ export default function PostJob() {
 
         sendInvoice({
           jobId: job.id,
+          customerId: user.id,
           customerEmail: user.email,
           customerName,
           jobTitle: formData.title,
