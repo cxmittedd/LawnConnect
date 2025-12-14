@@ -222,7 +222,7 @@ export default function Auth() {
     <div className="min-h-screen flex items-center justify-center bg-page-pattern p-4">
       <Card className="w-full max-w-md shadow-xl">
         <CardHeader className="text-center space-y-4">
-          <img src={lawnConnectLogo} alt="LawnConnect" className="mx-auto h-20 w-20 object-contain" />
+          <img src={lawnConnectLogo} alt="LawnConnect" className="mx-auto h-40 w-40 object-contain" />
           <div>
             <CardTitle className="text-2xl">Welcome to LawnConnect</CardTitle>
             <CardDescription>Connect customers with lawn care professionals</CardDescription>
