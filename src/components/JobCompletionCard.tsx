@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { CheckCircle, Clock, Flag, PartyPopper, Star, Camera, Upload, X, Image, AlertTriangle, MessageSquare } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { safeToast } from '@/lib/errorHandler';
 import { format } from 'date-fns';
 import { sendNotification } from '@/lib/notifications';
 
@@ -306,8 +307,8 @@ export function JobCompletionCard({
       setSelectedAfterFiles([]);
       await loadCompletionPhotos();
       return true;
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to upload photos');
+    } catch (error) {
+      safeToast.error(error);
       return false;
     } finally {
       setUploadingPhotos(false);
@@ -408,8 +409,8 @@ export function JobCompletionCard({
       }
       
       onStatusUpdate();
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to mark job as complete');
+    } catch (error) {
+      safeToast.error(error);
     } finally {
       setSubmitting(false);
     }
@@ -442,8 +443,8 @@ export function JobCompletionCard({
       toast.success('Job completed! Thank you for using LawnConnect.');
       setCustomerConfirmDialog(false);
       onStatusUpdate();
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to confirm job completion');
+    } catch (error) {
+      safeToast.error(error);
     } finally {
       setSubmitting(false);
     }
@@ -529,8 +530,8 @@ export function JobCompletionCard({
       setSelectedDisputeFiles([]);
       await loadActiveDispute();
       onStatusUpdate();
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to submit dispute');
+    } catch (error) {
+      safeToast.error(error);
     } finally {
       setSubmitting(false);
     }
@@ -603,8 +604,8 @@ export function JobCompletionCard({
       setProviderResponseText('');
       setSelectedResponseFiles([]);
       await loadDisputeResponses(activeDispute.id);
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to submit response');
+    } catch (error) {
+      safeToast.error(error);
     } finally {
       setSubmitting(false);
     }

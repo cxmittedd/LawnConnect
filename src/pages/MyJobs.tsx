@@ -9,6 +9,7 @@ import { useAuth } from '@/lib/auth';
 import { supabase } from '@/integrations/supabase/client';
 import { MapPin, Calendar, DollarSign, Briefcase, Eye, MessageSquare, Send, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import { safeToast } from '@/lib/errorHandler';
 import { format } from 'date-fns';
 
 interface Job {
@@ -137,8 +138,8 @@ export default function MyJobs() {
           }
         }
       }
-    } catch (error: any) {
-      toast.error('Failed to load jobs');
+    } catch (error) {
+      safeToast.error(error);
     } finally {
       setLoading(false);
     }

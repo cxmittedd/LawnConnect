@@ -10,6 +10,7 @@ import { useAuth } from '@/lib/auth';
 import { supabase } from '@/integrations/supabase/client';
 import { MapPin, Calendar, DollarSign, Clock, ArrowLeft, Check, X, User, Star } from 'lucide-react';
 import { toast } from 'sonner';
+import { safeToast } from '@/lib/errorHandler';
 import { format } from 'date-fns';
 import { TestPaymentCard } from '@/components/TestPaymentCard';
 import { JobCompletionCard } from '@/components/JobCompletionCard';
@@ -158,8 +159,8 @@ export default function JobDetails() {
       } else {
         setProposals([]);
       }
-    } catch (error: any) {
-      toast.error('Failed to load job details');
+    } catch (error) {
+      safeToast.error(error);
       console.error(error);
     } finally {
       setLoading(false);
@@ -227,8 +228,8 @@ export default function JobDetails() {
       toast.success('Proposal accepted! The provider will be notified.');
       setConfirmDialog({ open: false, proposal: null });
       loadJobDetails();
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to accept proposal');
+    } catch (error) {
+      safeToast.error(error);
     } finally {
       setAcceptingId(null);
     }
@@ -245,8 +246,8 @@ export default function JobDetails() {
 
       toast.success('Proposal rejected');
       loadJobDetails();
-    } catch (error: any) {
-      toast.error('Failed to reject proposal');
+    } catch (error) {
+      safeToast.error(error);
     }
   };
 

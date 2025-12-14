@@ -10,6 +10,7 @@ import { useAuth } from '@/lib/auth';
 import { supabase } from '@/integrations/supabase/client';
 import { Upload, X, ArrowRight } from 'lucide-react';
 import { toast } from 'sonner';
+import { safeToast } from '@/lib/errorHandler';
 import { useNavigate } from 'react-router-dom';
 import { z } from 'zod';
 import { JobPaymentForm } from '@/components/JobPaymentForm';
@@ -222,8 +223,8 @@ export default function PostJob() {
 
       toast.success('Job posted successfully! Payment received.');
       navigate('/my-jobs');
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to post job');
+    } catch (error) {
+      safeToast.error(error);
     } finally {
       setLoading(false);
     }

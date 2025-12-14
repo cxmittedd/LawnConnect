@@ -13,6 +13,7 @@ import { useAuth } from '@/lib/auth';
 import { supabase } from '@/integrations/supabase/client';
 import { MapPin, Calendar, DollarSign, Scissors, Shield, Clock, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
+import { safeToast } from '@/lib/errorHandler';
 import { format } from 'date-fns';
 import { z } from 'zod';
 import { useProviderVerification } from '@/hooks/useProviderVerification';
@@ -68,8 +69,8 @@ export default function BrowseJobs() {
 
       if (error) throw error;
       setJobs(data || []);
-    } catch (error: any) {
-      toast.error('Failed to load jobs');
+    } catch (error) {
+      safeToast.error(error);
     } finally {
       setLoading(false);
     }
@@ -152,8 +153,8 @@ export default function BrowseJobs() {
         setProposalOpen(false);
         loadJobs();
       }
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to submit proposal');
+    } catch (error) {
+      safeToast.error(error);
     } finally {
       setSubmitting(false);
     }

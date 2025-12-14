@@ -11,6 +11,7 @@ import { useAuth } from '@/lib/auth';
 import { supabase } from '@/integrations/supabase/client';
 import { User, Phone, MapPin, Building, Save, Camera } from 'lucide-react';
 import { toast } from 'sonner';
+import { safeToast } from '@/lib/errorHandler';
 import { ProviderVerification } from '@/components/ProviderVerification';
 
 interface ProfileData {
@@ -145,8 +146,8 @@ export default function Profile() {
       setProfile(prev => ({ ...prev, avatar_url: uploadedAvatarUrl }));
       setAvatarFile(null);
       toast.success('Profile updated successfully!');
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to update profile');
+    } catch (error) {
+      safeToast.error(error);
     } finally {
       setSaving(false);
     }
