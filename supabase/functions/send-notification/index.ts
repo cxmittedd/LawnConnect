@@ -29,300 +29,463 @@ const notificationSchema = z.object({
 
 type NotificationRequest = z.infer<typeof notificationSchema>;
 
-const getEmailContent = (type: string, jobTitle: string, additionalData?: NotificationRequest['additionalData']) => {
-  const baseStyles = `
-    <style>
-      body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
-      .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-      .header { background: linear-gradient(135deg, #22c55e, #16a34a); color: white; padding: 30px; border-radius: 10px 10px 0 0; text-align: center; }
-      .content { background: #f9fafb; padding: 30px; border-radius: 0 0 10px 10px; }
-      .button { display: inline-block; background: #22c55e; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin-top: 20px; }
-      .footer { text-align: center; margin-top: 20px; color: #6b7280; font-size: 12px; }
-    </style>
+// Branded email wrapper template
+const createBrandedEmail = (
+  headerColor: string,
+  headerIcon: string,
+  headerTitle: string,
+  bodyContent: string,
+  ctaUrl?: string,
+  ctaText?: string
+) => {
+  const logoUrl = `${Deno.env.get("SUPABASE_URL")}/storage/v1/object/public/assets/lawnconnect-logo.png`;
+  const currentYear = new Date().getFullYear();
+  
+  return `
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>LawnConnect Notification</title>
+    </head>
+    <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f4f4f5;">
+      <table role="presentation" style="width: 100%; border-collapse: collapse;">
+        <tr>
+          <td align="center" style="padding: 40px 20px;">
+            <table role="presentation" style="width: 100%; max-width: 520px; border-collapse: collapse; background-color: #ffffff; border-radius: 16px; box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);">
+              
+              <!-- Logo Header -->
+              <tr>
+                <td align="center" style="padding: 32px 40px 16px 40px;">
+                  <img src="${logoUrl}" alt="LawnConnect" width="80" height="80" style="display: block; border: 0;" />
+                </td>
+              </tr>
+              
+              <!-- Title Banner -->
+              <tr>
+                <td align="center" style="padding: 0 40px 24px 40px;">
+                  <div style="background: ${headerColor}; padding: 20px 32px; border-radius: 12px; display: inline-block;">
+                    <span style="font-size: 24px; margin-right: 8px;">${headerIcon}</span>
+                    <span style="color: #ffffff; font-size: 20px; font-weight: 700;">${headerTitle}</span>
+                  </div>
+                </td>
+              </tr>
+              
+              <!-- Body Content -->
+              <tr>
+                <td style="padding: 0 40px 24px 40px;">
+                  ${bodyContent}
+                </td>
+              </tr>
+              
+              ${ctaUrl && ctaText ? `
+              <!-- CTA Button -->
+              <tr>
+                <td align="center" style="padding: 0 40px 32px 40px;">
+                  <a href="${ctaUrl}" target="_blank" style="display: inline-block; padding: 14px 32px; background-color: #16a34a; color: #ffffff; text-decoration: none; font-size: 16px; font-weight: 600; border-radius: 8px;">
+                    ${ctaText}
+                  </a>
+                </td>
+              </tr>
+              ` : ''}
+              
+              <!-- Divider -->
+              <tr>
+                <td style="padding: 0 40px;">
+                  <div style="border-top: 1px solid #e4e4e7;"></div>
+                </td>
+              </tr>
+              
+              <!-- Footer -->
+              <tr>
+                <td align="center" style="padding: 24px 40px 32px 40px; background-color: #fafafa; border-radius: 0 0 16px 16px;">
+                  <p style="margin: 0 0 8px 0; font-size: 16px; font-weight: 700; color: #16a34a;">
+                    LawnConnect
+                  </p>
+                  <p style="margin: 0 0 12px 0; font-size: 13px; color: #71717a;">
+                    Jamaica's Premier Lawn Care Marketplace
+                  </p>
+                  <p style="margin: 0; font-size: 11px; color: #a1a1aa;">
+                    © ${currentYear} LawnConnect. All rights reserved.
+                  </p>
+                  <p style="margin: 8px 0 0 0; font-size: 11px; color: #a1a1aa;">
+                    Questions? Contact us at <a href="mailto:support@lawnconnect.jm" style="color: #16a34a;">support@lawnconnect.jm</a>
+                  </p>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+    </body>
+    </html>
   `;
+};
 
+const getEmailContent = (type: string, jobTitle: string, jobId: string, additionalData?: NotificationRequest['additionalData']) => {
+  const appUrl = "https://lawnconnect.jm";
+  const jobUrl = `${appUrl}/job/${jobId}`;
+  
   switch (type) {
     case 'proposal_received':
       return {
         subject: `New Proposal for "${jobTitle}"`,
-        html: `
-          ${baseStyles}
-          <div class="container">
-            <div class="header">
-              <h1>🎉 New Proposal Received!</h1>
+        html: createBrandedEmail(
+          'linear-gradient(135deg, #22c55e, #16a34a)',
+          '🎉',
+          'New Proposal Received!',
+          `
+            <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 26px; color: #3f3f46;">
+              Great news! A lawn care provider has submitted a proposal for your job:
+            </p>
+            <div style="background: #f0fdf4; padding: 16px 20px; border-radius: 10px; border-left: 4px solid #16a34a; margin-bottom: 16px;">
+              <p style="margin: 0; font-size: 18px; font-weight: 600; color: #166534;">${jobTitle}</p>
             </div>
-            <div class="content">
-              <p>Great news! A lawn care provider has submitted a proposal for your job:</p>
-              <h2>${jobTitle}</h2>
-              ${additionalData?.providerName ? `<p><strong>Provider:</strong> ${additionalData.providerName}</p>` : ''}
-              ${additionalData?.amount ? `<p><strong>Proposed Price:</strong> J$${additionalData.amount.toFixed(2)}</p>` : ''}
-              <p>Log in to LawnConnect to view the full proposal and accept or decline.</p>
-            </div>
-            <div class="footer">
-              <p>LawnConnect - Connecting Jamaica's Lawn Care Community</p>
-            </div>
-          </div>
-        `
+            ${additionalData?.providerName ? `
+              <p style="margin: 0 0 8px 0; font-size: 14px; color: #52525b;">
+                <strong>Provider:</strong> ${additionalData.providerName}
+              </p>
+            ` : ''}
+            ${additionalData?.amount ? `
+              <p style="margin: 0 0 16px 0; font-size: 14px; color: #52525b;">
+                <strong>Proposed Price:</strong> <span style="color: #16a34a; font-weight: 600;">J$${additionalData.amount.toLocaleString()}</span>
+              </p>
+            ` : ''}
+            <p style="margin: 0; font-size: 14px; color: #71717a;">
+              Log in to view the full proposal and accept or decline.
+            </p>
+          `,
+          jobUrl,
+          'View Proposal'
+        )
       };
 
     case 'proposal_accepted':
       return {
-        subject: `Your Proposal for "${jobTitle}" Was Accepted!`,
-        html: `
-          ${baseStyles}
-          <div class="container">
-            <div class="header">
-              <h1>✅ Proposal Accepted!</h1>
+        subject: `Congratulations! Your Proposal Was Accepted - "${jobTitle}"`,
+        html: createBrandedEmail(
+          'linear-gradient(135deg, #22c55e, #16a34a)',
+          '✅',
+          'Proposal Accepted!',
+          `
+            <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 26px; color: #3f3f46;">
+              Congratulations! Your proposal has been accepted for:
+            </p>
+            <div style="background: #f0fdf4; padding: 16px 20px; border-radius: 10px; border-left: 4px solid #16a34a; margin-bottom: 16px;">
+              <p style="margin: 0; font-size: 18px; font-weight: 600; color: #166534;">${jobTitle}</p>
             </div>
-            <div class="content">
-              <p>Congratulations! Your proposal has been accepted for:</p>
-              <h2>${jobTitle}</h2>
-              ${additionalData?.customerName ? `<p><strong>Customer:</strong> ${additionalData.customerName}</p>` : ''}
-              ${additionalData?.amount ? `<p><strong>Agreed Price:</strong> J$${additionalData.amount.toFixed(2)}</p>` : ''}
-              <p>The customer will now make payment via Lynk. You'll receive a notification once payment is confirmed.</p>
+            ${additionalData?.customerName ? `
+              <p style="margin: 0 0 8px 0; font-size: 14px; color: #52525b;">
+                <strong>Customer:</strong> ${additionalData.customerName}
+              </p>
+            ` : ''}
+            ${additionalData?.amount ? `
+              <p style="margin: 0 0 16px 0; font-size: 14px; color: #52525b;">
+                <strong>Agreed Price:</strong> <span style="color: #16a34a; font-weight: 600;">J$${additionalData.amount.toLocaleString()}</span>
+              </p>
+            ` : ''}
+            <div style="background: #fef3c7; padding: 14px 18px; border-radius: 8px; margin-top: 16px;">
+              <p style="margin: 0; font-size: 14px; color: #92400e;">
+                💰 The customer has already paid upfront. Complete the job to receive your payout!
+              </p>
             </div>
-            <div class="footer">
-              <p>LawnConnect - Connecting Jamaica's Lawn Care Community</p>
-            </div>
-          </div>
-        `
+          `,
+          jobUrl,
+          'View Job Details'
+        )
       };
 
     case 'payment_submitted':
       return {
-        subject: `Payment Submitted for "${jobTitle}"`,
-        html: `
-          ${baseStyles}
-          <div class="container">
-            <div class="header">
-              <h1>💰 Payment Submitted!</h1>
+        subject: `Payment Received for "${jobTitle}"`,
+        html: createBrandedEmail(
+          'linear-gradient(135deg, #3b82f6, #2563eb)',
+          '💰',
+          'Payment Received!',
+          `
+            <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 26px; color: #3f3f46;">
+              Payment has been submitted for your job:
+            </p>
+            <div style="background: #eff6ff; padding: 16px 20px; border-radius: 10px; border-left: 4px solid #2563eb; margin-bottom: 16px;">
+              <p style="margin: 0; font-size: 18px; font-weight: 600; color: #1e40af;">${jobTitle}</p>
             </div>
-            <div class="content">
-              <p>A customer has submitted payment for:</p>
-              <h2>${jobTitle}</h2>
-              ${additionalData?.amount ? `<p><strong>Amount:</strong> J$${additionalData.amount.toFixed(2)}</p>` : ''}
-              <p>Please check your Lynk app to verify the payment and confirm receipt in LawnConnect.</p>
-            </div>
-            <div class="footer">
-              <p>LawnConnect - Connecting Jamaica's Lawn Care Community</p>
-            </div>
-          </div>
-        `
+            ${additionalData?.amount ? `
+              <p style="margin: 0 0 16px 0; font-size: 14px; color: #52525b;">
+                <strong>Amount:</strong> <span style="color: #2563eb; font-weight: 600;">J$${additionalData.amount.toLocaleString()}</span>
+              </p>
+            ` : ''}
+            <p style="margin: 0; font-size: 14px; color: #71717a;">
+              Funds are held securely in escrow until job completion is confirmed.
+            </p>
+          `,
+          jobUrl,
+          'View Job'
+        )
       };
 
     case 'payment_confirmed':
       return {
-        subject: `Payment Confirmed for "${jobTitle}"`,
-        html: `
-          ${baseStyles}
-          <div class="container">
-            <div class="header">
-              <h1>✅ Payment Confirmed!</h1>
+        subject: `Payment Confirmed - Work Can Begin on "${jobTitle}"`,
+        html: createBrandedEmail(
+          'linear-gradient(135deg, #22c55e, #16a34a)',
+          '✅',
+          'Payment Confirmed!',
+          `
+            <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 26px; color: #3f3f46;">
+              Great news! Payment has been confirmed for:
+            </p>
+            <div style="background: #f0fdf4; padding: 16px 20px; border-radius: 10px; border-left: 4px solid #16a34a; margin-bottom: 16px;">
+              <p style="margin: 0; font-size: 18px; font-weight: 600; color: #166534;">${jobTitle}</p>
             </div>
-            <div class="content">
-              <p>Great news! Payment has been confirmed for:</p>
-              <h2>${jobTitle}</h2>
-              <p>The provider will now begin work on your lawn. You'll be notified when they mark the job as complete.</p>
-            </div>
-            <div class="footer">
-              <p>LawnConnect - Connecting Jamaica's Lawn Care Community</p>
-            </div>
-          </div>
-        `
+            <p style="margin: 0; font-size: 14px; color: #71717a;">
+              The provider will now begin work on your lawn. You'll be notified when they mark the job as complete.
+            </p>
+          `,
+          jobUrl,
+          'View Job Status'
+        )
       };
 
     case 'job_completed':
       return {
-        subject: `Job Marked Complete: "${jobTitle}"`,
-        html: `
-          ${baseStyles}
-          <div class="container">
-            <div class="header">
-              <h1>🏁 Job Marked Complete!</h1>
+        subject: `Job Complete - Please Review "${jobTitle}"`,
+        html: createBrandedEmail(
+          'linear-gradient(135deg, #8b5cf6, #7c3aed)',
+          '🏁',
+          'Job Marked Complete!',
+          `
+            <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 26px; color: #3f3f46;">
+              The provider has marked the following job as complete:
+            </p>
+            <div style="background: #f5f3ff; padding: 16px 20px; border-radius: 10px; border-left: 4px solid #7c3aed; margin-bottom: 16px;">
+              <p style="margin: 0; font-size: 18px; font-weight: 600; color: #5b21b6;">${jobTitle}</p>
             </div>
-            <div class="content">
-              <p>The provider has marked the following job as complete:</p>
-              <h2>${jobTitle}</h2>
-              <p>Please review the work and confirm completion in LawnConnect. Don't forget to leave a review!</p>
+            <div style="background: #fef3c7; padding: 14px 18px; border-radius: 8px;">
+              <p style="margin: 0; font-size: 14px; color: #92400e;">
+                ⏰ Please review the before & after photos and confirm completion within 30 hours. Don't forget to leave a rating!
+              </p>
             </div>
-            <div class="footer">
-              <p>LawnConnect - Connecting Jamaica's Lawn Care Community</p>
-            </div>
-          </div>
-        `
+          `,
+          jobUrl,
+          'Review & Confirm'
+        )
       };
 
     case 'review_received':
       return {
-        subject: `You Received a Review!`,
-        html: `
-          ${baseStyles}
-          <div class="container">
-            <div class="header">
-              <h1>⭐ New Review!</h1>
+        subject: `You Received a New Rating!`,
+        html: createBrandedEmail(
+          'linear-gradient(135deg, #f59e0b, #d97706)',
+          '⭐',
+          'New Rating Received!',
+          `
+            <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 26px; color: #3f3f46;">
+              You have received a rating for:
+            </p>
+            <div style="background: #fffbeb; padding: 16px 20px; border-radius: 10px; border-left: 4px solid #d97706; margin-bottom: 16px;">
+              <p style="margin: 0; font-size: 18px; font-weight: 600; color: #92400e;">${jobTitle}</p>
             </div>
-            <div class="content">
-              <p>You have received a review for:</p>
-              <h2>${jobTitle}</h2>
-              ${additionalData?.rating ? `<p><strong>Rating:</strong> ${'⭐'.repeat(additionalData.rating)} (${additionalData.rating}/5)</p>` : ''}
-              <p>Log in to LawnConnect to see the full review.</p>
-            </div>
-            <div class="footer">
-              <p>LawnConnect - Connecting Jamaica's Lawn Care Community</p>
-            </div>
-          </div>
-        `
+            ${additionalData?.rating ? `
+              <p style="margin: 0 0 16px 0; font-size: 24px; text-align: center;">
+                ${'⭐'.repeat(additionalData.rating)}${'☆'.repeat(5 - additionalData.rating)}
+              </p>
+              <p style="margin: 0; font-size: 14px; color: #71717a; text-align: center;">
+                ${additionalData.rating} out of 5 stars
+              </p>
+            ` : ''}
+          `,
+          jobUrl,
+          'View Details'
+        )
       };
 
     case 'late_completion_warning':
       return {
-        subject: `Late Completion Warning: "${jobTitle}"`,
-        html: `
-          ${baseStyles}
-          <div class="container">
-            <div class="header" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
-              <h1>⚠️ Late Completion Warning</h1>
+        subject: `⚠️ Late Completion Warning - "${jobTitle}"`,
+        html: createBrandedEmail(
+          'linear-gradient(135deg, #f59e0b, #d97706)',
+          '⚠️',
+          'Late Completion Warning',
+          `
+            <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 26px; color: #3f3f46;">
+              You have completed the following job after its preferred date:
+            </p>
+            <div style="background: #fffbeb; padding: 16px 20px; border-radius: 10px; border-left: 4px solid #d97706; margin-bottom: 16px;">
+              <p style="margin: 0; font-size: 18px; font-weight: 600; color: #92400e;">${jobTitle}</p>
             </div>
-            <div class="content">
-              <p>You have completed the following job after its preferred date:</p>
-              <h2>${jobTitle}</h2>
-              ${additionalData?.preferredDate ? `<p><strong>Original Due Date:</strong> ${additionalData.preferredDate}</p>` : ''}
-              ${additionalData?.lateJobsThisMonth ? `<p><strong>Late jobs this month:</strong> ${additionalData.lateJobsThisMonth}/3</p>` : ''}
-              <p style="background: #fef3c7; padding: 15px; border-radius: 8px; margin-top: 15px;">
-                <strong>⚠️ Important:</strong> If you accumulate 3 or more late completions in a calendar month, you may lose certain benefits including:
-                <ul style="margin-top: 10px;">
-                  <li>Priority listing in search results</li>
-                  <li>Featured provider badge</li>
-                  <li>Reduced platform fees</li>
-                </ul>
+            ${additionalData?.preferredDate ? `
+              <p style="margin: 0 0 8px 0; font-size: 14px; color: #52525b;">
+                <strong>Original Due Date:</strong> ${additionalData.preferredDate}
               </p>
-              <p style="margin-top: 15px;">Please try to complete jobs by their preferred date to maintain your standing.</p>
+            ` : ''}
+            ${additionalData?.lateJobsThisMonth !== undefined ? `
+              <p style="margin: 0 0 16px 0; font-size: 14px; color: #52525b;">
+                <strong>Late jobs this month:</strong> <span style="color: #dc2626; font-weight: 600;">${additionalData.lateJobsThisMonth}/3</span>
+              </p>
+            ` : ''}
+            <div style="background: #fef2f2; padding: 14px 18px; border-radius: 8px;">
+              <p style="margin: 0 0 8px 0; font-size: 14px; font-weight: 600; color: #991b1b;">
+                ⚠️ Important Notice
+              </p>
+              <p style="margin: 0; font-size: 13px; color: #b91c1c;">
+                Accumulating 3+ late completions in a month will reduce your payout percentage from 70% to 60%.
+              </p>
             </div>
-            <div class="footer">
-              <p>LawnConnect - Connecting Jamaica's Lawn Care Community</p>
-            </div>
-          </div>
-        `
+          `
+        )
       };
 
     case 'late_completion_apology':
       return {
-        subject: `Apology: Your Job "${jobTitle}" Was Completed Late`,
-        html: `
-          ${baseStyles}
-          <div class="container">
-            <div class="header" style="background: linear-gradient(135deg, #6366f1, #4f46e5);">
-              <h1>📝 We Apologize</h1>
+        subject: `We Apologize - Your Job "${jobTitle}" Was Completed Late`,
+        html: createBrandedEmail(
+          'linear-gradient(135deg, #6366f1, #4f46e5)',
+          '📝',
+          'Our Apologies',
+          `
+            <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 26px; color: #3f3f46;">
+              We sincerely apologize that your job was completed after the preferred date:
+            </p>
+            <div style="background: #eef2ff; padding: 16px 20px; border-radius: 10px; border-left: 4px solid #4f46e5; margin-bottom: 16px;">
+              <p style="margin: 0; font-size: 18px; font-weight: 600; color: #3730a3;">${jobTitle}</p>
             </div>
-            <div class="content">
-              <p>We sincerely apologize that your job was completed after the preferred date:</p>
-              <h2>${jobTitle}</h2>
-              ${additionalData?.preferredDate ? `<p><strong>Your Preferred Date:</strong> ${additionalData.preferredDate}</p>` : ''}
-              ${additionalData?.providerName ? `<p><strong>Provider:</strong> ${additionalData.providerName}</p>` : ''}
-              <p style="background: #e0e7ff; padding: 15px; border-radius: 8px; margin-top: 15px;">
-                We understand the inconvenience this may have caused and we're taking steps to ensure our providers meet their commitments on time.
+            ${additionalData?.preferredDate ? `
+              <p style="margin: 0 0 8px 0; font-size: 14px; color: #52525b;">
+                <strong>Your Preferred Date:</strong> ${additionalData.preferredDate}
               </p>
-              <p style="margin-top: 15px;">We value your business and hope you'll continue using LawnConnect. If you have any concerns, please don't hesitate to contact us.</p>
-              <p style="margin-top: 10px;">Thank you for your patience and understanding.</p>
-            </div>
-            <div class="footer">
-              <p>LawnConnect - Connecting Jamaica's Lawn Care Community</p>
-              <p style="margin-top: 5px;">Contact us: support@lawnconnect.jm</p>
-            </div>
-          </div>
-        `
+            ` : ''}
+            ${additionalData?.providerName ? `
+              <p style="margin: 0 0 16px 0; font-size: 14px; color: #52525b;">
+                <strong>Provider:</strong> ${additionalData.providerName}
+              </p>
+            ` : ''}
+            <p style="margin: 0; font-size: 14px; color: #71717a;">
+              We understand the inconvenience this may have caused and we're taking steps to ensure our providers meet their commitments on time. Thank you for your patience.
+            </p>
+          `,
+          jobUrl,
+          'View Job'
+        )
       };
 
     case 'completion_confirmation_needed':
       return {
-        subject: `Please Confirm Job Completion: "${jobTitle}"`,
-        html: `
-          ${baseStyles}
-          <div class="container">
-            <div class="header" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
-              <h1>✅ Action Required</h1>
+        subject: `Action Required - Please Confirm Job Completion: "${jobTitle}"`,
+        html: createBrandedEmail(
+          'linear-gradient(135deg, #f59e0b, #d97706)',
+          '✅',
+          'Action Required',
+          `
+            <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 26px; color: #3f3f46;">
+              Your lawn service provider has marked the following job as complete:
+            </p>
+            <div style="background: #fffbeb; padding: 16px 20px; border-radius: 10px; border-left: 4px solid #d97706; margin-bottom: 16px;">
+              <p style="margin: 0; font-size: 18px; font-weight: 600; color: #92400e;">${jobTitle}</p>
             </div>
-            <div class="content">
-              <p>Your lawn service provider has marked the following job as complete:</p>
-              <h2>${jobTitle}</h2>
-              ${additionalData?.providerName ? `<p><strong>Provider:</strong> ${additionalData.providerName}</p>` : ''}
-              <p style="background: #fef3c7; padding: 15px; border-radius: 8px; margin-top: 15px;">
-                <strong>Please review the before and after photos and either:</strong>
-                <ul style="margin-top: 10px;">
-                  <li><strong>Confirm Completion</strong> - if you're satisfied with the work</li>
-                  <li><strong>Report an Issue</strong> - if there are problems that need addressing</li>
-                </ul>
+            ${additionalData?.providerName ? `
+              <p style="margin: 0 0 16px 0; font-size: 14px; color: #52525b;">
+                <strong>Provider:</strong> ${additionalData.providerName}
               </p>
-              <p style="margin-top: 15px; font-size: 14px; color: #666;">
-                If you don't respond within 30 hours, the job will be automatically marked as complete.
+            ` : ''}
+            <div style="background: #f0fdf4; padding: 14px 18px; border-radius: 8px; margin-bottom: 12px;">
+              <p style="margin: 0; font-size: 14px; color: #166534;">
+                ✅ <strong>Confirm Completion</strong> - if you're satisfied with the work
               </p>
             </div>
-            <div class="footer">
-              <p>LawnConnect - Connecting Jamaica's Lawn Care Community</p>
+            <div style="background: #fef2f2; padding: 14px 18px; border-radius: 8px; margin-bottom: 16px;">
+              <p style="margin: 0; font-size: 14px; color: #991b1b;">
+                ⚠️ <strong>Report an Issue</strong> - if there are problems that need addressing
+              </p>
             </div>
-          </div>
-        `
+            <p style="margin: 0; font-size: 13px; color: #a1a1aa;">
+              ⏰ If you don't respond within 30 hours, the job will be automatically marked as complete.
+            </p>
+          `,
+          jobUrl,
+          'Review & Confirm'
+        )
       };
 
     case 'dispute_opened':
       return {
-        subject: `Dispute Filed: "${jobTitle}"`,
-        html: `
-          ${baseStyles}
-          <div class="container">
-            <div class="header" style="background: linear-gradient(135deg, #ef4444, #dc2626);">
-              <h1>⚠️ Dispute Filed</h1>
+        subject: `⚠️ Dispute Filed for "${jobTitle}"`,
+        html: createBrandedEmail(
+          'linear-gradient(135deg, #ef4444, #dc2626)',
+          '⚠️',
+          'Dispute Filed',
+          `
+            <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 26px; color: #3f3f46;">
+              A customer has filed a dispute for the following job:
+            </p>
+            <div style="background: #fef2f2; padding: 16px 20px; border-radius: 10px; border-left: 4px solid #dc2626; margin-bottom: 16px;">
+              <p style="margin: 0; font-size: 18px; font-weight: 600; color: #991b1b;">${jobTitle}</p>
             </div>
-            <div class="content">
-              <p>A customer has filed a dispute for the following job:</p>
-              <h2>${jobTitle}</h2>
-              ${additionalData?.customerName ? `<p><strong>Customer:</strong> ${additionalData.customerName}</p>` : ''}
-              ${additionalData?.disputeReason ? `<p><strong>Reason:</strong> ${additionalData.disputeReason}</p>` : ''}
-              <p style="background: #fee2e2; padding: 15px; border-radius: 8px; margin-top: 15px;">
-                <strong>What you need to do:</strong>
-                <ul style="margin-top: 10px;">
-                  <li>Review the customer's photos and explanation</li>
-                  <li>Respond with your own photos and notes</li>
-                  <li>Address any issues and re-submit completion</li>
-                </ul>
+            ${additionalData?.customerName ? `
+              <p style="margin: 0 0 8px 0; font-size: 14px; color: #52525b;">
+                <strong>Customer:</strong> ${additionalData.customerName}
               </p>
-              <p style="margin-top: 15px; font-size: 14px; color: #666;">
-                Note: Accumulating 3 or more disputes in a month will reduce your payout percentage from 70% to 60%.
+            ` : ''}
+            ${additionalData?.disputeReason ? `
+              <p style="margin: 0 0 16px 0; font-size: 14px; color: #52525b;">
+                <strong>Reason:</strong> ${additionalData.disputeReason}
               </p>
+            ` : ''}
+            <div style="background: #fef3c7; padding: 14px 18px; border-radius: 8px;">
+              <p style="margin: 0 0 8px 0; font-size: 14px; font-weight: 600; color: #92400e;">
+                What you need to do:
+              </p>
+              <ul style="margin: 0; padding-left: 20px; font-size: 13px; color: #92400e;">
+                <li>Review the customer's photos and explanation</li>
+                <li>Respond with your own photos and notes</li>
+                <li>Address any issues and re-submit completion</li>
+              </ul>
             </div>
-            <div class="footer">
-              <p>LawnConnect - Connecting Jamaica's Lawn Care Community</p>
-            </div>
-          </div>
-        `
+          `,
+          jobUrl,
+          'Respond to Dispute'
+        )
       };
 
     case 'dispute_response':
       return {
-        subject: `Provider Response to Dispute: "${jobTitle}"`,
-        html: `
-          ${baseStyles}
-          <div class="container">
-            <div class="header" style="background: linear-gradient(135deg, #6366f1, #4f46e5);">
-              <h1>💬 Dispute Response</h1>
+        subject: `Provider Responded to Your Dispute - "${jobTitle}"`,
+        html: createBrandedEmail(
+          'linear-gradient(135deg, #6366f1, #4f46e5)',
+          '💬',
+          'Dispute Response',
+          `
+            <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 26px; color: #3f3f46;">
+              The provider has responded to your dispute for:
+            </p>
+            <div style="background: #eef2ff; padding: 16px 20px; border-radius: 10px; border-left: 4px solid #4f46e5; margin-bottom: 16px;">
+              <p style="margin: 0; font-size: 18px; font-weight: 600; color: #3730a3;">${jobTitle}</p>
             </div>
-            <div class="content">
-              <p>The provider has responded to your dispute for:</p>
-              <h2>${jobTitle}</h2>
-              ${additionalData?.providerName ? `<p><strong>Provider:</strong> ${additionalData.providerName}</p>` : ''}
-              <p style="margin-top: 15px;">Please log in to LawnConnect to view their response, photos, and notes. You can then confirm completion or continue the dispute if needed.</p>
-            </div>
-            <div class="footer">
-              <p>LawnConnect - Connecting Jamaica's Lawn Care Community</p>
-            </div>
-          </div>
-        `
+            ${additionalData?.providerName ? `
+              <p style="margin: 0 0 16px 0; font-size: 14px; color: #52525b;">
+                <strong>Provider:</strong> ${additionalData.providerName}
+              </p>
+            ` : ''}
+            <p style="margin: 0; font-size: 14px; color: #71717a;">
+              Please log in to view their response, photos, and notes. You can then confirm completion or continue the dispute if needed.
+            </p>
+          `,
+          jobUrl,
+          'View Response'
+        )
       };
 
     default:
       return {
         subject: `LawnConnect Notification`,
-        html: `<p>You have a new notification from LawnConnect.</p>`
+        html: createBrandedEmail(
+          'linear-gradient(135deg, #22c55e, #16a34a)',
+          '📬',
+          'New Notification',
+          `<p style="margin: 0; font-size: 16px; color: #3f3f46;">You have a new notification from LawnConnect.</p>`,
+          undefined,
+          undefined
+        )
       };
   }
 };
@@ -440,7 +603,7 @@ serve(async (req: Request): Promise<Response> => {
     const recipientEmail = userData.user.email;
     console.log(`Sending email to: ${recipientEmail}`);
 
-    const { subject, html } = getEmailContent(type, jobTitle, additionalData);
+    const { subject, html } = getEmailContent(type, jobTitle, jobId, additionalData);
 
     const emailResponse = await resend.emails.send({
       from: "LawnConnect <onboarding@resend.dev>",
