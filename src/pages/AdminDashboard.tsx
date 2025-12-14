@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { DollarSign, TrendingUp, CreditCard, Users } from "lucide-react";
 import { format, startOfMonth, endOfMonth, subMonths } from "date-fns";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, Legend } from "recharts";
 
 interface MonthlyStats {
   month: string;
@@ -220,6 +221,124 @@ const AdminDashboard = () => {
                   <div className="text-2xl font-bold">{totals.completedJobs}</div>
                   <p className="text-xs text-muted-foreground">Total jobs completed</p>
                 </>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Revenue Chart */}
+        <div className="grid gap-4 md:grid-cols-2 mb-8">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <TrendingUp className="h-5 w-5" />
+                Platform Revenue Trend
+              </CardTitle>
+              <CardDescription>Monthly platform earnings from fees</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <Skeleton className="h-[300px] w-full" />
+              ) : stats.length > 0 ? (
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={[...stats].reverse()}>
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                    <XAxis 
+                      dataKey="month" 
+                      tickFormatter={(value) => value.split(" ")[0].slice(0, 3)}
+                      className="text-xs"
+                    />
+                    <YAxis 
+                      tickFormatter={(value) => `J$${(value / 1000).toFixed(0)}k`}
+                      className="text-xs"
+                    />
+                    <Tooltip 
+                      formatter={(value: number) => [formatCurrency(value), "Revenue"]}
+                      labelFormatter={(label) => label}
+                      contentStyle={{ 
+                        backgroundColor: 'hsl(var(--background))', 
+                        border: '1px solid hsl(var(--border))',
+                        borderRadius: '8px'
+                      }}
+                    />
+                    <Bar dataKey="totalRevenue" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-[300px] flex items-center justify-center text-muted-foreground">
+                  No data available
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <CreditCard className="h-5 w-5" />
+                Jobs & Transactions
+              </CardTitle>
+              <CardDescription>Monthly completed jobs and transaction volume</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <Skeleton className="h-[300px] w-full" />
+              ) : stats.length > 0 ? (
+                <ResponsiveContainer width="100%" height={300}>
+                  <LineChart data={[...stats].reverse()}>
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                    <XAxis 
+                      dataKey="month" 
+                      tickFormatter={(value) => value.split(" ")[0].slice(0, 3)}
+                      className="text-xs"
+                    />
+                    <YAxis 
+                      yAxisId="left"
+                      tickFormatter={(value) => `${value}`}
+                      className="text-xs"
+                    />
+                    <YAxis 
+                      yAxisId="right"
+                      orientation="right"
+                      tickFormatter={(value) => `J$${(value / 1000).toFixed(0)}k`}
+                      className="text-xs"
+                    />
+                    <Tooltip 
+                      formatter={(value: number, name: string) => [
+                        name === "completedJobs" ? value : formatCurrency(value),
+                        name === "completedJobs" ? "Jobs" : "Volume"
+                      ]}
+                      contentStyle={{ 
+                        backgroundColor: 'hsl(var(--background))', 
+                        border: '1px solid hsl(var(--border))',
+                        borderRadius: '8px'
+                      }}
+                    />
+                    <Legend />
+                    <Line 
+                      yAxisId="left"
+                      type="monotone" 
+                      dataKey="completedJobs" 
+                      stroke="hsl(var(--primary))" 
+                      strokeWidth={2}
+                      dot={{ fill: 'hsl(var(--primary))' }}
+                      name="Completed Jobs"
+                    />
+                    <Line 
+                      yAxisId="right"
+                      type="monotone" 
+                      dataKey="totalTransactions" 
+                      stroke="hsl(var(--chart-2))" 
+                      strokeWidth={2}
+                      dot={{ fill: 'hsl(var(--chart-2))' }}
+                      name="Transaction Volume"
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-[300px] flex items-center justify-center text-muted-foreground">
+                  No data available
+                </div>
               )}
             </CardContent>
           </Card>
