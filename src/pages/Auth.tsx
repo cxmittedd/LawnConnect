@@ -433,16 +433,34 @@ function ForgotPasswordDialog({
     }
 
     setLoading(true);
+    
+    // First, generate the reset link using Supabase
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/reset-password`,
     });
-    setLoading(false);
 
     if (error) {
+      setLoading(false);
       toast.error(error.message);
-    } else {
-      setSent(true);
+      return;
     }
+
+    // Send custom branded email via our edge function
+    try {
+      const resetLink = `${window.location.origin}/reset-password`;
+      const { error: emailError } = await supabase.functions.invoke('send-password-reset', {
+        body: { email, resetLink }
+      });
+
+      if (emailError) {
+        console.error('Custom email failed, using default:', emailError);
+      }
+    } catch (emailErr) {
+      console.error('Custom email error:', emailErr);
+    }
+
+    setLoading(false);
+    setSent(true);
   };
 
   return (
