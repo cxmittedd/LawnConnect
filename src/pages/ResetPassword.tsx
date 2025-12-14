@@ -6,7 +6,8 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Scissors, Check, X } from 'lucide-react';
+import { Check, X } from 'lucide-react';
+import lawnConnectLogo from '@/assets/lawnconnect-logo.png';
 
 export default function ResetPassword() {
   const navigate = useNavigate();
@@ -85,9 +86,7 @@ export default function ResetPassword() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-primary/5 p-4">
       <Card className="w-full max-w-md shadow-xl">
         <CardHeader className="text-center space-y-4">
-          <div className="mx-auto h-12 w-12 rounded-lg bg-primary flex items-center justify-center">
-            <Scissors className="h-6 w-6 text-primary-foreground" />
-          </div>
+          <img src={lawnConnectLogo} alt="LawnConnect" className="mx-auto h-40 w-40 object-contain" />
           <div>
             <CardTitle className="text-2xl">Reset Password</CardTitle>
             <CardDescription>Enter your new password below</CardDescription>
