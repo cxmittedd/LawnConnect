@@ -9,6 +9,7 @@ import { useAuth } from '@/lib/auth';
 import { supabase } from '@/integrations/supabase/client';
 import { Shield, Upload, CheckCircle, Clock, XCircle, AlertTriangle, Camera } from 'lucide-react';
 import { toast } from 'sonner';
+import { safeToast } from '@/lib/errorHandler';
 import { CameraCapture } from './CameraCapture';
 
 type DocumentType = 'drivers_license' | 'passport' | 'national_id';
@@ -207,8 +208,8 @@ export function ProviderVerification() {
       setBackFile(null);
       setSelfieFile(null);
       loadVerification();
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to submit documents');
+    } catch (error) {
+      safeToast.error(error);
     } finally {
       setUploading(false);
     }

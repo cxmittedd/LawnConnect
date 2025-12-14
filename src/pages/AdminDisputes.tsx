@@ -13,6 +13,7 @@ import { Shield, AlertTriangle, CheckCircle, Clock, Eye, Image, MessageSquare, U
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/auth';
 import { toast } from 'sonner';
+import { safeToast } from '@/lib/errorHandler';
 import { format } from 'date-fns';
 import { Navigation } from '@/components/Navigation';
 
@@ -159,8 +160,8 @@ export default function AdminDisputes() {
       );
 
       setDisputes(enrichedDisputes);
-    } catch (error: unknown) {
-      toast.error('Failed to load disputes');
+    } catch (error) {
+      safeToast.error(error);
       console.error(error);
     } finally {
       setLoading(false);
@@ -243,8 +244,8 @@ export default function AdminDisputes() {
       setAdminNotes('');
       setResolutionType('favor_customer');
       loadDisputes();
-    } catch (error: unknown) {
-      toast.error('Failed to resolve dispute');
+    } catch (error) {
+      safeToast.error(error);
     } finally {
       setSubmitting(false);
     }
