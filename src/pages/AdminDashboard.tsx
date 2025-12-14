@@ -185,7 +185,7 @@ const AdminDashboard = () => {
               ) : (
                 <>
                   <div className="text-2xl font-bold text-primary">{formatCurrency(totals.totalRevenue)}</div>
-                  <p className="text-xs text-muted-foreground">From 30% platform fee (40% for disputed)</p>
+                  <p className="text-xs text-muted-foreground">All time platform earnings</p>
                 </>
               )}
             </CardContent>
