@@ -96,7 +96,8 @@ export default function TermsOfService() {
               <p>6.1. Minimum job price is J$7,000 (Jamaican Dollars).</p>
               <p>6.2. Customers pay upfront; funds are held until job completion.</p>
               <p>6.3. Service Providers receive 70% of the final price after completion.</p>
-              <p>6.4. Refunds are processed according to our dispute resolution process.</p>
+              <p>6.4. Service Providers who receive 3 or more disputes in a calendar month will have their payout reduced to 60% (40% platform fee) for the remainder of that month.</p>
+              <p>6.5. Refunds are processed according to our dispute resolution process.</p>
             </section>
 
             <section>
