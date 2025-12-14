@@ -5,3 +5,9 @@ verify_jwt = true
 
 [functions.auto-complete-jobs]
 verify_jwt = false
+
+[functions.send-invoice]
+verify_jwt = true
+
+[functions.send-password-reset]
+verify_jwt = false

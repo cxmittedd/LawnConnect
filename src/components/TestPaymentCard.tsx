@@ -7,6 +7,7 @@ import { CreditCard, CheckCircle, Clock, AlertCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { sendNotification } from '@/lib/notifications';
+import { sendInvoice } from '@/lib/invoiceService';
 
 interface TestPaymentCardProps {
   jobId: string;
@@ -18,6 +19,10 @@ interface TestPaymentCardProps {
   paymentStatus: string;
   isCustomer: boolean;
   isProvider: boolean;
+  jobLocation?: string;
+  parish?: string;
+  lawnSize?: string | null;
+  platformFee?: number;
   onPaymentUpdate: () => void;
 }
 
@@ -31,6 +36,10 @@ export function TestPaymentCard({
   paymentStatus,
   isCustomer,
   isProvider,
+  jobLocation,
+  parish,
+  lawnSize,
+  platformFee,
   onPaymentUpdate,
 }: TestPaymentCardProps) {
   const [processing, setProcessing] = useState(false);
@@ -43,13 +52,15 @@ export function TestPaymentCard({
       // Simulate payment processing
       await new Promise(resolve => setTimeout(resolve, 1500));
       
+      const paymentReference = `TEST-${Date.now()}`;
+      
       const { error } = await supabase
         .from('job_requests')
         .update({
           payment_status: 'paid',
           payment_confirmed_at: new Date().toISOString(),
           payment_confirmed_by: user?.id,
-          payment_reference: `TEST-${Date.now()}`,
+          payment_reference: paymentReference,
           status: 'in_progress',
         })
         .eq('id', jobId);
@@ -63,6 +74,32 @@ export function TestPaymentCard({
         jobTitle,
         jobId,
       });
+
+      // Send invoice to customer
+      if (user?.email) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('first_name, last_name')
+          .eq('id', customerId)
+          .single();
+        
+        const customerName = profile 
+          ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 'Customer'
+          : 'Customer';
+
+        sendInvoice({
+          jobId,
+          customerEmail: user.email,
+          customerName,
+          jobTitle,
+          jobLocation: jobLocation || '',
+          parish: parish || '',
+          lawnSize: lawnSize || null,
+          amount,
+          platformFee: platformFee || Math.round(amount * 0.30),
+          paymentReference,
+        });
+      }
 
       toast.success('Test payment successful! Job is now in progress.');
       onPaymentUpdate();
