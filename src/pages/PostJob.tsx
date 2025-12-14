@@ -170,7 +170,7 @@ export default function PostJob() {
     try {
       const basePrice = currentMinOffer;
       const paymentAmount = getPaymentAmount();
-      const platformFee = Math.round(paymentAmount * 0.1);
+      const platformFee = Math.round(paymentAmount * 0.30);
       const providerPayout = paymentAmount - platformFee;
       
       const { data: job, error: jobError } = await supabase

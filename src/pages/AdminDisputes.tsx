@@ -192,7 +192,7 @@ export default function AdminDisputes() {
           })
           .eq('id', selectedDispute.job_id);
       } else if (resolutionType === 'favor_provider') {
-        const payoutPercentage = 0.80;
+        const payoutPercentage = 0.70;
         const providerPayout = (selectedDispute.final_price || 0) * payoutPercentage;
         const platformFee = (selectedDispute.final_price || 0) * (1 - payoutPercentage);
         

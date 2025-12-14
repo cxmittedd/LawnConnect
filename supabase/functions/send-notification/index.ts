@@ -287,7 +287,7 @@ const getEmailContent = (type: string, jobTitle: string, additionalData?: Notifi
                 </ul>
               </p>
               <p style="margin-top: 15px; font-size: 14px; color: #666;">
-                Note: Accumulating 3 or more disputes in a month will reduce your payout percentage from 80% to 70%.
+                Note: Accumulating 3 or more disputes in a month will reduce your payout percentage from 70% to 60%.
               </p>
             </div>
             <div class="footer">

@@ -85,17 +85,17 @@ const AdminDashboard = () => {
         .lte("completed_at", monthEnd.toISOString());
 
       if (jobs && jobs.length > 0) {
-        // Calculate platform revenue (20% normally, 30% from disputed providers)
+        // Calculate platform revenue (30% normally, 40% from disputed providers)
         const totalPlatformFee = jobs.reduce((sum, job) => sum + (Number(job.platform_fee) || 0), 0);
         const totalTransactionVolume = jobs.reduce((sum, job) => sum + (Number(job.final_price) || 0), 0);
         
-        // Calculate revenue from disputed accounts (jobs where platform took 30% instead of 20%)
+        // Calculate revenue from disputed accounts (jobs where platform took 40% instead of 30%)
         const disputedRevenue = jobs
           .filter(job => {
             const finalPrice = Number(job.final_price) || 0;
             const providerPayout = Number(job.provider_payout) || 0;
-            // If payout is 70% of final price, it was a disputed provider
-            return finalPrice > 0 && Math.abs(providerPayout / finalPrice - 0.7) < 0.01;
+            // If payout is 60% of final price, it was a disputed provider
+            return finalPrice > 0 && Math.abs(providerPayout / finalPrice - 0.6) < 0.01;
           })
           .reduce((sum, job) => sum + (Number(job.platform_fee) || 0), 0);
 
@@ -184,7 +184,7 @@ const AdminDashboard = () => {
               ) : (
                 <>
                   <div className="text-2xl font-bold text-primary">{formatCurrency(totals.totalRevenue)}</div>
-                  <p className="text-xs text-muted-foreground">From 20% platform fee (30% for disputed)</p>
+                  <p className="text-xs text-muted-foreground">From 30% platform fee (40% for disputed)</p>
                 </>
               )}
             </CardContent>

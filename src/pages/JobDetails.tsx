@@ -177,9 +177,9 @@ export default function JobDetails() {
     setAcceptingId(proposal.id);
 
     try {
-      // Calculate platform fee (10%) and provider payout (90%)
-      const platformFee = proposal.proposed_price * 0.10;
-      const providerPayout = proposal.proposed_price * 0.90;
+      // Calculate platform fee (30%) and provider payout (70%)
+      const platformFee = proposal.proposed_price * 0.30;
+      const providerPayout = proposal.proposed_price * 0.70;
 
       // Update the job with accepted provider and final price
       const { error: jobError } = await supabase
