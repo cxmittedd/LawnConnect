@@ -334,6 +334,43 @@ serve(async (req: Request): Promise<Response> => {
   }
 
   try {
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Check if this is a service role call (internal/cron job) - allow bypass
+    const authHeader = req.headers.get("authorization");
+    const isServiceRoleCall = authHeader?.includes(supabaseServiceKey);
+
+    let callerId: string | null = null;
+
+    // If not a service role call, validate the user's JWT
+    if (!isServiceRoleCall) {
+      if (!authHeader?.startsWith("Bearer ")) {
+        console.error("Missing or invalid authorization header");
+        return new Response(
+          JSON.stringify({ error: "Unauthorized" }),
+          { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        );
+      }
+
+      const token = authHeader.replace("Bearer ", "");
+      const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+
+      if (authError || !user) {
+        console.error("Failed to authenticate user:", authError);
+        return new Response(
+          JSON.stringify({ error: "Unauthorized" }),
+          { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        );
+      }
+
+      callerId = user.id;
+      console.log(`Authenticated user: ${callerId}`);
+    } else {
+      console.log("Service role call detected - bypassing user auth check");
+    }
+
     // Parse and validate request body with zod
     const body = await req.json();
     const parseResult = notificationSchema.safeParse(body);
@@ -350,10 +387,44 @@ serve(async (req: Request): Promise<Response> => {
 
     console.log(`Processing ${type} notification for recipient ${recipientId}, job: ${jobTitle}`);
 
-    // Get recipient email from profiles
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    // Verify job exists and caller is a participant (unless service role call)
+    if (!isServiceRoleCall && callerId) {
+      const { data: job, error: jobError } = await supabase
+        .from("job_requests")
+        .select("customer_id, accepted_provider_id")
+        .eq("id", jobId)
+        .single();
+
+      if (jobError || !job) {
+        console.error("Job not found:", jobError);
+        return new Response(
+          JSON.stringify({ error: "Job not found" }),
+          { status: 404, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        );
+      }
+
+      // Verify caller is a participant in this job
+      const isCustomer = job.customer_id === callerId;
+      const isProvider = job.accepted_provider_id === callerId;
+
+      if (!isCustomer && !isProvider) {
+        console.error(`User ${callerId} is not a participant in job ${jobId}`);
+        return new Response(
+          JSON.stringify({ error: "Forbidden - you are not a participant in this job" }),
+          { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        );
+      }
+
+      // Verify recipient is the other participant in the job
+      const validRecipient = recipientId === job.customer_id || recipientId === job.accepted_provider_id;
+      if (!validRecipient) {
+        console.error(`Recipient ${recipientId} is not a participant in job ${jobId}`);
+        return new Response(
+          JSON.stringify({ error: "Forbidden - invalid recipient for this job" }),
+          { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        );
+      }
+    }
 
     // Get user email from auth.users via admin API
     const { data: userData, error: userError } = await supabase.auth.admin.getUserById(recipientId);
