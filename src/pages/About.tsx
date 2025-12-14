@@ -17,7 +17,7 @@ export default function About() {
     {
       icon: DollarSign,
       title: 'Secure Transactions',
-      description: 'Customers pay upfront, funds held until completion. 10% platform fee from each transaction.',
+      description: 'Customers pay upfront, funds held until completion. 30% platform fee from each transaction.',
     },
     {
       icon: Shield,
@@ -79,7 +79,7 @@ export default function About() {
               <h2 className="text-2xl font-bold mb-4">Why Choose LawnConnect?</h2>
               <p className="text-muted-foreground leading-relaxed max-w-2xl mx-auto">
                 We provide a safe, transparent platform for both customers and service providers. 
-                With escrow payments, a 10% platform fee, and verified reviews, LawnConnect ensures 
+                With escrow payments, a 30% platform fee, and verified reviews, LawnConnect ensures 
                 quality service and fair compensation. Join Jamaica's growing community of satisfied 
                 homeowners and professional lawn care providers.
               </p>

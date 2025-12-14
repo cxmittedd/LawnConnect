@@ -62,7 +62,7 @@ export default function TermsOfService() {
               <h2 className="text-lg font-semibold">4. Platform Services</h2>
               <p>4.1. LawnConnect is a marketplace connecting Customers with Service Providers.</p>
               <p>4.2. We facilitate connections but are not party to agreements between users.</p>
-              <p>4.3. A 10% platform fee applies to all completed transactions.</p>
+              <p>4.3. A 30% platform fee applies to all completed transactions.</p>
               <p>4.4. Payments are held in escrow until job completion is confirmed.</p>
             </section>
 
@@ -95,7 +95,7 @@ export default function TermsOfService() {
               <h2 className="text-lg font-semibold">6. Payments and Fees</h2>
               <p>6.1. Minimum job price is J$7,000 (Jamaican Dollars).</p>
               <p>6.2. Customers pay upfront; funds are held until job completion.</p>
-              <p>6.3. Service Providers receive 90% of the final price after completion.</p>
+              <p>6.3. Service Providers receive 70% of the final price after completion.</p>
               <p>6.4. Refunds are processed according to our dispute resolution process.</p>
             </section>
 
