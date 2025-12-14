@@ -14,6 +14,7 @@ import { safeToast } from '@/lib/errorHandler';
 import { useNavigate } from 'react-router-dom';
 import { z } from 'zod';
 import { JobPaymentForm } from '@/components/JobPaymentForm';
+import { sendInvoice } from '@/lib/invoiceService';
 
 import lawnSmall from '@/assets/lawn-size-small.jpg';
 import lawnMedium from '@/assets/lawn-size-medium.jpg';
@@ -219,6 +220,32 @@ export default function PostJob() {
             photo_url: fileName,
           });
         }
+      }
+
+      // Send invoice to customer
+      if (job && user?.email) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('first_name, last_name')
+          .eq('id', user.id)
+          .single();
+        
+        const customerName = profile 
+          ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 'Customer'
+          : 'Customer';
+
+        sendInvoice({
+          jobId: job.id,
+          customerEmail: user.email,
+          customerName,
+          jobTitle: formData.title,
+          jobLocation: formData.location,
+          parish: formData.parish,
+          lawnSize: formData.lawn_size || null,
+          amount: paymentAmount,
+          platformFee,
+          paymentReference,
+        });
       }
 
       toast.success('Job posted successfully! Payment received.');

@@ -31,6 +31,7 @@ interface JobDetails {
   base_price: number;
   customer_offer: number | null;
   final_price: number | null;
+  platform_fee: number | null;
   status: string;
   payment_status: string | null;
   payment_reference: string | null;
@@ -424,6 +425,10 @@ export default function JobDetails() {
                 paymentStatus={job.payment_status || 'pending'}
                 isCustomer={isCustomer}
                 isProvider={isProvider}
+                jobLocation={job.location}
+                parish={job.parish}
+                lawnSize={job.lawn_size}
+                platformFee={job.platform_fee || undefined}
                 onPaymentUpdate={loadJobDetails}
               />
             )}
