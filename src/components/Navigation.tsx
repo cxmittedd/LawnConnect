@@ -12,16 +12,25 @@ import {
   Menu,
   X,
   User,
-  MessageSquare,
   Shield,
   Sun,
   Moon,
+  ChevronDown,
+  AlertTriangle,
+  UserCheck,
+  BarChart3,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useUnreadMessages } from '@/hooks/useUnreadMessages';
 import { useTheme } from '@/hooks/useTheme';
 import { Badge } from '@/components/ui/badge';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 export function Navigation() {
   const { user, signOut } = useAuth();
@@ -75,6 +84,12 @@ export function Navigation() {
   const isCustomer = !roleLoading && (userRole === 'customer' || userRole === 'both');
   const isProvider = !roleLoading && (userRole === 'provider' || userRole === 'both');
 
+  const adminItems = [
+    { path: '/admin/dashboard', label: 'Dashboard', icon: BarChart3 },
+    { path: '/admin/disputes', label: 'Disputes', icon: AlertTriangle },
+    { path: '/admin/verifications', label: 'Verifications', icon: UserCheck },
+  ];
+
   const navItems = user
     ? [
         { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, badge: 0 },
@@ -82,7 +97,6 @@ export function Navigation() {
         ...(isProvider ? [{ path: '/browse-jobs', label: 'Browse Jobs', icon: Scissors, badge: 0 }] : []),
         { path: '/my-jobs', label: 'My Jobs', icon: Briefcase, badge: unreadCount },
         { path: '/profile', label: 'Profile', icon: User, badge: 0 },
-        ...(isAdmin ? [{ path: '/admin/disputes', label: 'Admin', icon: Shield, badge: 0 }] : []),
         { path: '/about', label: 'About', icon: Info, badge: 0 },
         { path: '/contact', label: 'Contact', icon: Mail, badge: 0 },
       ]
@@ -90,6 +104,8 @@ export function Navigation() {
         { path: '/about', label: 'About', icon: Info, badge: 0 },
         { path: '/contact', label: 'Contact', icon: Mail, badge: 0 },
       ];
+
+  const isAdminPage = location.pathname.startsWith('/admin');
 
   return (
     <nav className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
@@ -125,6 +141,54 @@ export function Navigation() {
                 </Link>
               );
             })}
+            {isAdmin && (
+              <DropdownMenu>
+                <DropdownMenuTrigger className={`flex items-center gap-1 text-sm font-medium transition-colors hover:text-primary ${isAdminPage ? 'text-primary' : 'text-muted-foreground'}`}>
+                  <Shield className="h-4 w-4" />
+                  Admin
+                  <ChevronDown className="h-3 w-3" />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  {adminItems.map((item) => {
+                    const Icon = item.icon;
+                    return (
+                      <DropdownMenuItem key={item.path} asChild>
+                        <Link to={item.path} className="flex items-center gap-2">
+                          <Icon className="h-4 w-4" />
+                          {item.label}
+                        </Link>
+                      </DropdownMenuItem>
+                    );
+            })}
+            {isAdmin && (
+              <>
+                <div className="px-4 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  Admin
+                </div>
+                {adminItems.map((item) => {
+                  const Icon = item.icon;
+                  const isActive = location.pathname === item.path;
+                  return (
+                    <Link
+                      key={item.path}
+                      to={item.path}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className={`flex items-center gap-3 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                        isActive
+                          ? 'bg-primary/10 text-primary'
+                          : 'text-muted-foreground hover:bg-muted'
+                      }`}
+                    >
+                      <Icon className="h-4 w-4" />
+                      {item.label}
+                    </Link>
+                  );
+                })}
+              </>
+            )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
             <button
               onClick={toggleTheme}
               className="p-2 rounded-md hover:bg-muted transition-colors"
