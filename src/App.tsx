@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider, ProtectedRoute } from "./lib/auth";
 import { ThemeProvider } from "./hooks/useTheme";
 import { CookieConsent } from "./components/CookieConsent";
+import ErrorBoundary from "./components/ErrorBoundary";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import ResetPassword from "./pages/ResetPassword";
@@ -30,119 +31,121 @@ import NotFound from "./pages/NotFound";
 const queryClient = new QueryClient();
 
 const App = () => (
-  <ThemeProvider>
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-        <AuthProvider>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/reset-password" element={<ResetPassword />} />
-            <Route path="/about" element={<About />} />
-            <Route path="/contact" element={<Contact />} />
-            <Route path="/install" element={<Install />} />
-            <Route path="/terms" element={<TermsOfService />} />
-            <Route path="/privacy" element={<PrivacyPolicy />} />
-            <Route
-              path="/dashboard"
-              element={
-                <ProtectedRoute>
-                  <Dashboard />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/post-job"
-              element={
-                <ProtectedRoute>
-                  <PostJob />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/browse-jobs"
-              element={
-                <ProtectedRoute>
-                  <BrowseJobs />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/my-jobs"
-              element={
-                <ProtectedRoute>
-                  <MyJobs />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/job/:id"
-              element={
-                <ProtectedRoute>
-                  <JobDetails />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/profile"
-              element={
-                <ProtectedRoute>
-                  <Profile />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/earnings"
-              element={
-                <ProtectedRoute>
-                  <ProviderEarnings />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/provider/:id"
-              element={
-                <ProtectedRoute>
-                  <ProviderProfile />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin/dashboard"
-              element={
-                <ProtectedRoute>
-                  <AdminDashboard />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin/disputes"
-              element={
-                <ProtectedRoute>
-                  <AdminDisputes />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin/verifications"
-              element={
-                <ProtectedRoute>
-                  <AdminVerifications />
-                </ProtectedRoute>
-              }
-            />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </AuthProvider>
-        <CookieConsent />
-      </BrowserRouter>
-      </TooltipProvider>
-    </QueryClientProvider>
-  </ThemeProvider>
+  <ErrorBoundary>
+    <ThemeProvider>
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+          <AuthProvider>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/auth" element={<Auth />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="/about" element={<About />} />
+              <Route path="/contact" element={<Contact />} />
+              <Route path="/install" element={<Install />} />
+              <Route path="/terms" element={<TermsOfService />} />
+              <Route path="/privacy" element={<PrivacyPolicy />} />
+              <Route
+                path="/dashboard"
+                element={
+                  <ProtectedRoute>
+                    <Dashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/post-job"
+                element={
+                  <ProtectedRoute>
+                    <PostJob />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/browse-jobs"
+                element={
+                  <ProtectedRoute>
+                    <BrowseJobs />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/my-jobs"
+                element={
+                  <ProtectedRoute>
+                    <MyJobs />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/job/:id"
+                element={
+                  <ProtectedRoute>
+                    <JobDetails />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/profile"
+                element={
+                  <ProtectedRoute>
+                    <Profile />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/earnings"
+                element={
+                  <ProtectedRoute>
+                    <ProviderEarnings />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/provider/:id"
+                element={
+                  <ProtectedRoute>
+                    <ProviderProfile />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/dashboard"
+                element={
+                  <ProtectedRoute>
+                    <AdminDashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/disputes"
+                element={
+                  <ProtectedRoute>
+                    <AdminDisputes />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/verifications"
+                element={
+                  <ProtectedRoute>
+                    <AdminVerifications />
+                  </ProtectedRoute>
+                }
+              />
+              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </AuthProvider>
+          <CookieConsent />
+        </BrowserRouter>
+        </TooltipProvider>
+      </QueryClientProvider>
+    </ThemeProvider>
+  </ErrorBoundary>
 );
 
 export default App;
