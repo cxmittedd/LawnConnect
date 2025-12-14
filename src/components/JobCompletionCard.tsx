@@ -422,8 +422,8 @@ export function JobCompletionCard({
       const { data: disputeCount } = await supabase
         .rpc('get_provider_disputes_this_month', { provider_id: providerId });
 
-      // Calculate payout percentage (80% normally, 70% if 3+ disputes)
-      const payoutPercentage = (disputeCount || 0) >= 3 ? 0.70 : 0.80;
+      // Calculate payout percentage (70% normally, 60% if 3+ disputes)
+      const payoutPercentage = (disputeCount || 0) >= 3 ? 0.60 : 0.70;
       const providerPayout = finalPrice ? finalPrice * payoutPercentage : null;
       const platformFee = finalPrice ? finalPrice * (1 - payoutPercentage) : null;
 
