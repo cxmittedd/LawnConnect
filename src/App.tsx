@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider, ProtectedRoute } from "./lib/auth";
 import { ThemeProvider } from "./hooks/useTheme";
+import { CookieConsent } from "./components/CookieConsent";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import ResetPassword from "./pages/ResetPassword";
@@ -34,8 +35,8 @@ const App = () => (
       <TooltipProvider>
         <Toaster />
         <Sonner />
-      <Sonner />
-      <BrowserRouter>
+        <CookieConsent />
+        <BrowserRouter>
         <AuthProvider>
           <Routes>
             <Route path="/" element={<Index />} />
