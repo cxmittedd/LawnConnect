@@ -11,11 +11,12 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Scissors, Check, X } from 'lucide-react';
+import { Check, X } from 'lucide-react';
 import { z } from 'zod';
 import { useMemo } from 'react';
 import { TERMS_VERSION } from './TermsOfService';
 import { PRIVACY_VERSION } from './PrivacyPolicy';
+import lawnConnectLogo from '@/assets/lawnconnect-logo.png';
 
 const signInSchema = z.object({
   email: z.string().trim().email({ message: 'Invalid email address' }),
@@ -221,9 +222,7 @@ export default function Auth() {
     <div className="min-h-screen flex items-center justify-center bg-page-pattern p-4">
       <Card className="w-full max-w-md shadow-xl">
         <CardHeader className="text-center space-y-4">
-          <div className="mx-auto h-12 w-12 rounded-lg bg-primary flex items-center justify-center">
-            <Scissors className="h-6 w-6 text-primary-foreground" />
-          </div>
+          <img src={lawnConnectLogo} alt="LawnConnect" className="mx-auto h-20 w-20 object-contain" />
           <div>
             <CardTitle className="text-2xl">Welcome to LawnConnect</CardTitle>
             <CardDescription>Connect customers with lawn care professionals</CardDescription>
