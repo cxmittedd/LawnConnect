@@ -19,6 +19,7 @@ import {
   AlertTriangle,
   UserCheck,
   BarChart3,
+  Receipt,
 } from 'lucide-react';
 import lawnConnectLogo from '@/assets/lawnconnect-logo.png';
 import { useState, useEffect } from 'react';
@@ -97,6 +98,7 @@ export function Navigation() {
         ...(isCustomer ? [{ path: '/post-job', label: 'Post Job', icon: Plus, badge: 0 }] : []),
         ...(isProvider ? [{ path: '/browse-jobs', label: 'Browse Jobs', icon: Scissors, badge: 0 }] : []),
         { path: '/my-jobs', label: 'My Jobs', icon: Briefcase, badge: unreadCount },
+        ...(isCustomer ? [{ path: '/invoices', label: 'Invoices', icon: Receipt, badge: 0 }] : []),
         { path: '/profile', label: 'Profile', icon: User, badge: 0 },
         { path: '/about', label: 'About', icon: Info, badge: 0 },
         { path: '/contact', label: 'Contact', icon: Mail, badge: 0 },

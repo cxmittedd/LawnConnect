@@ -210,6 +210,15 @@ export default function Auth() {
         console.error('Failed to record consent:', consentError);
         // Don't block signup if consent recording fails
       }
+
+      // Send welcome email (fire-and-forget)
+      supabase.functions.invoke('send-welcome-email', {
+        body: {
+          email: signUpData.email,
+          firstName: signUpData.firstName,
+          userRole: signUpData.userRole,
+        }
+      }).catch(err => console.error('Failed to send welcome email:', err));
     }
 
     setLoading(false);

@@ -140,6 +140,65 @@ export type Database = {
           },
         ]
       }
+      invoices: {
+        Row: {
+          amount: number
+          created_at: string
+          customer_id: string
+          id: string
+          invoice_number: string
+          job_id: string
+          job_location: string
+          job_title: string
+          lawn_size: string | null
+          parish: string
+          payment_date: string
+          payment_reference: string
+          pdf_url: string | null
+          platform_fee: number
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          customer_id: string
+          id?: string
+          invoice_number: string
+          job_id: string
+          job_location: string
+          job_title: string
+          lawn_size?: string | null
+          parish: string
+          payment_date: string
+          payment_reference: string
+          pdf_url?: string | null
+          platform_fee: number
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          customer_id?: string
+          id?: string
+          invoice_number?: string
+          job_id?: string
+          job_location?: string
+          job_title?: string
+          lawn_size?: string | null
+          parish?: string
+          payment_date?: string
+          payment_reference?: string
+          pdf_url?: string | null
+          platform_fee?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoices_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "job_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       job_completion_photos: {
         Row: {
           created_at: string

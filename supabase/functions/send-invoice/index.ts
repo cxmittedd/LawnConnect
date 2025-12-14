@@ -12,6 +12,7 @@ const corsHeaders = {
 
 interface InvoiceRequest {
   jobId: string;
+  customerId: string;
   customerEmail: string;
   customerName: string;
   jobTitle: string;
@@ -46,8 +47,7 @@ const generateInvoiceNumber = (jobId: string, paymentDate: string): string => {
   return `INV-${year}${month}-${shortId}`;
 };
 
-const createInvoiceEmail = (data: InvoiceRequest): string => {
-  const invoiceNumber = generateInvoiceNumber(data.jobId, data.paymentDate);
+const createInvoiceEmail = (data: InvoiceRequest, invoiceNumber: string): string => {
   const logoUrl = `${Deno.env.get("SUPABASE_URL")}/storage/v1/object/public/assets/lawnconnect-logo.png`;
   const appUrl = "https://lawnconnect.jm";
 
@@ -170,8 +170,8 @@ const createInvoiceEmail = (data: InvoiceRequest): string => {
                   <p style="color: #a1a1aa; margin: 0 0 16px 0; font-size: 12px;">
                     Your payment is held securely until the job is completed.
                   </p>
-                  <a href="${appUrl}/my-jobs" style="display: inline-block; background-color: #16a34a; color: #ffffff; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-size: 14px; font-weight: 600;">
-                    View Your Jobs
+                  <a href="${appUrl}/invoices" style="display: inline-block; background-color: #16a34a; color: #ffffff; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-size: 14px; font-weight: 600;">
+                    View All Invoices
                   </a>
                   <p style="color: #a1a1aa; margin: 24px 0 0 0; font-size: 11px;">
                     LawnConnect • Jamaica's Lawn Care Marketplace<br>
@@ -200,7 +200,32 @@ const handler = async (req: Request): Promise<Response> => {
     console.log("Invoice data:", JSON.stringify(invoiceData, null, 2));
 
     const invoiceNumber = generateInvoiceNumber(invoiceData.jobId, invoiceData.paymentDate);
-    const htmlContent = createInvoiceEmail(invoiceData);
+    const htmlContent = createInvoiceEmail(invoiceData, invoiceNumber);
+
+    // Store invoice in database using service role
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    const { error: dbError } = await supabase.from('invoices').insert({
+      invoice_number: invoiceNumber,
+      customer_id: invoiceData.customerId,
+      job_id: invoiceData.jobId,
+      job_title: invoiceData.jobTitle,
+      job_location: invoiceData.jobLocation,
+      parish: invoiceData.parish,
+      lawn_size: invoiceData.lawnSize,
+      amount: invoiceData.amount,
+      platform_fee: invoiceData.platformFee,
+      payment_reference: invoiceData.paymentReference,
+      payment_date: invoiceData.paymentDate,
+    });
+
+    if (dbError) {
+      console.error("Failed to store invoice in database:", dbError);
+    } else {
+      console.log("Invoice stored in database:", invoiceNumber);
+    }
 
     const emailResponse = await resend.emails.send({
       from: "LawnConnect <billing@lawnconnect.jm>",
