@@ -116,7 +116,7 @@ export default function ProviderEarnings() {
               <div>
                 <p className="font-semibold text-destructive">Reduced Payout Rate Active</p>
                 <p className="text-sm text-muted-foreground">
-                  You have {disputeCount} disputes this month. Your payout rate has been reduced to 70% until next month.
+                  You have {disputeCount} disputes this month. Your payout rate has been reduced to 60% until next month.
                 </p>
               </div>
             </CardContent>
@@ -187,7 +187,7 @@ export default function ProviderEarnings() {
             </CardHeader>
             <CardContent>
               <div className={`text-2xl font-bold ${disputeCount >= 3 ? 'text-destructive' : 'text-primary'}`}>
-                {disputeCount >= 3 ? '70%' : '80%'}
+                {disputeCount >= 3 ? '60%' : '70%'}
               </div>
               <p className="text-xs text-muted-foreground mt-1">Of job price</p>
             </CardContent>
