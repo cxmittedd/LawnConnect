@@ -35,7 +35,6 @@ const App = () => (
       <TooltipProvider>
         <Toaster />
         <Sonner />
-        <CookieConsent />
         <BrowserRouter>
         <AuthProvider>
           <Routes>
@@ -139,6 +138,7 @@ const App = () => (
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
+        <CookieConsent />
       </BrowserRouter>
       </TooltipProvider>
     </QueryClientProvider>
