@@ -28,7 +28,6 @@ interface Job {
   preferred_time: string | null;
   additional_requirements: string | null;
   base_price: number;
-  customer_offer: number | null;
   created_at: string;
 }
 
@@ -91,7 +90,7 @@ export default function BrowseJobs() {
 
     try {
       // Calculate platform fee (30%) and provider payout (70%)
-      const jobPrice = selectedJob.customer_offer || selectedJob.base_price;
+      const jobPrice = selectedJob.base_price;
       const platformFee = jobPrice * 0.30;
       const providerPayout = jobPrice * 0.70;
 
@@ -235,7 +234,7 @@ export default function BrowseJobs() {
         ) : (
           <div className="grid gap-6 md:grid-cols-2">
             {jobs.map((job) => (
-              <Card key={job.id} className="hover:shadow-lg transition-shadow">
+              <Card key={job.id} className="bg-card hover:shadow-lg transition-shadow border-border">
                 <CardHeader>
                   <div className="flex justify-between items-start">
                     <div>
@@ -275,12 +274,12 @@ export default function BrowseJobs() {
                     </div>
                   )}
 
-                  <div className="flex items-center justify-between pt-4 border-t">
+                  <div className="flex items-center justify-between pt-4 border-t border-border">
                     <div>
                       <div className="text-xs text-muted-foreground">Your Earnings</div>
                       <div className="text-2xl font-bold text-primary flex items-center gap-1">
                         <DollarSign className="h-5 w-5" />
-                        J${((job.customer_offer || job.base_price) * 0.70).toFixed(2)}
+                        J${(job.base_price * 0.70).toFixed(2)}
                       </div>
                     </div>
                     <Button onClick={() => handleConfirmJob(job)}>
@@ -319,7 +318,7 @@ export default function BrowseJobs() {
                 <div>
                   <span className="font-medium">Your Earnings:</span>{' '}
                   <span className="text-primary font-bold">
-                    J${((selectedJob.customer_offer || selectedJob.base_price) * 0.70).toFixed(2)}
+                    J${(selectedJob.base_price * 0.70).toFixed(2)}
                   </span>
                 </div>
               </div>
