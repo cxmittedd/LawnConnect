@@ -106,17 +106,15 @@ export default function BrowseJobs() {
           provider_payout: providerPayout,
         })
         .eq('id', selectedJob.id)
-        .eq('accepted_provider_id', null) // Only update if not already assigned
+        .is('accepted_provider_id', null) // Only update if not already assigned
         .select('customer_id')
-        .single();
+        .maybeSingle();
 
-      if (jobError) {
-        if (jobError.code === 'PGRST116') {
-          toast.error('This job has already been taken by another provider');
-          loadJobs();
-        } else {
-          throw jobError;
-        }
+      if (jobError) throw jobError;
+
+      if (!jobData?.customer_id) {
+        toast.error('This job has already been taken by another provider');
+        loadJobs();
         return;
       }
 
