@@ -99,6 +99,11 @@ export function sanitizeError(error: unknown): string {
     return 'Too many requests. Please wait a moment and try again.';
   }
 
+  // Common casting/syntax errors
+  if (errorMessage.toLowerCase().includes('invalid input syntax')) {
+    return 'Something went wrong. Please try again.';
+  }
+
   // Generic patterns that indicate technical errors - don't expose details
   const technicalPatterns = [
     'postgres',
@@ -108,6 +113,8 @@ export function sanitizeError(error: unknown): string {
     'violates',
     'duplicate key',
     'syntax error',
+    'invalid input syntax',
+    'uuid',
     'column',
     'table',
     'schema',
