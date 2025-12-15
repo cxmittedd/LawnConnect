@@ -18,6 +18,7 @@ import MyJobs from "./pages/MyJobs";
 import JobDetails from "./pages/JobDetails";
 import Profile from "./pages/Profile";
 import ProviderEarnings from "./pages/ProviderEarnings";
+import ProviderCalendar from "./pages/ProviderCalendar";
 import ProviderProfile from "./pages/ProviderProfile";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminDisputes from "./pages/AdminDisputes";
@@ -103,6 +104,14 @@ const App = () => (
                 element={
                   <ProtectedRoute>
                     <ProviderEarnings />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/calendar"
+                element={
+                  <ProtectedRoute>
+                    <ProviderCalendar />
                   </ProtectedRoute>
                 }
               />
