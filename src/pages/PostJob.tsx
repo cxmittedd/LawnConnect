@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Navigation } from '@/components/Navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,13 +8,16 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/integrations/supabase/client';
-import { Upload, X, ArrowRight } from 'lucide-react';
+import { Upload, X, ArrowRight, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 import { safeToast } from '@/lib/errorHandler';
 import { useNavigate } from 'react-router-dom';
 import { z } from 'zod';
 import { JobPaymentForm } from '@/components/JobPaymentForm';
+import { AutopaySetupDialog } from '@/components/AutopaySetupDialog';
 import { sendInvoice } from '@/lib/invoiceService';
+import { useCustomerPreferences } from '@/hooks/useCustomerPreferences';
+import { addDays, setDate, isBefore, startOfDay } from 'date-fns';
 
 import lawnSmall from '@/assets/lawn-size-small.jpg';
 import lawnMedium from '@/assets/lawn-size-medium.jpg';
@@ -79,11 +82,14 @@ const createJobSchema = (minOffer: number) => z.object({
 export default function PostJob() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { preferences, autopaySettings, savePreferences, saveAutopaySettings, loading: prefsLoading } = useCustomerPreferences();
   const [loading, setLoading] = useState(false);
   const [photos, setPhotos] = useState<File[]>([]);
   const [lawnSizeSelection, setLawnSizeSelection] = useState('');
   const [customLawnSize, setCustomLawnSize] = useState('');
   const [step, setStep] = useState<'details' | 'payment'>('details');
+  const [showAutopayDialog, setShowAutopayDialog] = useState(false);
+  const [pendingCardInfo, setPendingCardInfo] = useState<{ lastFour: string; name: string } | null>(null);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -95,6 +101,22 @@ export default function PostJob() {
     additional_requirements: '',
     customer_offer: '',
   });
+
+  // Load saved preferences when available
+  useEffect(() => {
+    if (preferences && !prefsLoading) {
+      const lawnSizeValue = LAWN_SIZES.find(s => s.label === preferences.lawn_size)?.value || '';
+      setLawnSizeSelection(lawnSizeValue);
+      setFormData(prev => ({
+        ...prev,
+        location: preferences.location || prev.location,
+        parish: preferences.parish || prev.parish,
+        lawn_size: preferences.lawn_size || prev.lawn_size,
+        title: preferences.job_type || prev.title,
+        additional_requirements: preferences.additional_requirements || prev.additional_requirements,
+      }));
+    }
+  }, [preferences, prefsLoading]);
 
   const currentMinOffer = getMinOffer(lawnSizeSelection);
 
@@ -165,7 +187,7 @@ export default function PostJob() {
     setStep('payment');
   };
 
-  const handlePaymentSuccess = async (paymentReference: string) => {
+  const handlePaymentSuccess = async (paymentReference: string, cardInfo: { lastFour: string; name: string }) => {
     setLoading(true);
 
     try {
@@ -221,6 +243,15 @@ export default function PostJob() {
         }
       }
 
+      // Save preferences for next time
+      savePreferences({
+        location: formData.location,
+        parish: formData.parish,
+        lawn_size: formData.lawn_size,
+        job_type: formData.title,
+        additional_requirements: formData.additional_requirements,
+      });
+
       // Send invoice to customer
       if (job && user?.email) {
         const { data: profile } = await supabase
@@ -249,11 +280,55 @@ export default function PostJob() {
       }
 
       toast.success('Job posted successfully! Payment received.');
-      navigate('/my-jobs');
+      
+      // Check if autopay is enabled, if not offer to set it up
+      if (!autopaySettings?.enabled) {
+        setPendingCardInfo(cardInfo);
+        setShowAutopayDialog(true);
+      } else {
+        navigate('/my-jobs');
+      }
     } catch (error) {
       safeToast.error(error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleAutopaySetup = async (settings: {
+    recurring_day: number;
+    location: string;
+    parish: string;
+    lawn_size: string;
+    job_type: string;
+    additional_requirements: string;
+  }) => {
+    if (!pendingCardInfo) return;
+
+    const today = startOfDay(new Date());
+    let targetDate = setDate(today, settings.recurring_day);
+    if (isBefore(targetDate, today) || targetDate.getTime() === today.getTime()) {
+      targetDate = setDate(addDays(targetDate, 32), settings.recurring_day);
+    }
+
+    await saveAutopaySettings({
+      enabled: true,
+      recurring_day: settings.recurring_day,
+      card_last_four: pendingCardInfo.lastFour,
+      card_name: pendingCardInfo.name,
+      next_scheduled_date: targetDate.toISOString().split('T')[0],
+      location: settings.location,
+      parish: settings.parish,
+      lawn_size: settings.lawn_size,
+      job_type: settings.job_type,
+      additional_requirements: settings.additional_requirements,
+    });
+  };
+
+  const handleAutopayDialogClose = (open: boolean) => {
+    setShowAutopayDialog(open);
+    if (!open) {
+      navigate('/my-jobs');
     }
   };
 
@@ -477,6 +552,24 @@ export default function PostJob() {
           )}
         </div>
       </main>
+
+      {/* Autopay Setup Dialog */}
+      {pendingCardInfo && (
+        <AutopaySetupDialog
+          open={showAutopayDialog}
+          onOpenChange={handleAutopayDialogClose}
+          cardLastFour={pendingCardInfo.lastFour}
+          cardName={pendingCardInfo.name}
+          jobDetails={{
+            location: formData.location,
+            parish: formData.parish,
+            lawn_size: lawnSizeSelection,
+            job_type: formData.title,
+            additional_requirements: formData.additional_requirements,
+          }}
+          onConfirm={handleAutopaySetup}
+        />
+      )}
     </>
   );
 }

@@ -9,7 +9,7 @@ import { CreditCard, Lock, CheckCircle } from 'lucide-react';
 interface JobPaymentFormProps {
   amount: number;
   jobTitle: string;
-  onPaymentSuccess: (reference: string) => void;
+  onPaymentSuccess: (reference: string, cardInfo: { lastFour: string; name: string }) => void;
   onCancel: () => void;
   loading?: boolean;
 }
@@ -63,7 +63,10 @@ export function JobPaymentForm({ amount, jobTitle, onPaymentSuccess, onCancel, l
     // Generate a test payment reference
     const reference = `TEST-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
     
-    onPaymentSuccess(reference);
+    // Get last 4 digits of card
+    const lastFour = cardNumber.replace(/\s/g, '').slice(-4);
+    
+    onPaymentSuccess(reference, { lastFour, name: cardName });
     setProcessing(false);
   };
 

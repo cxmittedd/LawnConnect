@@ -44,6 +44,93 @@ export type Database = {
         }
         Relationships: []
       }
+      autopay_settings: {
+        Row: {
+          additional_requirements: string | null
+          card_last_four: string | null
+          card_name: string | null
+          created_at: string
+          customer_id: string
+          enabled: boolean
+          id: string
+          job_type: string | null
+          lawn_size: string | null
+          location: string | null
+          next_scheduled_date: string | null
+          parish: string | null
+          recurring_day: number
+          updated_at: string
+        }
+        Insert: {
+          additional_requirements?: string | null
+          card_last_four?: string | null
+          card_name?: string | null
+          created_at?: string
+          customer_id: string
+          enabled?: boolean
+          id?: string
+          job_type?: string | null
+          lawn_size?: string | null
+          location?: string | null
+          next_scheduled_date?: string | null
+          parish?: string | null
+          recurring_day: number
+          updated_at?: string
+        }
+        Update: {
+          additional_requirements?: string | null
+          card_last_four?: string | null
+          card_name?: string | null
+          created_at?: string
+          customer_id?: string
+          enabled?: boolean
+          id?: string
+          job_type?: string | null
+          lawn_size?: string | null
+          location?: string | null
+          next_scheduled_date?: string | null
+          parish?: string | null
+          recurring_day?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      customer_preferences: {
+        Row: {
+          additional_requirements: string | null
+          created_at: string
+          customer_id: string
+          id: string
+          job_type: string | null
+          lawn_size: string | null
+          location: string | null
+          parish: string | null
+          updated_at: string
+        }
+        Insert: {
+          additional_requirements?: string | null
+          created_at?: string
+          customer_id: string
+          id?: string
+          job_type?: string | null
+          lawn_size?: string | null
+          location?: string | null
+          parish?: string | null
+          updated_at?: string
+        }
+        Update: {
+          additional_requirements?: string | null
+          created_at?: string
+          customer_id?: string
+          id?: string
+          job_type?: string | null
+          lawn_size?: string | null
+          location?: string | null
+          parish?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       dispute_photos: {
         Row: {
           created_at: string
