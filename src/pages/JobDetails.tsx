@@ -5,9 +5,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/integrations/supabase/client';
-import { MapPin, Calendar, DollarSign, Clock, ArrowLeft, User, Star } from 'lucide-react';
+import { MapPin, Calendar, DollarSign, Clock, ArrowLeft, User, Star, XCircle, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import { safeToast } from '@/lib/errorHandler';
 import { format } from 'date-fns';
@@ -57,6 +59,8 @@ export default function JobDetails() {
   const [providerInfo, setProviderInfo] = useState<ProviderInfo | null>(null);
   const [customerName, setCustomerName] = useState<string>('Customer');
   const [loading, setLoading] = useState(true);
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
 
   useEffect(() => {
     if (id) loadJobDetails();
@@ -133,6 +137,34 @@ export default function JobDetails() {
     }
   };
 
+  const handleCancelJob = async () => {
+    if (!job || !user) return;
+
+    setCancelling(true);
+    try {
+      // Update job status to cancelled and payment to refunded
+      const { error } = await supabase
+        .from('job_requests')
+        .update({
+          status: 'cancelled',
+          payment_status: 'refunded',
+        })
+        .eq('id', job.id)
+        .eq('customer_id', user.id)
+        .is('accepted_provider_id', null); // Only allow cancellation if no provider assigned
+
+      if (error) throw error;
+
+      toast.success('Job cancelled successfully. Your payment will be refunded.');
+      setCancelDialogOpen(false);
+      navigate('/my-jobs');
+    } catch (error) {
+      safeToast.error(error);
+    } finally {
+      setCancelling(false);
+    }
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'open':
@@ -157,6 +189,7 @@ export default function JobDetails() {
 
   const isCustomer = job?.customer_id === user?.id;
   const isProvider = job?.accepted_provider_id === user?.id;
+  const canCancelJob = isCustomer && job?.status === 'open' && !job?.accepted_provider_id;
   const showPaymentCard = job?.status === 'accepted' || job?.status === 'in_progress' || job?.status === 'pending_completion' || job?.status === 'completed';
   const showCompletionCard = (job?.status === 'in_progress' || job?.status === 'pending_completion' || job?.status === 'completed') && job?.payment_status === 'paid';
   const showReviewCard = job?.status === 'completed';
@@ -355,6 +388,16 @@ export default function JobDetails() {
                   <p className="text-sm text-muted-foreground mt-1">
                     A provider will confirm this job soon
                   </p>
+                  {canCancelJob && (
+                    <Button
+                      variant="destructive"
+                      className="mt-4"
+                      onClick={() => setCancelDialogOpen(true)}
+                    >
+                      <XCircle className="h-4 w-4 mr-2" />
+                      Cancel Job
+                    </Button>
+                  )}
                 </CardContent>
               </Card>
             ) : providerInfo && (
@@ -405,6 +448,36 @@ export default function JobDetails() {
             )}
           </div>
         </div>
+
+        {/* Cancel Job Dialog */}
+        <Dialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Cancel Job</DialogTitle>
+              <DialogDescription>
+                Are you sure you want to cancel this job?
+              </DialogDescription>
+            </DialogHeader>
+            <Alert>
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription>
+                Since no provider has been assigned yet, you will receive a full refund of{' '}
+                <span className="font-semibold text-primary">
+                  J${(job.customer_offer || job.base_price).toFixed(2)}
+                </span>
+                . This action cannot be undone.
+              </AlertDescription>
+            </Alert>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setCancelDialogOpen(false)}>
+                Keep Job
+              </Button>
+              <Button variant="destructive" onClick={handleCancelJob} disabled={cancelling}>
+                {cancelling ? 'Cancelling...' : 'Cancel Job & Get Refund'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </main>
     </>
   );
