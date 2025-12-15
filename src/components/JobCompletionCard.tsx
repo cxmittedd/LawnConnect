@@ -1330,7 +1330,7 @@ export function JobCompletionCard({
                 <ul className="mt-2 text-sm list-disc list-inside">
                   <li>Priority listing in search results</li>
                   <li>Featured provider badge</li>
-                  <li>Reduced platform fees</li>
+                  <li>Premium account perks</li>
                 </ul>
               </AlertDescription>
             </Alert>

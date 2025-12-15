@@ -23,7 +23,7 @@ const Index = () => {
     {
       icon: Scissors,
       title: 'Post Lawn Jobs',
-      description: 'Customers post their lawn cutting needs with photos and details. Start at J$7,000.',
+      description: 'Customers post their lawn cutting needs with photos and details.',
     },
     {
       icon: Users,
@@ -33,7 +33,7 @@ const Index = () => {
     {
       icon: DollarSign,
       title: 'Secure Payments',
-      description: 'Customers pay upfront, funds held securely until job completion. 10% platform fee.',
+      description: 'Customers pay upfront, funds held securely until job completion.',
     },
     {
       icon: CheckCircle,
@@ -80,7 +80,7 @@ const Index = () => {
           </h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-8">
             Jamaica's premier platform connecting homeowners with professional lawn cutting services. 
-            Post jobs or find work - all starting from J$7,000.
+            Post jobs or find work today.
           </p>
           <Button size="lg" className="text-lg px-8" onClick={() => navigate('/auth')}>
             Join LawnConnect

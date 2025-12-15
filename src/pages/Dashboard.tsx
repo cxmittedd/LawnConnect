@@ -4,10 +4,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/integrations/supabase/client';
-import { Scissors, Briefcase, DollarSign, CheckCircle, ArrowRight, Plus, Calendar, CreditCard, Pause, MapPin, Trash2 } from 'lucide-react';
+import { Scissors, Briefcase, DollarSign, CheckCircle, ArrowRight, Plus, Calendar, CreditCard, Pause, MapPin, Trash2, Edit } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import InstallBanner from '@/components/InstallBanner';
-import { useCustomerPreferences } from '@/hooks/useCustomerPreferences';
+import { useCustomerPreferences, AutopaySettings } from '@/hooks/useCustomerPreferences';
+import { EditAutopayDialog } from '@/components/EditAutopayDialog';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 
@@ -21,8 +22,9 @@ const getDaySuffix = (day: number) => {
 export default function Dashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const { autopaySettings, disableAutopay, deleteAutopay } = useCustomerPreferences();
+  const { autopaySettings, disableAutopay, deleteAutopay, updateAutopaySettings } = useCustomerPreferences();
   const [userRole, setUserRole] = useState<string>('customer');
+  const [editingAutopay, setEditingAutopay] = useState<AutopaySettings | null>(null);
   const [stats, setStats] = useState({
     activeJobs: 0,
     completedJobs: 0,
@@ -241,6 +243,15 @@ export default function Dashboard() {
                           <Button 
                             variant="outline" 
                             size="sm"
+                            className="flex-1"
+                            onClick={() => setEditingAutopay(setting)}
+                          >
+                            <Edit className="h-4 w-4 mr-1" />
+                            Edit
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
                             className="flex-1 text-destructive hover:text-destructive"
                             onClick={async () => {
                               try {
@@ -257,7 +268,7 @@ export default function Dashboard() {
                           <Button 
                             variant="ghost" 
                             size="sm"
-                            className="flex-1 text-destructive hover:text-destructive"
+                            className="text-destructive hover:text-destructive"
                             onClick={async () => {
                               try {
                                 await deleteAutopay(setting.id!);
@@ -267,8 +278,7 @@ export default function Dashboard() {
                               }
                             }}
                           >
-                            <Trash2 className="h-4 w-4 mr-1" />
-                            Delete
+                            <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
                       </div>
@@ -370,6 +380,16 @@ export default function Dashboard() {
         )}
       </main>
       <InstallBanner />
+      
+      {/* Edit Autopay Dialog */}
+      {editingAutopay && (
+        <EditAutopayDialog
+          open={!!editingAutopay}
+          onOpenChange={(open) => !open && setEditingAutopay(null)}
+          settings={editingAutopay}
+          onSave={updateAutopaySettings}
+        />
+      )}
     </div>
   );
 }

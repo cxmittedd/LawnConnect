@@ -7,7 +7,7 @@ export default function About() {
     {
       icon: Scissors,
       title: 'Easy Job Posting',
-      description: 'Customers post lawn cutting jobs with photos, location, and pricing starting from J$7,000.',
+      description: 'Customers post lawn cutting jobs with photos, location, and preferred scheduling.',
     },
     {
       icon: Users,
@@ -17,7 +17,7 @@ export default function About() {
     {
       icon: DollarSign,
       title: 'Secure Transactions',
-      description: 'Customers pay upfront, funds held until completion. 30% platform fee from each transaction.',
+      description: 'Customers pay upfront, funds held securely until job completion is confirmed.',
     },
     {
       icon: Shield,
@@ -44,7 +44,7 @@ export default function About() {
               <p className="text-muted-foreground leading-relaxed">
                 LawnConnect was created to make finding and providing lawn care services simple and secure in Jamaica. 
                 We connect homeowners who need quality lawn maintenance with skilled service providers looking for work. 
-                With transparent pricing starting at J$7,000, secure payments, and a trusted review system, 
+                With secure payments and a trusted review system, 
                 we're building a community where both customers and providers succeed.
               </p>
             </CardContent>
@@ -79,7 +79,7 @@ export default function About() {
               <h2 className="text-2xl font-bold mb-4">Why Choose LawnConnect?</h2>
               <p className="text-muted-foreground leading-relaxed max-w-2xl mx-auto">
                 We provide a safe, transparent platform for both customers and service providers. 
-                With escrow payments, a 30% platform fee, and verified reviews, LawnConnect ensures 
+                With escrow payments and verified reviews, LawnConnect ensures 
                 quality service and fair compensation. Join Jamaica's growing community of satisfied 
                 homeowners and professional lawn care providers.
               </p>
