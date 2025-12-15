@@ -45,7 +45,7 @@ export default function Dashboard() {
             .select('*')
             .eq('customer_id', user.id);
 
-          const activeJobs = jobs?.filter(j => ['open', 'in_negotiation', 'accepted', 'in_progress'].includes(j.status)).length || 0;
+          const activeJobs = jobs?.filter(j => ['open', 'accepted', 'in_progress'].includes(j.status)).length || 0;
           const completedJobs = jobs?.filter(j => j.status === 'completed').length || 0;
 
           setStats(prev => ({ ...prev, activeJobs, completedJobs }));

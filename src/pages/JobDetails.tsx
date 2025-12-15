@@ -256,8 +256,6 @@ export default function JobDetails() {
     switch (status) {
       case 'open':
         return 'bg-info text-info-foreground';
-      case 'in_negotiation':
-        return 'bg-warning text-warning-foreground';
       case 'accepted':
       case 'in_progress':
         return 'bg-primary text-primary-foreground';
@@ -384,30 +382,14 @@ export default function JobDetails() {
                 <div className="pt-4 border-t">
                   <div className="flex items-center gap-8">
                     <div>
-                      <div className="text-sm text-muted-foreground">Base Price</div>
-                      <div className="text-xl font-bold flex items-center gap-1">
+                      <div className="text-sm text-muted-foreground">{isProvider ? 'Your Earnings' : 'Job Price'}</div>
+                      <div className="text-xl font-bold text-primary flex items-center gap-1">
                         <DollarSign className="h-5 w-5" />
-                        J${job.base_price.toFixed(2)}
+                        J${isProvider 
+                          ? ((job.final_price || job.customer_offer || job.base_price) * 0.70).toFixed(2)
+                          : (job.final_price || job.customer_offer || job.base_price).toFixed(2)}
                       </div>
                     </div>
-                    {job.customer_offer && job.customer_offer !== job.base_price && (
-                      <div>
-                        <div className="text-sm text-muted-foreground">Customer Offer</div>
-                        <div className="text-xl font-bold text-primary flex items-center gap-1">
-                          <DollarSign className="h-5 w-5" />
-                          J${job.customer_offer.toFixed(2)}
-                        </div>
-                      </div>
-                    )}
-                    {job.final_price && (
-                      <div>
-                        <div className="text-sm text-muted-foreground">Final Price</div>
-                        <div className="text-xl font-bold text-success flex items-center gap-1">
-                          <DollarSign className="h-5 w-5" />
-                          J${job.final_price.toFixed(2)}
-                        </div>
-                      </div>
-                    )}
                   </div>
                 </div>
               </CardContent>

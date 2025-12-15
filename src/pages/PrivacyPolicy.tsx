@@ -116,11 +116,10 @@ export default function PrivacyPolicy() {
                 <li>Create, manage, and authenticate your account</li>
                 <li>Verify Service Provider identities to ensure marketplace safety</li>
                 <li>Facilitate connections between Customers and Service Providers</li>
-                <li>Process payments, calculate platform fees (30%), and manage escrow transactions</li>
+                <li>Process payments and manage transactions</li>
                 <li>Send transactional notifications (job updates, payment confirmations, dispute alerts)</li>
                 <li>Resolve disputes and provide customer support</li>
                 <li>Enforce our Terms of Service and platform policies</li>
-                <li>Calculate provider payouts and apply dispute-related penalties</li>
                 <li>Improve our platform, services, and user experience</li>
                 <li>Ensure platform security, prevent fraud, and detect abuse</li>
                 <li>Comply with legal and regulatory requirements</li>
@@ -280,7 +279,6 @@ export default function PrivacyPolicy() {
               </p>
               <ul className="list-disc pl-6 space-y-1">
                 <li><strong>Face Detection:</strong> Automated verification that selfie photos contain a face</li>
-                <li><strong>Dispute Penalty Calculation:</strong> Automatic calculation of provider payout adjustments based on dispute count</li>
                 <li><strong>Auto-Completion:</strong> Automatic job completion after 30 hours if customer doesn't respond</li>
               </ul>
               <p className="mt-2">

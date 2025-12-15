@@ -289,13 +289,10 @@ export default function BrowseJobs() {
 
                   <div className="flex items-center justify-between pt-4 border-t">
                     <div>
-                      <div className="text-xs text-muted-foreground">Offered Price</div>
+                      <div className="text-xs text-muted-foreground">Your Earnings</div>
                       <div className="text-2xl font-bold text-primary flex items-center gap-1">
                         <DollarSign className="h-5 w-5" />
-                        J${(job.customer_offer || job.base_price).toFixed(2)}
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        Min: J${job.base_price.toFixed(2)}
+                        J${((job.customer_offer || job.base_price) * 0.70).toFixed(2)}
                       </div>
                     </div>
                     <Button onClick={() => handleOpenProposal(job)}>
@@ -317,7 +314,7 @@ export default function BrowseJobs() {
               </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleSubmitProposal}>
-              <div className="space-y-4 py-4">
+                <div className="space-y-4 py-4">
                 <div className="space-y-2">
                   <Label htmlFor="proposed_price">Your Price (J$)</Label>
                   <Input
@@ -332,7 +329,7 @@ export default function BrowseJobs() {
                     required
                   />
                   <p className="text-xs text-muted-foreground">
-                    Customer offered: J${selectedJob?.customer_offer?.toFixed(2) || selectedJob?.base_price.toFixed(2)}
+                    Your earnings: J${((parseFloat(proposalData.proposed_price) || 0) * 0.70).toFixed(2)}
                   </p>
                 </div>
                 <div className="space-y-2">
