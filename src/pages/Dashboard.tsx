@@ -4,17 +4,24 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/integrations/supabase/client';
-import { Scissors, Briefcase, DollarSign, CheckCircle, ArrowRight, Plus, Calendar, CreditCard, Pause } from 'lucide-react';
+import { Scissors, Briefcase, DollarSign, CheckCircle, ArrowRight, Plus, Calendar, CreditCard, Pause, MapPin, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import InstallBanner from '@/components/InstallBanner';
 import { useCustomerPreferences } from '@/hooks/useCustomerPreferences';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 
+const getDaySuffix = (day: number) => {
+  if (day === 1 || day === 21) return 'st';
+  if (day === 2 || day === 22) return 'nd';
+  if (day === 3 || day === 23) return 'rd';
+  return 'th';
+};
+
 export default function Dashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const { autopaySettings, disableAutopay, refreshAutopay } = useCustomerPreferences();
+  const { autopaySettings, disableAutopay, deleteAutopay } = useCustomerPreferences();
   const [userRole, setUserRole] = useState<string>('customer');
   const [stats, setStats] = useState({
     activeJobs: 0,
@@ -181,58 +188,94 @@ export default function Dashboard() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Calendar className="h-5 w-5 text-primary" />
-                    <CardTitle className="text-lg">Autopay Schedule</CardTitle>
+                    <CardTitle className="text-lg">Autopay Schedules</CardTitle>
                   </div>
-                  {autopaySettings?.enabled && (
+                  {autopaySettings.filter(s => s.enabled).length > 0 && (
                     <span className="text-xs bg-success/10 text-success px-2 py-1 rounded-full font-medium">
-                      Active
+                      {autopaySettings.filter(s => s.enabled).length} Active
                     </span>
                   )}
                 </div>
                 <CardDescription>
-                  {autopaySettings?.enabled 
+                  {autopaySettings.filter(s => s.enabled).length > 0
                     ? 'Your lawn care is scheduled automatically'
                     : 'Set up recurring lawn care jobs'}
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {autopaySettings?.enabled ? (
+                {autopaySettings.filter(s => s.enabled).length > 0 ? (
                   <div className="space-y-4">
-                    <div className="bg-muted/50 rounded-lg p-4 space-y-2 text-sm">
-                      <div className="flex items-center gap-2 text-muted-foreground">
-                        <CreditCard className="h-4 w-4" />
-                        <span>Card ending in {autopaySettings.card_last_four}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Cut day:</span>
-                        <span className="font-medium">{autopaySettings.recurring_day}{autopaySettings.recurring_day === 1 ? 'st' : autopaySettings.recurring_day === 2 ? 'nd' : autopaySettings.recurring_day === 3 ? 'rd' : 'th'} of each month</span>
-                      </div>
-                      {autopaySettings.next_scheduled_date && (
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Next cut:</span>
-                          <span className="font-medium">{format(new Date(autopaySettings.next_scheduled_date), 'MMMM d, yyyy')}</span>
+                    {autopaySettings.filter(s => s.enabled).map((setting) => (
+                      <div key={setting.id} className="border rounded-lg p-4 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <h4 className="font-medium flex items-center gap-2">
+                            <MapPin className="h-4 w-4 text-primary" />
+                            {setting.location_name || setting.parish}
+                          </h4>
+                          <span className="text-xs bg-muted px-2 py-1 rounded">
+                            {setting.frequency === 'bimonthly' ? 'Twice/month' : 'Monthly'}
+                          </span>
                         </div>
-                      )}
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Location:</span>
-                        <span className="font-medium">{autopaySettings.parish}</span>
+                        <div className="bg-muted/50 rounded-lg p-3 space-y-2 text-sm">
+                          <div className="flex items-center gap-2 text-muted-foreground">
+                            <CreditCard className="h-4 w-4" />
+                            <span>Card ending in {setting.card_last_four}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Cut day{setting.frequency === 'bimonthly' ? 's' : ''}:</span>
+                            <span className="font-medium">
+                              {setting.recurring_day}{getDaySuffix(setting.recurring_day)}
+                              {setting.frequency === 'bimonthly' && setting.recurring_day_2 && (
+                                <> & {setting.recurring_day_2}{getDaySuffix(setting.recurring_day_2)}</>
+                              )}
+                            </span>
+                          </div>
+                          {setting.next_scheduled_date && (
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">Next cut:</span>
+                              <span className="font-medium">{format(new Date(setting.next_scheduled_date), 'MMM d, yyyy')}</span>
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex gap-2">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            className="flex-1 text-destructive hover:text-destructive"
+                            onClick={async () => {
+                              try {
+                                await disableAutopay(setting.id!);
+                                toast.success('Autopay disabled');
+                              } catch {
+                                toast.error('Failed to disable autopay');
+                              }
+                            }}
+                          >
+                            <Pause className="h-4 w-4 mr-1" />
+                            Disable
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            className="flex-1 text-destructive hover:text-destructive"
+                            onClick={async () => {
+                              try {
+                                await deleteAutopay(setting.id!);
+                                toast.success('Autopay deleted');
+                              } catch {
+                                toast.error('Failed to delete autopay');
+                              }
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4 mr-1" />
+                            Delete
+                          </Button>
+                        </div>
                       </div>
-                    </div>
-                    <Button 
-                      variant="outline" 
-                      className="w-full text-destructive hover:text-destructive"
-                      onClick={async () => {
-                        try {
-                          await disableAutopay();
-                          toast.success('Autopay has been disabled');
-                          refreshAutopay();
-                        } catch {
-                          toast.error('Failed to disable autopay');
-                        }
-                      }}
-                    >
-                      <Pause className="h-4 w-4 mr-2" />
-                      Disable Autopay
+                    ))}
+                    <Button onClick={() => navigate('/post-job')} variant="outline" className="w-full">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Another Location
                     </Button>
                   </div>
                 ) : (

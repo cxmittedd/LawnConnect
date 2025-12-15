@@ -13,11 +13,15 @@ export interface CustomerPreferences {
 export interface AutopaySettings {
   id?: string;
   enabled: boolean;
+  frequency: 'monthly' | 'bimonthly';
   recurring_day: number;
+  recurring_day_2?: number | null;
   card_last_four: string | null;
   card_name: string | null;
   next_scheduled_date: string | null;
+  next_scheduled_date_2?: string | null;
   location: string | null;
+  location_name: string | null;
   parish: string | null;
   lawn_size: string | null;
   job_type: string | null;
@@ -27,7 +31,7 @@ export interface AutopaySettings {
 export function useCustomerPreferences() {
   const { user } = useAuth();
   const [preferences, setPreferences] = useState<CustomerPreferences | null>(null);
-  const [autopaySettings, setAutopaySettings] = useState<AutopaySettings | null>(null);
+  const [autopaySettings, setAutopaySettings] = useState<AutopaySettings[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -73,24 +77,28 @@ export function useCustomerPreferences() {
         .from('autopay_settings')
         .select('*')
         .eq('customer_id', user.id)
-        .maybeSingle();
+        .order('created_at', { ascending: true });
 
       if (error) throw error;
       
       if (data) {
-        setAutopaySettings({
-          id: data.id,
-          enabled: data.enabled,
-          recurring_day: data.recurring_day,
-          card_last_four: data.card_last_four,
-          card_name: data.card_name,
-          next_scheduled_date: data.next_scheduled_date,
-          location: data.location,
-          parish: data.parish,
-          lawn_size: data.lawn_size,
-          job_type: data.job_type,
-          additional_requirements: data.additional_requirements,
-        });
+        setAutopaySettings(data.map(d => ({
+          id: d.id,
+          enabled: d.enabled,
+          frequency: (d.frequency as 'monthly' | 'bimonthly') || 'monthly',
+          recurring_day: d.recurring_day,
+          recurring_day_2: d.recurring_day_2,
+          card_last_four: d.card_last_four,
+          card_name: d.card_name,
+          next_scheduled_date: d.next_scheduled_date,
+          next_scheduled_date_2: d.next_scheduled_date_2,
+          location: d.location,
+          location_name: d.location_name,
+          parish: d.parish,
+          lawn_size: d.lawn_size,
+          job_type: d.job_type,
+          additional_requirements: d.additional_requirements,
+        })));
       }
     } catch (error) {
       console.error('Error loading autopay settings:', error);
@@ -123,17 +131,28 @@ export function useCustomerPreferences() {
     try {
       const { data, error } = await supabase
         .from('autopay_settings')
-        .upsert({
+        .insert({
           customer_id: user.id,
-          ...settings,
-        }, {
-          onConflict: 'customer_id',
+          enabled: settings.enabled,
+          frequency: settings.frequency,
+          recurring_day: settings.recurring_day,
+          recurring_day_2: settings.recurring_day_2,
+          card_last_four: settings.card_last_four,
+          card_name: settings.card_name,
+          next_scheduled_date: settings.next_scheduled_date,
+          next_scheduled_date_2: settings.next_scheduled_date_2,
+          location: settings.location,
+          location_name: settings.location_name,
+          parish: settings.parish,
+          lawn_size: settings.lawn_size,
+          job_type: settings.job_type,
+          additional_requirements: settings.additional_requirements,
         })
         .select()
         .single();
 
       if (error) throw error;
-      setAutopaySettings({ ...settings, id: data.id });
+      await loadAutopaySettings();
       return data;
     } catch (error) {
       console.error('Error saving autopay settings:', error);
@@ -141,19 +160,38 @@ export function useCustomerPreferences() {
     }
   };
 
-  const disableAutopay = async () => {
-    if (!user || !autopaySettings?.id) return;
+  const disableAutopay = async (id: string) => {
+    if (!user) return;
     
     try {
       const { error } = await supabase
         .from('autopay_settings')
         .update({ enabled: false })
+        .eq('id', id)
         .eq('customer_id', user.id);
 
       if (error) throw error;
-      setAutopaySettings(prev => prev ? { ...prev, enabled: false } : null);
+      await loadAutopaySettings();
     } catch (error) {
       console.error('Error disabling autopay:', error);
+      throw error;
+    }
+  };
+
+  const deleteAutopay = async (id: string) => {
+    if (!user) return;
+    
+    try {
+      const { error } = await supabase
+        .from('autopay_settings')
+        .delete()
+        .eq('id', id)
+        .eq('customer_id', user.id);
+
+      if (error) throw error;
+      await loadAutopaySettings();
+    } catch (error) {
+      console.error('Error deleting autopay:', error);
       throw error;
     }
   };
@@ -165,6 +203,7 @@ export function useCustomerPreferences() {
     savePreferences,
     saveAutopaySettings,
     disableAutopay,
+    deleteAutopay,
     refreshAutopay: loadAutopaySettings,
   };
 }

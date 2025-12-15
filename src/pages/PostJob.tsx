@@ -82,7 +82,7 @@ const createJobSchema = (minOffer: number) => z.object({
 export default function PostJob() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const { preferences, autopaySettings, savePreferences, saveAutopaySettings, loading: prefsLoading } = useCustomerPreferences();
+  const { preferences, savePreferences, saveAutopaySettings, loading: prefsLoading } = useCustomerPreferences();
   const [loading, setLoading] = useState(false);
   const [photos, setPhotos] = useState<File[]>([]);
   const [lawnSizeSelection, setLawnSizeSelection] = useState('');
@@ -281,13 +281,9 @@ export default function PostJob() {
 
       toast.success('Job posted successfully! Payment received.');
       
-      // Check if autopay is enabled, if not offer to set it up
-      if (!autopaySettings?.enabled) {
-        setPendingCardInfo(cardInfo);
-        setShowAutopayDialog(true);
-      } else {
-        navigate('/my-jobs');
-      }
+      // Always offer to set up autopay for this location
+      setPendingCardInfo(cardInfo);
+      setShowAutopayDialog(true);
     } catch (error) {
       safeToast.error(error);
     } finally {
@@ -296,8 +292,11 @@ export default function PostJob() {
   };
 
   const handleAutopaySetup = async (settings: {
+    frequency: 'monthly' | 'bimonthly';
     recurring_day: number;
+    recurring_day_2?: number;
     location: string;
+    location_name: string;
     parish: string;
     lawn_size: string;
     job_type: string;
@@ -311,13 +310,25 @@ export default function PostJob() {
       targetDate = setDate(addDays(targetDate, 32), settings.recurring_day);
     }
 
+    let targetDate2: Date | null = null;
+    if (settings.frequency === 'bimonthly' && settings.recurring_day_2) {
+      targetDate2 = setDate(today, settings.recurring_day_2);
+      if (isBefore(targetDate2, today) || targetDate2.getTime() === today.getTime()) {
+        targetDate2 = setDate(addDays(targetDate2, 32), settings.recurring_day_2);
+      }
+    }
+
     await saveAutopaySettings({
       enabled: true,
+      frequency: settings.frequency,
       recurring_day: settings.recurring_day,
+      recurring_day_2: settings.recurring_day_2 || null,
       card_last_four: pendingCardInfo.lastFour,
       card_name: pendingCardInfo.name,
       next_scheduled_date: targetDate.toISOString().split('T')[0],
+      next_scheduled_date_2: targetDate2 ? targetDate2.toISOString().split('T')[0] : null,
       location: settings.location,
+      location_name: settings.location_name,
       parish: settings.parish,
       lawn_size: settings.lawn_size,
       job_type: settings.job_type,

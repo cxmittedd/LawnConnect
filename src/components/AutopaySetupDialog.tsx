@@ -12,7 +12,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Calendar, CreditCard, Edit, Check, X } from 'lucide-react';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Calendar, CreditCard, Edit, Check, X, MapPin } from 'lucide-react';
 import { toast } from 'sonner';
 import { addDays, format, setDate, isBefore, startOfDay } from 'date-fns';
 
@@ -48,8 +49,11 @@ interface AutopaySetupDialogProps {
     additional_requirements: string;
   };
   onConfirm: (settings: {
+    frequency: 'monthly' | 'bimonthly';
     recurring_day: number;
+    recurring_day_2?: number;
     location: string;
+    location_name: string;
     parish: string;
     lawn_size: string;
     job_type: string;
@@ -65,7 +69,10 @@ export function AutopaySetupDialog({
   jobDetails,
   onConfirm,
 }: AutopaySetupDialogProps) {
+  const [frequency, setFrequency] = useState<'monthly' | 'bimonthly'>('monthly');
   const [recurringDay, setRecurringDay] = useState<number>(15);
+  const [recurringDay2, setRecurringDay2] = useState<number>(28);
+  const [locationName, setLocationName] = useState('');
   const [editMode, setEditMode] = useState(false);
   const [editedDetails, setEditedDetails] = useState(jobDetails);
   const [saving, setSaving] = useState(false);
@@ -78,23 +85,30 @@ export function AutopaySetupDialog({
     const today = startOfDay(new Date());
     let targetDate = setDate(today, day);
     
-    // If the day has passed this month, move to next month
     if (isBefore(targetDate, today) || targetDate.getTime() === today.getTime()) {
       targetDate = setDate(addDays(targetDate, 32), day);
     }
     
-    // Job will be posted 2 days before
     const postDate = addDays(targetDate, -2);
     return { cutDate: targetDate, postDate };
   };
 
   const { cutDate, postDate } = getNextScheduledDate(recurringDay);
+  const { cutDate: cutDate2, postDate: postDate2 } = getNextScheduledDate(recurringDay2);
 
   const handleConfirm = async () => {
+    if (!locationName.trim()) {
+      toast.error('Please enter a name for this location');
+      return;
+    }
+    
     setSaving(true);
     try {
       await onConfirm({
+        frequency,
         recurring_day: recurringDay,
+        recurring_day_2: frequency === 'bimonthly' ? recurringDay2 : undefined,
+        location_name: locationName,
         ...editedDetails,
       });
       toast.success('Autopay has been set up successfully!');
@@ -110,6 +124,13 @@ export function AutopaySetupDialog({
     return LAWN_SIZES.find(s => s.value === value)?.label || value;
   };
 
+  const getDaySuffix = (day: number) => {
+    if (day === 1 || day === 21) return 'st';
+    if (day === 2 || day === 22) return 'nd';
+    if (day === 3 || day === 23) return 'rd';
+    return 'th';
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
@@ -119,11 +140,27 @@ export function AutopaySetupDialog({
             Set Up Autopay
           </DialogTitle>
           <DialogDescription>
-            Automatically post your lawn cutting job on a recurring schedule. Your job will be posted 2 days before your selected cut date.
+            Automatically post your lawn cutting job on a recurring schedule. Jobs are posted 2 days before cut date.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6 py-4">
+          {/* Location Name */}
+          <div className="space-y-2">
+            <Label className="flex items-center gap-2">
+              <MapPin className="h-4 w-4" />
+              Location Name
+            </Label>
+            <Input
+              placeholder="e.g., Home, Office, Mom's House"
+              value={locationName}
+              onChange={(e) => setLocationName(e.target.value)}
+            />
+            <p className="text-xs text-muted-foreground">
+              Give this autopay location a name to identify it
+            </p>
+          </div>
+
           {/* Card Info */}
           <div className="bg-muted/50 rounded-lg p-4">
             <div className="flex items-center gap-3">
@@ -135,29 +172,70 @@ export function AutopaySetupDialog({
             </div>
           </div>
 
+          {/* Frequency Selection */}
+          <div className="space-y-3">
+            <Label>How often do you want your lawn cut?</Label>
+            <RadioGroup value={frequency} onValueChange={(v) => setFrequency(v as 'monthly' | 'bimonthly')}>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="monthly" id="monthly" />
+                <Label htmlFor="monthly" className="font-normal cursor-pointer">Once a month</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="bimonthly" id="bimonthly" />
+                <Label htmlFor="bimonthly" className="font-normal cursor-pointer">Twice a month</Label>
+              </div>
+            </RadioGroup>
+          </div>
+
           {/* Recurring Day Selection */}
-          <div className="space-y-2">
-            <Label>Select your preferred lawn cut day (1-28)</Label>
-            <Select
-              value={recurringDay.toString()}
-              onValueChange={(v) => setRecurringDay(parseInt(v))}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {Array.from({ length: 28 }, (_, i) => i + 1).map((day) => (
-                  <SelectItem key={day} value={day.toString()}>
-                    {day}{day === 1 ? 'st' : day === 2 ? 'nd' : day === 3 ? 'rd' : 'th'} of each month
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <p className="text-xs text-muted-foreground">
-              Next cut: <span className="font-medium">{format(cutDate, 'MMMM d, yyyy')}</span>
-              <br />
-              Job will be posted: <span className="font-medium">{format(postDate, 'MMMM d, yyyy')}</span>
-            </p>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>{frequency === 'bimonthly' ? 'First cut day (1-28)' : 'Cut day (1-28)'}</Label>
+              <Select
+                value={recurringDay.toString()}
+                onValueChange={(v) => setRecurringDay(parseInt(v))}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {Array.from({ length: 28 }, (_, i) => i + 1).map((day) => (
+                    <SelectItem key={day} value={day.toString()}>
+                      {day}{getDaySuffix(day)} of each month
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Next cut: <span className="font-medium">{format(cutDate, 'MMMM d, yyyy')}</span>
+                {' · '}Job posts: <span className="font-medium">{format(postDate, 'MMM d')}</span>
+              </p>
+            </div>
+
+            {frequency === 'bimonthly' && (
+              <div className="space-y-2">
+                <Label>Second cut day (1-28)</Label>
+                <Select
+                  value={recurringDay2.toString()}
+                  onValueChange={(v) => setRecurringDay2(parseInt(v))}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Array.from({ length: 28 }, (_, i) => i + 1).map((day) => (
+                      <SelectItem key={day} value={day.toString()}>
+                        {day}{getDaySuffix(day)} of each month
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Next cut: <span className="font-medium">{format(cutDate2, 'MMMM d, yyyy')}</span>
+                  {' · '}Job posts: <span className="font-medium">{format(postDate2, 'MMM d')}</span>
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Job Details Preview/Edit */}
@@ -291,7 +369,7 @@ export function AutopaySetupDialog({
             <X className="h-4 w-4 mr-1" />
             Cancel
           </Button>
-          <Button onClick={handleConfirm} disabled={saving || !editedDetails.location || !editedDetails.parish}>
+          <Button onClick={handleConfirm} disabled={saving || !editedDetails.location || !editedDetails.parish || !locationName.trim()}>
             <Check className="h-4 w-4 mr-1" />
             {saving ? 'Setting up...' : 'Confirm Autopay'}
           </Button>
