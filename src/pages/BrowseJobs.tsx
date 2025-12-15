@@ -5,9 +5,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/integrations/supabase/client';
@@ -15,21 +12,17 @@ import { MapPin, Calendar, DollarSign, Scissors, Shield, Clock, AlertTriangle } 
 import { toast } from 'sonner';
 import { safeToast } from '@/lib/errorHandler';
 import { format } from 'date-fns';
-import { z } from 'zod';
 import { useProviderVerification } from '@/hooks/useProviderVerification';
 import { useProviderProfileCompletion } from '@/hooks/useProviderProfileCompletion';
 import { ProfileCompletionDialog } from '@/components/ProfileCompletionDialog';
-
-const proposalSchema = z.object({
-  proposed_price: z.number().min(7000, 'Minimum price is J$7000'),
-  message: z.string().trim().max(500).optional(),
-});
+import { sendNotification } from '@/lib/notifications';
 
 interface Job {
   id: string;
   title: string;
   description: string | null;
   parish: string;
+  location: string;
   lawn_size: string | null;
   preferred_date: string | null;
   preferred_time: string | null;
@@ -46,13 +39,9 @@ export default function BrowseJobs() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
-  const [proposalOpen, setProposalOpen] = useState(false);
+  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
   const [profileDialogOpen, setProfileDialogOpen] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [proposalData, setProposalData] = useState({
-    proposed_price: '',
-    message: '',
-  });
+  const [confirming, setConfirming] = useState(false);
 
   useEffect(() => {
     if (!verificationLoading && isVerified) {
@@ -64,7 +53,6 @@ export default function BrowseJobs() {
 
   const loadJobs = async () => {
     try {
-      // Use secure function that doesn't expose customer_id
       const { data, error } = await supabase.rpc('get_provider_job_listings');
 
       if (error) throw error;
@@ -76,8 +64,8 @@ export default function BrowseJobs() {
     }
   };
 
-  const handleOpenProposal = (job: Job) => {
-    // Check if profile is complete before allowing proposal
+  const handleConfirmJob = (job: Job) => {
+    // Check if profile is complete before allowing confirmation
     if (!isComplete) {
       setSelectedJob(job);
       setProfileDialogOpen(true);
@@ -85,78 +73,80 @@ export default function BrowseJobs() {
     }
 
     setSelectedJob(job);
-    setProposalData({
-      proposed_price: job.customer_offer?.toString() || job.base_price.toString(),
-      message: '',
-    });
-    setProposalOpen(true);
+    setConfirmDialogOpen(true);
   };
 
   const handleProfileComplete = () => {
     refetchProfile();
-    // After profile is complete, open the proposal dialog
+    // After profile is complete, open the confirm dialog
     if (selectedJob) {
-      setProposalData({
-        proposed_price: selectedJob.customer_offer?.toString() || selectedJob.base_price.toString(),
-        message: '',
-      });
-      setProposalOpen(true);
+      setConfirmDialogOpen(true);
     }
   };
 
-  const handleSubmitProposal = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleAcceptJob = async () => {
+    if (!selectedJob || !user) return;
 
-    const result = proposalSchema.safeParse({
-      proposed_price: parseFloat(proposalData.proposed_price),
-      message: proposalData.message,
-    });
-
-    if (!result.success) {
-      toast.error(result.error.errors[0].message);
-      return;
-    }
-
-    setSubmitting(true);
+    setConfirming(true);
 
     try {
-      // Check if provider already has 5 pending proposals
-      const { count, error: countError } = await supabase
-        .from('job_proposals')
-        .select('*', { count: 'exact', head: true })
-        .eq('provider_id', user!.id)
-        .eq('status', 'pending');
+      // Calculate platform fee (30%) and provider payout (70%)
+      const jobPrice = selectedJob.customer_offer || selectedJob.base_price;
+      const platformFee = jobPrice * 0.30;
+      const providerPayout = jobPrice * 0.70;
 
-      if (countError) throw countError;
+      // Update the job with accepted provider
+      const { data: jobData, error: jobError } = await supabase
+        .from('job_requests')
+        .update({
+          status: 'accepted',
+          accepted_provider_id: user.id,
+          final_price: jobPrice,
+          platform_fee: platformFee,
+          provider_payout: providerPayout,
+        })
+        .eq('id', selectedJob.id)
+        .eq('accepted_provider_id', null) // Only update if not already assigned
+        .select('customer_id')
+        .single();
 
-      if (count !== null && count >= 5) {
-        toast.error('You can only have 5 active proposals at a time. Wait for a response or withdraw existing proposals.');
-        setSubmitting(false);
+      if (jobError) {
+        if (jobError.code === 'PGRST116') {
+          toast.error('This job has already been taken by another provider');
+          loadJobs();
+        } else {
+          throw jobError;
+        }
         return;
       }
 
-      const { error } = await supabase.from('job_proposals').insert({
-        job_id: selectedJob!.id,
-        provider_id: user!.id,
-        proposed_price: parseFloat(proposalData.proposed_price),
-        message: proposalData.message || null,
-      });
+      // Send notification to customer
+      if (jobData?.customer_id) {
+        const { data: providerProfile } = await supabase
+          .from('profiles')
+          .select('full_name')
+          .eq('id', user.id)
+          .single();
 
-      if (error) {
-        if (error.message.includes('unique')) {
-          toast.error('You have already submitted a proposal for this job');
-        } else {
-          throw error;
-        }
-      } else {
-        toast.success('Proposal submitted successfully!');
-        setProposalOpen(false);
-        loadJobs();
+        sendNotification({
+          type: 'job_confirmed',
+          recipientId: jobData.customer_id,
+          jobTitle: selectedJob.title,
+          jobId: selectedJob.id,
+          additionalData: {
+            providerName: providerProfile?.full_name || 'A provider',
+          },
+        });
       }
+
+      toast.success('Job confirmed! You can now start working on this job.');
+      setConfirmDialogOpen(false);
+      setSelectedJob(null);
+      loadJobs();
     } catch (error) {
       safeToast.error(error);
     } finally {
-      setSubmitting(false);
+      setConfirming(false);
     }
   };
 
@@ -254,7 +244,7 @@ export default function BrowseJobs() {
                       <CardTitle className="text-lg">{job.title}</CardTitle>
                       <CardDescription className="flex items-center gap-2 mt-1">
                         <MapPin className="h-3 w-3" />
-                        {job.parish}
+                        {job.location}, {job.parish}
                       </CardDescription>
                     </div>
                     <Badge variant="default">Open</Badge>
@@ -295,8 +285,8 @@ export default function BrowseJobs() {
                         J${((job.customer_offer || job.base_price) * 0.70).toFixed(2)}
                       </div>
                     </div>
-                    <Button onClick={() => handleOpenProposal(job)}>
-                      Submit Proposal
+                    <Button onClick={() => handleConfirmJob(job)}>
+                      Confirm Job
                     </Button>
                   </div>
                 </CardContent>
@@ -305,67 +295,59 @@ export default function BrowseJobs() {
           </div>
         )}
 
-        <Dialog open={proposalOpen} onOpenChange={setProposalOpen}>
+        {/* Confirmation Dialog */}
+        <Dialog open={confirmDialogOpen} onOpenChange={setConfirmDialogOpen}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Submit Proposal</DialogTitle>
+              <DialogTitle>Confirm Job</DialogTitle>
               <DialogDescription>
-                Propose your price for this job (minimum J$7,000)
+                Are you sure you want to take this job? Once confirmed, you will be assigned to complete it.
               </DialogDescription>
             </DialogHeader>
-            <form onSubmit={handleSubmitProposal}>
-                <div className="space-y-4 py-4">
-                <div className="space-y-2">
-                  <Label htmlFor="proposed_price">Your Price (J$)</Label>
-                  <Input
-                    id="proposed_price"
-                    type="number"
-                    min="7000"
-                    step="100"
-                    value={proposalData.proposed_price}
-                    onChange={(e) =>
-                      setProposalData({ ...proposalData, proposed_price: e.target.value })
-                    }
-                    required
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Your earnings: J${((parseFloat(proposalData.proposed_price) || 0) * 0.70).toFixed(2)}
-                  </p>
+            {selectedJob && (
+              <div className="py-4 space-y-3">
+                <div>
+                  <span className="font-medium">Job:</span> {selectedJob.title}
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="message">Message (Optional)</Label>
-                  <Textarea
-                    id="message"
-                    placeholder="Introduce yourself and explain your experience..."
-                    value={proposalData.message}
-                    onChange={(e) => setProposalData({ ...proposalData, message: e.target.value })}
-                    rows={4}
-                  />
+                <div>
+                  <span className="font-medium">Location:</span> {selectedJob.location}, {selectedJob.parish}
+                </div>
+                {selectedJob.preferred_date && (
+                  <div>
+                    <span className="font-medium">Preferred Date:</span>{' '}
+                    {format(new Date(selectedJob.preferred_date), 'MMMM dd, yyyy')}
+                  </div>
+                )}
+                <div>
+                  <span className="font-medium">Your Earnings:</span>{' '}
+                  <span className="text-primary font-bold">
+                    J${((selectedJob.customer_offer || selectedJob.base_price) * 0.70).toFixed(2)}
+                  </span>
                 </div>
               </div>
-              <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => setProposalOpen(false)}>
-                  Cancel
-                </Button>
-                <Button type="submit" disabled={submitting}>
-                  {submitting ? 'Submitting...' : 'Submit Proposal'}
-                </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+            )}
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setConfirmDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleAcceptJob} disabled={confirming}>
+                {confirming ? 'Confirming...' : 'Confirm & Accept Job'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
-    {/* Profile Completion Dialog */}
-    <ProfileCompletionDialog
-      open={profileDialogOpen}
-      onOpenChange={setProfileDialogOpen}
-      hasAvatar={hasAvatar}
-      hasBio={hasBio}
-      currentAvatarUrl={avatarUrl}
-      currentBio={bio}
-      onComplete={handleProfileComplete}
-    />
-  </main>
-</>
-);
+        {/* Profile Completion Dialog */}
+        <ProfileCompletionDialog
+          open={profileDialogOpen}
+          onOpenChange={setProfileDialogOpen}
+          hasAvatar={hasAvatar}
+          hasBio={hasBio}
+          currentAvatarUrl={avatarUrl}
+          currentBio={bio}
+          onComplete={handleProfileComplete}
+        />
+      </main>
+    </>
+  );
 }

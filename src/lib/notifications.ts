@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 type NotificationType = 
   | 'proposal_received'
   | 'proposal_accepted'
+  | 'job_confirmed'
   | 'payment_submitted'
   | 'payment_confirmed'
   | 'job_completed'
