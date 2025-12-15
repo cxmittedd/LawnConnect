@@ -120,7 +120,7 @@ export default function MyJobs() {
               .from('job_requests')
               .select('*')
               .in('id', jobIds)
-              .in('status', ['open', 'in_negotiation']);
+              .eq('status', 'open');
 
             if (jobs) {
               const jobMap = new Map(jobs.map(j => [j.id, j]));
@@ -149,8 +149,6 @@ export default function MyJobs() {
     switch (status) {
       case 'open':
         return 'bg-info text-info-foreground';
-      case 'in_negotiation':
-        return 'bg-warning text-warning-foreground';
       case 'accepted':
       case 'in_progress':
         return 'bg-primary text-primary-foreground';

@@ -5,7 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/integrations/supabase/client';
-import { DollarSign, CheckCircle, TrendingUp, Calendar, AlertTriangle, Percent } from 'lucide-react';
+import { DollarSign, CheckCircle, TrendingUp, Calendar } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface CompletedJob {
@@ -23,7 +23,6 @@ export default function ProviderEarnings() {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [completedJobs, setCompletedJobs] = useState<CompletedJob[]>([]);
-  const [disputeCount, setDisputeCount] = useState(0);
   const [stats, setStats] = useState({
     totalEarnings: 0,
     thisMonthEarnings: 0,
@@ -41,33 +40,26 @@ export default function ProviderEarnings() {
     if (!user) return;
 
     try {
-      // Fetch completed jobs and dispute count in parallel
-      const [jobsResult, disputesResult] = await Promise.all([
-        supabase
-          .from('job_requests')
-          .select('*')
-          .eq('accepted_provider_id', user.id)
-          .eq('status', 'completed')
-          .order('completed_at', { ascending: false }),
-        supabase.rpc('get_provider_disputes_this_month', { provider_id: user.id })
-      ]);
+      const { data: jobsData, error: jobsError } = await supabase
+        .from('job_requests')
+        .select('*')
+        .eq('accepted_provider_id', user.id)
+        .eq('status', 'completed')
+        .order('completed_at', { ascending: false });
 
-      if (jobsResult.error) throw jobsResult.error;
+      if (jobsError) throw jobsError;
 
-      // Set dispute count
-      setDisputeCount(disputesResult.data || 0);
+      if (jobsData) {
+        setCompletedJobs(jobsData as CompletedJob[]);
 
-      if (jobsResult.data) {
-        setCompletedJobs(jobsResult.data as CompletedJob[]);
-
-        const totalEarnings = jobsResult.data.reduce((sum, job) => sum + Number(job.provider_payout || 0), 0);
-        const completedJobsCount = jobsResult.data.length;
+        const totalEarnings = jobsData.reduce((sum, job) => sum + Number(job.provider_payout || 0), 0);
+        const completedJobsCount = jobsData.length;
         const averagePerJob = completedJobsCount > 0 ? totalEarnings / completedJobsCount : 0;
 
         // Calculate this month's earnings
         const now = new Date();
         const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-        const thisMonthEarnings = jobsResult.data
+        const thisMonthEarnings = jobsData
           .filter(job => job.completed_at && new Date(job.completed_at) >= firstDayOfMonth)
           .reduce((sum, job) => sum + Number(job.provider_payout || 0), 0);
 
@@ -108,23 +100,8 @@ export default function ProviderEarnings() {
           <p className="text-muted-foreground">Track your earnings and payment history</p>
         </div>
 
-        {/* Dispute Standing Alert */}
-        {disputeCount >= 3 && (
-          <Card className="mb-6 border-destructive bg-destructive/10">
-            <CardContent className="flex items-center gap-4 py-4">
-              <AlertTriangle className="h-8 w-8 text-destructive" />
-              <div>
-                <p className="font-semibold text-destructive">Reduced Payout Rate Active</p>
-                <p className="text-sm text-muted-foreground">
-                  You have {disputeCount} disputes this month. Your payout rate has been reduced to 60% until next month.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
         {/* Stats Cards */}
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-6 mb-8">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-8">
           <Card className="hover:shadow-lg transition-shadow">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Earnings</CardTitle>
@@ -168,37 +145,13 @@ export default function ProviderEarnings() {
               <p className="text-xs text-muted-foreground mt-1">Per completed job</p>
             </CardContent>
           </Card>
-
-          <Card className={`hover:shadow-lg transition-shadow ${disputeCount >= 3 ? 'border-destructive' : ''}`}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Disputes This Month</CardTitle>
-              <AlertTriangle className={`h-5 w-5 ${disputeCount >= 3 ? 'text-destructive' : 'text-muted-foreground'}`} />
-            </CardHeader>
-            <CardContent>
-              <div className={`text-2xl font-bold ${disputeCount >= 3 ? 'text-destructive' : ''}`}>{disputeCount}/3</div>
-              <p className="text-xs text-muted-foreground mt-1">3+ reduces payout</p>
-            </CardContent>
-          </Card>
-
-          <Card className="hover:shadow-lg transition-shadow">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Current Payout Rate</CardTitle>
-              <Percent className="h-5 w-5 text-primary" />
-            </CardHeader>
-            <CardContent>
-              <div className={`text-2xl font-bold ${disputeCount >= 3 ? 'text-destructive' : 'text-primary'}`}>
-                {disputeCount >= 3 ? '60%' : '70%'}
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">Of job price</p>
-            </CardContent>
-          </Card>
         </div>
 
         {/* Payment History Table */}
         <Card>
           <CardHeader>
             <CardTitle>Payment History</CardTitle>
-            <CardDescription>Your completed jobs and earnings breakdown</CardDescription>
+            <CardDescription>Your completed jobs and earnings</CardDescription>
           </CardHeader>
           <CardContent>
             {completedJobs.length === 0 ? (
@@ -214,9 +167,7 @@ export default function ProviderEarnings() {
                     <TableHead>Job</TableHead>
                     <TableHead>Location</TableHead>
                     <TableHead>Completed</TableHead>
-                    <TableHead className="text-right">Job Price</TableHead>
-                    <TableHead className="text-right">Platform Fee</TableHead>
-                    <TableHead className="text-right">Your Payout</TableHead>
+                    <TableHead className="text-right">Your Earnings</TableHead>
                     <TableHead>Status</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -227,12 +178,6 @@ export default function ProviderEarnings() {
                       <TableCell className="text-muted-foreground">{job.location}</TableCell>
                       <TableCell>
                         {job.completed_at ? format(new Date(job.completed_at), 'MMM d, yyyy') : '-'}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        J${Number(job.final_price || 0).toLocaleString('en-JM', { minimumFractionDigits: 2 })}
-                      </TableCell>
-                      <TableCell className="text-right text-muted-foreground">
-                        J${Number(job.platform_fee || 0).toLocaleString('en-JM', { minimumFractionDigits: 2 })}
                       </TableCell>
                       <TableCell className="text-right font-semibold text-primary">
                         J${Number(job.provider_payout || 0).toLocaleString('en-JM', { minimumFractionDigits: 2 })}

@@ -130,8 +130,7 @@ export default function PostJob() {
   };
 
   const getPaymentAmount = () => {
-    const offer = formData.customer_offer ? parseFloat(formData.customer_offer) : 0;
-    return Math.max(offer, currentMinOffer);
+    return currentMinOffer;
   };
 
   const handleProceedToPayment = (e: React.FormEvent) => {
@@ -140,7 +139,7 @@ export default function PostJob() {
     const jobSchema = createJobSchema(currentMinOffer);
     const result = jobSchema.safeParse({
       ...formData,
-      customer_offer: formData.customer_offer ? parseFloat(formData.customer_offer) : currentMinOffer,
+      customer_offer: currentMinOffer,
     });
 
     if (!result.success) {
@@ -366,19 +365,6 @@ export default function PostJob() {
                         className="mt-2"
                       />
                     )}
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="customer_offer">Your Offer (J$)</Label>
-                    <Input
-                      id="customer_offer"
-                      type="number"
-                      min={currentMinOffer}
-                      step="100"
-                      placeholder={currentMinOffer.toString()}
-                      value={formData.customer_offer}
-                      onChange={(e) => setFormData({ ...formData, customer_offer: e.target.value })}
-                    />
-                    <p className="text-xs text-muted-foreground">Minimum: J${currentMinOffer.toLocaleString()}</p>
                   </div>
                 </div>
 
