@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { jsPDF } from "https://esm.sh/jspdf@2.5.1";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -7,20 +8,23 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-interface InvoicePdfRequest {
-  invoiceId: string;
-  invoiceNumber: string;
-  jobTitle: string;
-  jobLocation: string;
-  parish: string;
-  lawnSize: string | null;
-  amount: number;
-  platformFee: number;
-  paymentReference: string;
-  paymentDate: string;
-  customerName?: string;
-  customerEmail?: string;
-}
+// Input validation schema
+const InvoicePdfSchema = z.object({
+  invoiceId: z.string().uuid(),
+  invoiceNumber: z.string().min(1).max(100),
+  jobTitle: z.string().min(1).max(200),
+  jobLocation: z.string().min(1).max(500),
+  parish: z.string().min(1).max(100),
+  lawnSize: z.string().max(100).nullable(),
+  amount: z.number().positive().max(10000000),
+  platformFee: z.number().nonnegative().max(10000000),
+  paymentReference: z.string().min(1).max(100),
+  paymentDate: z.string(),
+  customerName: z.string().max(200).optional(),
+  customerEmail: z.string().email().max(255).optional(),
+});
+
+type InvoicePdfRequest = z.infer<typeof InvoicePdfSchema>;
 
 const formatCurrency = (amount: number): string => {
   return `J$${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -40,7 +44,22 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const data: InvoicePdfRequest = await req.json();
+    const rawData = await req.json();
+    
+    // Validate input with Zod schema
+    const parseResult = InvoicePdfSchema.safeParse(rawData);
+    if (!parseResult.success) {
+      console.error("Invalid input data:", parseResult.error.errors);
+      return new Response(
+        JSON.stringify({ error: "Invalid input data" }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
+    
+    const data: InvoicePdfRequest = parseResult.data;
     
     console.log("Generating PDF for invoice:", data.invoiceNumber);
 
@@ -210,7 +229,7 @@ const handler = async (req: Request): Promise<Response> => {
   } catch (error: any) {
     console.error("Error generating PDF:", error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: "Failed to generate PDF" }),
       {
         status: 500,
         headers: { "Content-Type": "application/json", ...corsHeaders },
