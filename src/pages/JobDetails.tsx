@@ -5,10 +5,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/integrations/supabase/client';
-import { MapPin, Calendar, DollarSign, Clock, ArrowLeft, Check, X, User, Star } from 'lucide-react';
+import { MapPin, Calendar, DollarSign, Clock, ArrowLeft, User, Star } from 'lucide-react';
 import { toast } from 'sonner';
 import { safeToast } from '@/lib/errorHandler';
 import { format } from 'date-fns';
@@ -16,7 +15,6 @@ import { TestPaymentCard } from '@/components/TestPaymentCard';
 import { JobCompletionCard } from '@/components/JobCompletionCard';
 import { JobReviewCard } from '@/components/JobReviewCard';
 import { JobChat } from '@/components/JobChat';
-import { sendNotification } from '@/lib/notifications';
 
 interface JobDetails {
   id: string;
@@ -42,18 +40,13 @@ interface JobDetails {
   completed_at: string | null;
 }
 
-interface Proposal {
+interface ProviderInfo {
   id: string;
-  proposed_price: number;
-  message: string | null;
-  status: string | null;
-  created_at: string | null;
-  provider_id: string;
-  provider_name: string | null;
-  provider_avatar: string | null;
-  provider_bio: string | null;
-  provider_rating: number | null;
-  provider_review_count: number;
+  full_name: string | null;
+  avatar_url: string | null;
+  bio: string | null;
+  rating: number | null;
+  review_count: number;
 }
 
 export default function JobDetails() {
@@ -61,14 +54,9 @@ export default function JobDetails() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [job, setJob] = useState<JobDetails | null>(null);
-  const [proposals, setProposals] = useState<Proposal[]>([]);
+  const [providerInfo, setProviderInfo] = useState<ProviderInfo | null>(null);
   const [customerName, setCustomerName] = useState<string>('Customer');
   const [loading, setLoading] = useState(true);
-  const [acceptingId, setAcceptingId] = useState<string | null>(null);
-  const [confirmDialog, setConfirmDialog] = useState<{ open: boolean; proposal: Proposal | null }>({
-    open: false,
-    proposal: null,
-  });
 
   useEffect(() => {
     if (id) loadJobDetails();
@@ -107,148 +95,41 @@ export default function JobDetails() {
         }
       }
 
-      // Load proposals with provider info
-      const { data: proposalData, error: proposalError } = await supabase
-        .from('job_proposals')
-        .select('*')
-        .eq('job_id', id)
-        .order('created_at', { ascending: false });
-
-      if (proposalError) throw proposalError;
-
-      // Fetch provider profiles and ratings separately
-      if (proposalData && proposalData.length > 0) {
-        const providerIds = proposalData.map(p => p.provider_id);
-        
-        // Fetch profiles
-        const { data: profiles } = await supabase
+      // Load provider info if job has accepted provider
+      if (jobData.accepted_provider_id) {
+        const { data: profile } = await supabase
           .from('profiles')
           .select('id, full_name, avatar_url, bio')
-          .in('id', providerIds);
+          .eq('id', jobData.accepted_provider_id)
+          .maybeSingle();
 
         // Fetch reviews for rating calculation
         const { data: reviews } = await supabase
           .from('reviews')
-          .select('reviewee_id, rating')
-          .in('reviewee_id', providerIds);
+          .select('rating')
+          .eq('reviewee_id', jobData.accepted_provider_id);
 
-        const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
-        
-        // Calculate average ratings per provider
-        const ratingsMap = new Map<string, { total: number; count: number }>();
-        reviews?.forEach(review => {
-          const existing = ratingsMap.get(review.reviewee_id) || { total: 0, count: 0 };
-          ratingsMap.set(review.reviewee_id, {
-            total: existing.total + review.rating,
-            count: existing.count + 1,
+        const reviewCount = reviews?.length || 0;
+        const avgRating = reviewCount > 0
+          ? reviews!.reduce((sum, r) => sum + r.rating, 0) / reviewCount
+          : null;
+
+        if (profile) {
+          setProviderInfo({
+            id: profile.id,
+            full_name: profile.full_name,
+            avatar_url: profile.avatar_url,
+            bio: profile.bio,
+            rating: avgRating,
+            review_count: reviewCount,
           });
-        });
-        
-        const enrichedProposals = proposalData.map(proposal => {
-          const ratingData = ratingsMap.get(proposal.provider_id);
-          return {
-            ...proposal,
-            provider_name: profileMap.get(proposal.provider_id)?.full_name || null,
-            provider_avatar: profileMap.get(proposal.provider_id)?.avatar_url || null,
-            provider_bio: profileMap.get(proposal.provider_id)?.bio || null,
-            provider_rating: ratingData ? ratingData.total / ratingData.count : null,
-            provider_review_count: ratingData?.count || 0,
-          };
-        });
-
-        setProposals(enrichedProposals);
-      } else {
-        setProposals([]);
+        }
       }
     } catch (error) {
       safeToast.error(error);
       console.error(error);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleAcceptProposal = async (proposal: Proposal) => {
-    setConfirmDialog({ open: true, proposal });
-  };
-
-  const confirmAcceptProposal = async () => {
-    const proposal = confirmDialog.proposal;
-    if (!proposal || !job) return;
-
-    setAcceptingId(proposal.id);
-
-    try {
-      // Calculate platform fee (30%) and provider payout (70%)
-      const platformFee = proposal.proposed_price * 0.30;
-      const providerPayout = proposal.proposed_price * 0.70;
-
-      // Update the job with accepted provider and final price
-      const { error: jobError } = await supabase
-        .from('job_requests')
-        .update({
-          status: 'accepted',
-          accepted_provider_id: proposal.provider_id,
-          final_price: proposal.proposed_price,
-          platform_fee: platformFee,
-          provider_payout: providerPayout,
-        })
-        .eq('id', job.id);
-
-      if (jobError) throw jobError;
-
-      // Update accepted proposal status
-      const { error: acceptError } = await supabase
-        .from('job_proposals')
-        .update({ status: 'accepted' })
-        .eq('id', proposal.id);
-
-      if (acceptError) throw acceptError;
-
-      // Reject other proposals for this job
-      const { error: rejectError } = await supabase
-        .from('job_proposals')
-        .update({ status: 'rejected' })
-        .eq('job_id', job.id)
-        .neq('id', proposal.id);
-
-      if (rejectError) throw rejectError;
-
-      // Send notification to provider
-      sendNotification({
-        type: 'proposal_accepted',
-        recipientId: proposal.provider_id,
-        jobTitle: job.title,
-        jobId: job.id,
-        additionalData: {
-          customerName: customerName,
-          amount: proposal.proposed_price,
-        },
-      });
-
-      toast.success('Proposal accepted! The provider will be notified.');
-      setConfirmDialog({ open: false, proposal: null });
-      loadJobDetails();
-    } catch (error) {
-      safeToast.error(error);
-    } finally {
-      setAcceptingId(null);
-    }
-  };
-
-  const handleRejectProposal = async (proposalId: string) => {
-    try {
-      const { error } = await supabase
-        .from('job_proposals')
-        .update({ status: 'rejected' })
-        .eq('id', proposalId);
-
-      if (error) throw error;
-
-      toast.success('Proposal rejected');
-      loadJobDetails();
-    } catch (error) {
-      safeToast.error(error);
     }
   };
 
@@ -276,7 +157,6 @@ export default function JobDetails() {
 
   const isCustomer = job?.customer_id === user?.id;
   const isProvider = job?.accepted_provider_id === user?.id;
-  const acceptedProposal = proposals.find(p => p.status === 'accepted');
   const showPaymentCard = job?.status === 'accepted' || job?.status === 'in_progress' || job?.status === 'pending_completion' || job?.status === 'completed';
   const showCompletionCard = (job?.status === 'in_progress' || job?.status === 'pending_completion' || job?.status === 'completed') && job?.payment_status === 'paid';
   const showReviewCard = job?.status === 'completed';
@@ -395,15 +275,15 @@ export default function JobDetails() {
               </CardContent>
             </Card>
 
-            {/* Payment Card - shown after proposal accepted */}
-            {showPaymentCard && acceptedProposal && job.final_price && job.accepted_provider_id && (
+            {/* Payment Card - shown after job accepted */}
+            {showPaymentCard && providerInfo && job.final_price && job.accepted_provider_id && (
               <TestPaymentCard
                 jobId={job.id}
                 jobTitle={job.title}
                 amount={job.final_price}
                 providerId={job.accepted_provider_id}
                 customerId={job.customer_id}
-                providerName={acceptedProposal.provider_name || 'Provider'}
+                providerName={providerInfo.full_name || 'Provider'}
                 paymentStatus={job.payment_status || 'pending'}
                 isCustomer={isCustomer}
                 isProvider={isProvider}
@@ -416,7 +296,7 @@ export default function JobDetails() {
             )}
 
             {/* Job Completion Card - shown after payment confirmed */}
-            {showCompletionCard && acceptedProposal && (
+            {showCompletionCard && providerInfo && (
               <JobCompletionCard
                 jobId={job.id}
                 jobTitle={job.title}
@@ -427,7 +307,7 @@ export default function JobDetails() {
                 completedAt={job.completed_at}
                 isCustomer={isCustomer}
                 isProvider={isProvider}
-                providerName={acceptedProposal.provider_name || 'Provider'}
+                providerName={providerInfo.full_name || 'Provider'}
                 customerName={customerName}
                 preferredDate={job.preferred_date}
                 finalPrice={job.final_price}
@@ -436,14 +316,14 @@ export default function JobDetails() {
             )}
 
             {/* Reviews Card - shown for completed jobs */}
-            {showReviewCard && acceptedProposal && job.accepted_provider_id && (
+            {showReviewCard && providerInfo && job.accepted_provider_id && (
               <JobReviewCard
                 jobId={job.id}
                 jobTitle={job.title}
                 customerId={job.customer_id}
                 providerId={job.accepted_provider_id}
                 customerName={customerName}
-                providerName={acceptedProposal.provider_name || 'Provider'}
+                providerName={providerInfo.full_name || 'Provider'}
                 isCustomer={isCustomer}
                 isProvider={isProvider}
                 onReviewSubmit={loadJobDetails}
@@ -461,139 +341,70 @@ export default function JobDetails() {
             )}
           </div>
 
-          {/* Proposals Sidebar */}
+          {/* Provider Sidebar */}
           <div className="space-y-4">
             <h2 className="text-xl font-semibold">
-              Proposals ({proposals.length})
+              {job.accepted_provider_id ? 'Assigned Provider' : 'Provider Status'}
             </h2>
 
-            {proposals.length === 0 ? (
+            {!job.accepted_provider_id ? (
               <Card>
                 <CardContent className="py-8 text-center">
                   <User className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <p className="text-muted-foreground">No proposals yet</p>
+                  <p className="text-muted-foreground">Waiting for provider</p>
                   <p className="text-sm text-muted-foreground mt-1">
-                    Providers will submit proposals soon
+                    A provider will confirm this job soon
                   </p>
                 </CardContent>
               </Card>
-            ) : (
-              proposals.map((proposal) => (
-                <Card key={proposal.id} className={proposal.status === 'accepted' ? 'border-success' : ''}>
-                  <CardContent className="pt-6">
-                    <div className="flex items-start gap-4">
-                      <Avatar className="h-12 w-12">
-                        {proposal.provider_avatar && (
-                          <AvatarImage src={proposal.provider_avatar} alt={proposal.provider_name || 'Provider'} />
-                        )}
-                        <AvatarFallback>
-                          {proposal.provider_name?.charAt(0) || 'P'}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1">
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <button
-                              onClick={() => navigate(`/provider/${proposal.provider_id}`)}
-                              className="font-semibold hover:text-primary hover:underline text-left"
-                            >
-                              {proposal.provider_name || 'Provider'}
-                            </button>
-                            {proposal.provider_rating !== null && (
-                              <div className="flex items-center gap-1 mt-1">
-                                <Star className="h-3.5 w-3.5 fill-warning text-warning" />
-                                <span className="text-sm font-medium">{proposal.provider_rating.toFixed(1)}</span>
-                                <span className="text-xs text-muted-foreground">
-                                  ({proposal.provider_review_count} {proposal.provider_review_count === 1 ? 'review' : 'reviews'})
-                                </span>
-                              </div>
-                            )}
-                            {proposal.provider_rating === null && (
-                              <span className="text-xs text-muted-foreground mt-1">No reviews yet</span>
-                            )}
-                            {proposal.provider_bio && (
-                              <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
-                                {proposal.provider_bio}
-                              </p>
-                            )}
-                          </div>
-                          {proposal.status && proposal.status !== 'pending' && (
-                            <Badge variant={proposal.status === 'accepted' ? 'default' : 'secondary'}>
-                              {proposal.status.charAt(0).toUpperCase() + proposal.status.slice(1)}
-                            </Badge>
+            ) : providerInfo && (
+              <Card className="border-success">
+                <CardContent className="pt-6">
+                  <div className="flex items-start gap-4">
+                    <Avatar className="h-12 w-12">
+                      {providerInfo.avatar_url && (
+                        <AvatarImage src={providerInfo.avatar_url} alt={providerInfo.full_name || 'Provider'} />
+                      )}
+                      <AvatarFallback>
+                        {providerInfo.full_name?.charAt(0) || 'P'}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <button
+                            onClick={() => navigate(`/provider/${providerInfo.id}`)}
+                            className="font-semibold hover:text-primary hover:underline text-left"
+                          >
+                            {providerInfo.full_name || 'Provider'}
+                          </button>
+                          {providerInfo.rating !== null && (
+                            <div className="flex items-center gap-1 mt-1">
+                              <Star className="h-3.5 w-3.5 fill-warning text-warning" />
+                              <span className="text-sm font-medium">{providerInfo.rating.toFixed(1)}</span>
+                              <span className="text-xs text-muted-foreground">
+                                ({providerInfo.review_count} {providerInfo.review_count === 1 ? 'review' : 'reviews'})
+                              </span>
+                            </div>
+                          )}
+                          {providerInfo.rating === null && (
+                            <span className="text-xs text-muted-foreground mt-1">No reviews yet</span>
+                          )}
+                          {providerInfo.bio && (
+                            <p className="text-xs text-muted-foreground mt-2 line-clamp-3">
+                              {providerInfo.bio}
+                            </p>
                           )}
                         </div>
-
-                        <div className="mt-3">
-                          <div className="text-2xl font-bold text-primary">
-                            J${proposal.proposed_price.toFixed(2)}
-                          </div>
-                        </div>
-
-                        {proposal.message && (
-                          <p className="text-sm text-muted-foreground mt-3 line-clamp-3">
-                            {proposal.message}
-                          </p>
-                        )}
-
-                        {proposal.created_at && (
-                          <p className="text-xs text-muted-foreground mt-2">
-                            Submitted {format(new Date(proposal.created_at), 'MMM dd, yyyy')}
-                          </p>
-                        )}
-
-                        {isCustomer && job.status === 'open' && proposal.status === 'pending' && (
-                          <div className="flex gap-2 mt-4">
-                            <Button
-                              size="sm"
-                              onClick={() => handleAcceptProposal(proposal)}
-                              disabled={acceptingId === proposal.id}
-                            >
-                              <Check className="h-4 w-4 mr-1" />
-                              Accept
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleRejectProposal(proposal.id)}
-                            >
-                              <X className="h-4 w-4 mr-1" />
-                              Reject
-                            </Button>
-                          </div>
-                        )}
+                        <Badge variant="default">Assigned</Badge>
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
-              ))
+                  </div>
+                </CardContent>
+              </Card>
             )}
           </div>
         </div>
-
-        {/* Confirmation Dialog */}
-        <Dialog open={confirmDialog.open} onOpenChange={(open) => setConfirmDialog({ open, proposal: null })}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Accept Proposal</DialogTitle>
-              <DialogDescription>
-                Are you sure you want to accept this proposal for{' '}
-                <span className="font-semibold text-primary">
-                  J${confirmDialog.proposal?.proposed_price.toFixed(2)}
-                </span>
-                ? This will assign the job to {confirmDialog.proposal?.provider_name || 'this provider'}.
-              </DialogDescription>
-            </DialogHeader>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setConfirmDialog({ open: false, proposal: null })}>
-                Cancel
-              </Button>
-              <Button onClick={confirmAcceptProposal} disabled={!!acceptingId}>
-                {acceptingId ? 'Accepting...' : 'Confirm'}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
       </main>
     </>
   );

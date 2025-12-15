@@ -28,7 +28,7 @@ const Index = () => {
     {
       icon: Users,
       title: 'Connect with Providers',
-      description: 'Service providers browse jobs and submit proposals to customers.',
+      description: 'Service providers browse available jobs and confirm ones they want to complete.',
     },
     {
       icon: DollarSign,

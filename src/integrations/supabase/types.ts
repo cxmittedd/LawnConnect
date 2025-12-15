@@ -808,6 +808,7 @@ export type Database = {
           description: string
           id: string
           lawn_size: string
+          location: string
           parish: string
           preferred_date: string
           preferred_time: string

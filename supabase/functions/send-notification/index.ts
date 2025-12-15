@@ -12,7 +12,7 @@ const corsHeaders = {
 
 // Zod schema for input validation
 const notificationSchema = z.object({
-  type: z.enum(['proposal_received', 'proposal_accepted', 'payment_submitted', 'payment_confirmed', 'job_completed', 'review_received', 'late_completion_warning', 'late_completion_apology', 'completion_confirmation_needed', 'dispute_opened', 'dispute_response']),
+  type: z.enum(['proposal_received', 'proposal_accepted', 'job_confirmed', 'payment_submitted', 'payment_confirmed', 'job_completed', 'review_received', 'late_completion_warning', 'late_completion_apology', 'completion_confirmation_needed', 'dispute_opened', 'dispute_response']),
   recipientId: z.string().uuid(),
   jobTitle: z.string().min(1).max(200),
   jobId: z.string().uuid(),
@@ -190,6 +190,34 @@ const getEmailContent = (type: string, jobTitle: string, jobId: string, addition
                 💰 The customer has already paid upfront. Complete the job to receive your payout!
               </p>
             </div>
+          `,
+          jobUrl,
+          'View Job Details'
+        )
+      };
+
+    case 'job_confirmed':
+      return {
+        subject: `A Provider Has Confirmed Your Job - "${jobTitle}"`,
+        html: createBrandedEmail(
+          'linear-gradient(135deg, #22c55e, #16a34a)',
+          '✅',
+          'Job Confirmed!',
+          `
+            <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 26px; color: #3f3f46;">
+              Great news! A lawn care provider has confirmed and accepted your job:
+            </p>
+            <div style="background: #f0fdf4; padding: 16px 20px; border-radius: 10px; border-left: 4px solid #16a34a; margin-bottom: 16px;">
+              <p style="margin: 0; font-size: 18px; font-weight: 600; color: #166534;">${jobTitle}</p>
+            </div>
+            ${additionalData?.providerName ? `
+              <p style="margin: 0 0 16px 0; font-size: 14px; color: #52525b;">
+                <strong>Provider:</strong> ${additionalData.providerName}
+              </p>
+            ` : ''}
+            <p style="margin: 0; font-size: 14px; color: #71717a;">
+              Your payment has already been secured. The provider will now begin working on your lawn. You'll be notified when they mark the job as complete.
+            </p>
           `,
           jobUrl,
           'View Job Details'
