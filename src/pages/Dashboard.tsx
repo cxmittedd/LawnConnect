@@ -29,7 +29,7 @@ export default function Dashboard() {
     activeJobs: 0,
     completedJobs: 0,
     totalEarnings: 0,
-    pendingProposals: 0,
+    myActiveJobs: 0,
   });
   const [loading, setLoading] = useState(true);
 
@@ -74,16 +74,14 @@ export default function Dashboard() {
           const totalEarnings = acceptedJobs?.filter(j => j.status === 'completed')
             .reduce((sum, job) => sum + Number(job.provider_payout || 0), 0) || 0;
 
-          const { data: proposals } = await supabase
-            .from('job_proposals')
-            .select('*')
-            .eq('provider_id', user.id)
-            .eq('status', 'pending');
+          const myActiveJobs = acceptedJobs?.filter(j => 
+            ['accepted', 'in_progress', 'pending_completion'].includes(j.status)
+          ).length || 0;
 
           setStats(prev => ({ 
             ...prev, 
             totalEarnings, 
-            pendingProposals: proposals?.length || 0 
+            myActiveJobs
           }));
         }
       }
@@ -325,12 +323,12 @@ export default function Dashboard() {
                 onClick={() => navigate('/my-jobs')}
               >
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Pending Proposals</CardTitle>
-                  <Scissors className="h-5 w-5 text-warning" />
+                  <CardTitle className="text-sm font-medium">My Active Jobs</CardTitle>
+                  <Briefcase className="h-5 w-5 text-warning" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{stats.pendingProposals}</div>
-                  <p className="text-xs text-muted-foreground mt-1">Awaiting customer response</p>
+                  <div className="text-2xl font-bold">{stats.myActiveJobs}</div>
+                  <p className="text-xs text-muted-foreground mt-1">Jobs in progress</p>
                 </CardContent>
               </Card>
 
