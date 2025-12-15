@@ -178,6 +178,34 @@ export function useCustomerPreferences() {
     }
   };
 
+  const updateAutopaySettings = async (settings: AutopaySettings) => {
+    if (!user || !settings.id) return;
+    
+    try {
+      const { error } = await supabase
+        .from('autopay_settings')
+        .update({
+          frequency: settings.frequency,
+          recurring_day: settings.recurring_day,
+          recurring_day_2: settings.recurring_day_2,
+          location: settings.location,
+          location_name: settings.location_name,
+          parish: settings.parish,
+          lawn_size: settings.lawn_size,
+          job_type: settings.job_type,
+          additional_requirements: settings.additional_requirements,
+        })
+        .eq('id', settings.id)
+        .eq('customer_id', user.id);
+
+      if (error) throw error;
+      await loadAutopaySettings();
+    } catch (error) {
+      console.error('Error updating autopay settings:', error);
+      throw error;
+    }
+  };
+
   const deleteAutopay = async (id: string) => {
     if (!user) return;
     
@@ -202,6 +230,7 @@ export function useCustomerPreferences() {
     loading,
     savePreferences,
     saveAutopaySettings,
+    updateAutopaySettings,
     disableAutopay,
     deleteAutopay,
     refreshAutopay: loadAutopaySettings,

@@ -92,7 +92,7 @@ export default function TermsOfService() {
 
             <section>
               <h2 className="text-lg font-semibold">6. Payments and Fees</h2>
-              <p>6.1. Minimum job price is J$7,000 (Jamaican Dollars).</p>
+              <p>6.1. Job pricing is determined by lawn size and service type.</p>
               <p>6.2. Customers pay upfront; funds are held until job completion.</p>
               <p>6.3. Service Providers receive payment after job completion confirmation.</p>
               <p>6.4. Refunds are processed according to our dispute resolution process.</p>
@@ -110,7 +110,7 @@ export default function TermsOfService() {
               <h2 className="text-lg font-semibold">8. Limitation of Liability</h2>
               <p>8.1. LawnConnect is not liable for the quality of services provided by Service Providers.</p>
               <p>8.2. We are not responsible for disputes between users beyond facilitating resolution.</p>
-              <p>8.3. Our maximum liability shall not exceed the platform fees collected for the disputed transaction.</p>
+              <p>8.3. Our maximum liability shall not exceed the fees collected for the disputed transaction.</p>
             </section>
 
             <section>
