@@ -76,7 +76,6 @@ const createJobSchema = (minOffer: number) => z.object({
   preferred_date: z.string().optional(),
   preferred_time: z.string().trim().max(50).optional(),
   additional_requirements: z.string().trim().max(500).optional(),
-  customer_offer: z.number().min(minOffer, `Minimum offer is J$${minOffer.toLocaleString()}`).optional(),
 });
 
 export default function PostJob() {
@@ -90,7 +89,7 @@ export default function PostJob() {
   const [step, setStep] = useState<'details' | 'payment'>('details');
   const [showAutopayDialog, setShowAutopayDialog] = useState(false);
   const [pendingCardInfo, setPendingCardInfo] = useState<{ lastFour: string; name: string } | null>(null);
-  const [formData, setFormData] = useState({
+const [formData, setFormData] = useState({
     title: '',
     description: '',
     location: '',
@@ -99,7 +98,6 @@ export default function PostJob() {
     preferred_date: '',
     preferred_time: '',
     additional_requirements: '',
-    customer_offer: '',
   });
 
   // Load saved preferences when available
@@ -120,14 +118,14 @@ export default function PostJob() {
 
   const currentMinOffer = getMinOffer(lawnSizeSelection);
 
-  const handleLawnSizeChange = (value: string) => {
+const handleLawnSizeChange = (value: string) => {
     setLawnSizeSelection(value);
     const selected = LAWN_SIZES.find(s => s.value === value);
     if (value !== 'custom') {
-      setFormData({ ...formData, lawn_size: selected?.label || '', customer_offer: '' });
+      setFormData({ ...formData, lawn_size: selected?.label || '' });
       setCustomLawnSize('');
     } else {
-      setFormData({ ...formData, lawn_size: customLawnSize, customer_offer: '' });
+      setFormData({ ...formData, lawn_size: customLawnSize });
     }
   };
 
@@ -155,14 +153,11 @@ export default function PostJob() {
     return currentMinOffer;
   };
 
-  const handleProceedToPayment = (e: React.FormEvent) => {
+const handleProceedToPayment = (e: React.FormEvent) => {
     e.preventDefault();
 
     const jobSchema = createJobSchema(currentMinOffer);
-    const result = jobSchema.safeParse({
-      ...formData,
-      customer_offer: currentMinOffer,
-    });
+    const result = jobSchema.safeParse(formData);
 
     if (!result.success) {
       toast.error(result.error.errors[0].message);
@@ -196,7 +191,7 @@ export default function PostJob() {
       const platformFee = Math.round(paymentAmount * 0.30);
       const providerPayout = paymentAmount - platformFee;
       
-      const { data: job, error: jobError } = await supabase
+const { data: job, error: jobError } = await supabase
         .from('job_requests')
         .insert({
           customer_id: user!.id,
@@ -208,7 +203,6 @@ export default function PostJob() {
           preferred_date: formData.preferred_date || null,
           preferred_time: formData.preferred_time || null,
           additional_requirements: formData.additional_requirements || null,
-          customer_offer: paymentAmount,
           base_price: basePrice,
           final_price: paymentAmount,
           platform_fee: platformFee,

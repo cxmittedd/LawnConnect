@@ -299,8 +299,8 @@ export default function JobDetails() {
                       <div className="text-xl font-bold text-primary flex items-center gap-1">
                         <DollarSign className="h-5 w-5" />
                         J${isProvider 
-                          ? ((job.final_price || job.customer_offer || job.base_price) * 0.70).toFixed(2)
-                          : (job.final_price || job.customer_offer || job.base_price).toFixed(2)}
+                          ? ((job.final_price || job.base_price) * 0.70).toFixed(2)
+                          : (job.final_price || job.base_price).toFixed(2)}
                       </div>
                     </div>
                   </div>
@@ -463,7 +463,7 @@ export default function JobDetails() {
               <AlertDescription>
                 Since no provider has been assigned yet, you will receive a full refund of{' '}
                 <span className="font-semibold text-primary">
-                  J${(job.customer_offer || job.base_price).toFixed(2)}
+                  J${(job.final_price || job.base_price).toFixed(2)}
                 </span>
                 . This action cannot be undone.
               </AlertDescription>
