@@ -363,8 +363,8 @@ export default function JobDetails() {
               />
             )}
 
-            {/* Chat - shown when provider is accepted */}
-            {job.accepted_provider_id && (isCustomer || isProvider) && (
+            {/* Chat - shown when provider is accepted but job not completed */}
+            {job.accepted_provider_id && (isCustomer || isProvider) && job.status !== 'completed' && (
               <JobChat
                 jobId={job.id}
                 customerId={job.customer_id}
