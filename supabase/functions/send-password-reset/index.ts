@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "https://esm.sh/resend@2.0.0";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.86.0";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
@@ -32,6 +33,74 @@ const handler = async (req: Request): Promise<Response> => {
         }
       );
     }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email) || email.length > 255) {
+      console.error("Invalid email format:", email);
+      return new Response(
+        JSON.stringify({ error: "Invalid email format" }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
+
+    // Validate resetLink is from our domain
+    const allowedDomains = ['lawnconnect.jm', 'localhost', 'lovableproject.com'];
+    let linkUrl: URL;
+    try {
+      linkUrl = new URL(resetLink);
+      const isAllowedDomain = allowedDomains.some(domain => 
+        linkUrl.hostname === domain || linkUrl.hostname.endsWith(`.${domain}`)
+      );
+      if (!isAllowedDomain) {
+        console.error("Reset link from unauthorized domain:", linkUrl.hostname);
+        return new Response(
+          JSON.stringify({ error: "Invalid reset link domain" }),
+          {
+            status: 400,
+            headers: { "Content-Type": "application/json", ...corsHeaders },
+          }
+        );
+      }
+    } catch {
+      console.error("Invalid reset link URL:", resetLink);
+      return new Response(
+        JSON.stringify({ error: "Invalid reset link format" }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
+
+    // Verify the email exists in our system using service role
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Check if user exists (using admin API)
+    const { data: users, error: lookupError } = await supabase.auth.admin.listUsers({
+      perPage: 1,
+      page: 1,
+    });
+
+    // Search for the user by email
+    const { data: userData } = await supabase.auth.admin.listUsers();
+    const userExists = userData?.users?.some(u => u.email?.toLowerCase() === email.toLowerCase());
+
+    if (!userExists) {
+      // Don't reveal whether email exists - return success anyway for security
+      console.log("Password reset requested for non-existent email (not revealing to client)");
+      return new Response(JSON.stringify({ success: true }), {
+        status: 200,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
+
+    console.log("Sending password reset email to:", email);
 
     const emailResponse = await resend.emails.send({
       from: "LawnConnect <noreply@lawnconnect.jm>",
