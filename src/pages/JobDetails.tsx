@@ -191,7 +191,7 @@ export default function JobDetails() {
   const isProvider = job?.accepted_provider_id === user?.id;
   const canCancelJob = isCustomer && job?.status === 'open' && !job?.accepted_provider_id;
   const showPaymentCard = job?.status === 'accepted' || job?.status === 'in_progress' || job?.status === 'pending_completion' || job?.status === 'completed';
-  const showCompletionCard = (job?.status === 'accepted' || job?.status === 'in_progress' || job?.status === 'pending_completion' || job?.status === 'completed') && job?.payment_status === 'paid';
+  const showCompletionCard = (job?.status === 'in_progress' || job?.status === 'pending_completion' || job?.status === 'completed') && job?.payment_status === 'paid';
   const showReviewCard = job?.status === 'completed';
 
   if (loading) {
