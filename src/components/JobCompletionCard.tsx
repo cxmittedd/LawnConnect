@@ -614,7 +614,7 @@ export function JobCompletionCard({
   const beforePhotos = completionPhotos.filter(p => p.photo_type === 'before');
   const afterPhotos = completionPhotos.filter(p => p.photo_type === 'after');
 
-  if (status !== 'in_progress' && status !== 'pending_completion' && status !== 'completed') {
+  if (status !== 'accepted' && status !== 'in_progress' && status !== 'pending_completion' && status !== 'completed') {
     return null;
   }
 
@@ -629,18 +629,18 @@ export function JobCompletionCard({
                 Job Completion
               </CardTitle>
               <CardDescription>
-                {status === 'completed' 
-                  ? 'This job has been completed'
-                  : status === 'pending_completion'
-                  ? 'Awaiting customer confirmation'
-                  : 'Mark job as complete when finished'}
-              </CardDescription>
-            </div>
-            {status === 'in_progress' && (
-              <Badge className="bg-info text-info-foreground gap-1">
-                <Clock className="h-3 w-3" /> In Progress
-              </Badge>
-            )}
+              {status === 'completed' 
+                ? 'This job has been completed'
+                : status === 'pending_completion'
+                ? 'Awaiting customer confirmation'
+                : 'Mark job as complete when finished'}
+            </CardDescription>
+          </div>
+          {(status === 'accepted' || status === 'in_progress') && (
+            <Badge className="bg-info text-info-foreground gap-1">
+              <Clock className="h-3 w-3" /> {status === 'accepted' ? 'Accepted' : 'In Progress'}
+            </Badge>
+          )}
             {status === 'pending_completion' && (
               <Badge className="bg-warning text-warning-foreground gap-1">
                 <Clock className="h-3 w-3" /> Pending Confirmation
@@ -717,14 +717,14 @@ export function JobCompletionCard({
             </Alert>
           )}
 
-          {/* Provider View - In Progress */}
-          {isProvider && status === 'in_progress' && (
+          {/* Provider View - Accepted / In Progress */}
+          {isProvider && (status === 'accepted' || status === 'in_progress') && (
             <div className="space-y-4">
               {!activeDispute && (
                 <Alert>
                   <Clock className="h-4 w-4" />
                   <AlertDescription>
-                    <strong>Job is in progress</strong>
+                    <strong>{status === 'accepted' ? 'Job accepted' : 'Job is in progress'}</strong>
                     <p className="mt-1 text-sm">
                       Once you've completed the lawn service, upload before and after photos and mark the job as complete.
                     </p>
