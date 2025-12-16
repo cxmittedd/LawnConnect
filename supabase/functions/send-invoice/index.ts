@@ -194,17 +194,53 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
+    // Verify authentication
+    const authHeader = req.headers.get('authorization');
+    if (!authHeader) {
+      console.error("No authorization header provided");
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    
+    // Create client with user's auth token
+    const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } }
+    });
+
+    // Verify the user
+    const { data: { user }, error: authError } = await supabaseAuth.auth.getUser();
+    if (authError || !user) {
+      console.error("Invalid authentication token:", authError);
+      return new Response(
+        JSON.stringify({ error: 'Invalid token' }),
+        { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
     const invoiceData: InvoiceRequest = await req.json();
     
+    // Verify the user owns this invoice/is the customer
+    if (invoiceData.customerId !== user.id) {
+      console.error("User does not own this invoice:", user.id, invoiceData.customerId);
+      return new Response(
+        JSON.stringify({ error: 'Forbidden' }),
+        { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+    
     console.log("Sending invoice to:", invoiceData.customerEmail);
-    console.log("Invoice data:", JSON.stringify(invoiceData, null, 2));
+    console.log("Invoice data for user:", user.id);
 
     const invoiceNumber = generateInvoiceNumber(invoiceData.jobId, invoiceData.paymentDate);
     const htmlContent = createInvoiceEmail(invoiceData, invoiceNumber);
 
     // Store invoice in database using service role
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     const { error: dbError } = await supabase.from('invoices').insert({

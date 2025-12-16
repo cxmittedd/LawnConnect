@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { jsPDF } from "https://esm.sh/jspdf@2.5.1";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.86.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -22,6 +23,7 @@ const InvoicePdfSchema = z.object({
   paymentDate: z.string(),
   customerName: z.string().max(200).optional(),
   customerEmail: z.string().email().max(255).optional(),
+  customerId: z.string().uuid(),
 });
 
 type InvoicePdfRequest = z.infer<typeof InvoicePdfSchema>;
@@ -44,6 +46,34 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
+    // Verify authentication
+    const authHeader = req.headers.get('authorization');
+    if (!authHeader) {
+      console.error("No authorization header provided");
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+    
+    // Create client with user's auth token
+    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } }
+    });
+
+    // Verify the user
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      console.error("Invalid authentication token:", authError);
+      return new Response(
+        JSON.stringify({ error: 'Invalid token' }),
+        { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
     const rawData = await req.json();
     
     // Validate input with Zod schema
@@ -61,7 +91,16 @@ const handler = async (req: Request): Promise<Response> => {
     
     const data: InvoicePdfRequest = parseResult.data;
     
-    console.log("Generating PDF for invoice:", data.invoiceNumber);
+    // Verify the user owns this invoice
+    if (data.customerId !== user.id) {
+      console.error("User does not own this invoice:", user.id, data.customerId);
+      return new Response(
+        JSON.stringify({ error: 'Forbidden' }),
+        { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+    
+    console.log("Generating PDF for invoice:", data.invoiceNumber, "for user:", user.id);
 
     // Create PDF document
     const doc = new jsPDF();
