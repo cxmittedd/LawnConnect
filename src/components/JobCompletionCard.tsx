@@ -1089,8 +1089,7 @@ export function JobCompletionCard({
               Are you satisfied with the lawn service provided by {providerName}?
               <br />
               <br />
-              By confirming, you acknowledge that the work has been completed to your satisfaction and payment will be
-              released to the provider.
+              By confirming, you acknowledge that the work has been completed.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
