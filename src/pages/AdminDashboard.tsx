@@ -6,8 +6,8 @@ import { Navigation } from "@/components/Navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { DollarSign, TrendingUp, CreditCard, Users } from "lucide-react";
-import { format, startOfMonth, endOfMonth, subMonths } from "date-fns";
+import { DollarSign, TrendingUp, CreditCard, Users, Calendar, CalendarDays, CalendarRange } from "lucide-react";
+import { format, startOfMonth, endOfMonth, subMonths, startOfDay, endOfDay, startOfYear, endOfYear } from "date-fns";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, Legend } from "recharts";
 
 interface MonthlyStats {
@@ -16,6 +16,12 @@ interface MonthlyStats {
   totalTransactions: number;
   completedJobs: number;
   disputedJobsRevenue: number;
+}
+
+interface JobCounts {
+  today: number;
+  thisMonth: number;
+  thisYear: number;
 }
 
 const AdminDashboard = () => {
@@ -30,6 +36,11 @@ const AdminDashboard = () => {
     totalTransactions: 0,
     completedJobs: 0,
   });
+  const [jobCounts, setJobCounts] = useState<JobCounts>({
+    today: 0,
+    thisMonth: 0,
+    thisYear: 0,
+  });
 
   useEffect(() => {
     if (!user) {
@@ -42,8 +53,44 @@ const AdminDashboard = () => {
   useEffect(() => {
     if (isAdmin) {
       loadStats();
+      loadJobCounts();
     }
   }, [isAdmin, selectedMonths]);
+
+  const loadJobCounts = async () => {
+    const now = new Date();
+    const todayStart = startOfDay(now);
+    const todayEnd = endOfDay(now);
+    const monthStart = startOfMonth(now);
+    const monthEnd = endOfMonth(now);
+    const yearStart = startOfYear(now);
+    const yearEnd = endOfYear(now);
+
+    // Fetch job counts in parallel
+    const [todayResult, monthResult, yearResult] = await Promise.all([
+      supabase
+        .from("job_requests")
+        .select("id", { count: "exact", head: true })
+        .gte("created_at", todayStart.toISOString())
+        .lte("created_at", todayEnd.toISOString()),
+      supabase
+        .from("job_requests")
+        .select("id", { count: "exact", head: true })
+        .gte("created_at", monthStart.toISOString())
+        .lte("created_at", monthEnd.toISOString()),
+      supabase
+        .from("job_requests")
+        .select("id", { count: "exact", head: true })
+        .gte("created_at", yearStart.toISOString())
+        .lte("created_at", yearEnd.toISOString()),
+    ]);
+
+    setJobCounts({
+      today: todayResult.count || 0,
+      thisMonth: monthResult.count || 0,
+      thisYear: yearResult.count || 0,
+    });
+  };
 
   /**
    * Security Note: This client-side admin check is for UX optimization only.
@@ -226,6 +273,60 @@ const AdminDashboard = () => {
                 <>
                   <div className="text-2xl font-bold">{totals.completedJobs}</div>
                   <p className="text-xs text-muted-foreground">Total jobs completed</p>
+                </>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Job Activity Cards */}
+        <div className="grid gap-4 md:grid-cols-3 mb-8">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Jobs Today</CardTitle>
+              <Calendar className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <Skeleton className="h-8 w-16" />
+              ) : (
+                <>
+                  <div className="text-2xl font-bold">{jobCounts.today}</div>
+                  <p className="text-xs text-muted-foreground">Jobs posted today</p>
+                </>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Jobs This Month</CardTitle>
+              <CalendarDays className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <Skeleton className="h-8 w-16" />
+              ) : (
+                <>
+                  <div className="text-2xl font-bold">{jobCounts.thisMonth}</div>
+                  <p className="text-xs text-muted-foreground">Jobs posted this month</p>
+                </>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Jobs This Year</CardTitle>
+              <CalendarRange className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <Skeleton className="h-8 w-16" />
+              ) : (
+                <>
+                  <div className="text-2xl font-bold">{jobCounts.thisYear}</div>
+                  <p className="text-xs text-muted-foreground">Jobs posted this year</p>
                 </>
               )}
             </CardContent>
