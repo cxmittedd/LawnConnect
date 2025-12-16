@@ -11,7 +11,6 @@ import { format } from 'date-fns';
 interface CompletedJob {
   id: string;
   title: string;
-  location: string;
   completed_at: string;
   final_price: number;
   provider_payout: number;
@@ -165,7 +164,6 @@ export default function ProviderEarnings() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Job</TableHead>
-                    <TableHead>Location</TableHead>
                     <TableHead>Completed</TableHead>
                     <TableHead className="text-right">Your Earnings</TableHead>
                     <TableHead>Status</TableHead>
@@ -175,7 +173,6 @@ export default function ProviderEarnings() {
                   {completedJobs.map((job) => (
                     <TableRow key={job.id}>
                       <TableCell className="font-medium">{job.title}</TableCell>
-                      <TableCell className="text-muted-foreground">{job.location}</TableCell>
                       <TableCell>
                         {job.completed_at ? format(new Date(job.completed_at), 'MMM d, yyyy') : '-'}
                       </TableCell>
