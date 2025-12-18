@@ -127,7 +127,10 @@ export default function Dashboard() {
               <Card className="hover:shadow-lg transition-shadow">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Active Jobs</CardTitle>
-                  <Briefcase className="h-5 w-5 text-primary" />
+                  <div className="flex flex-col items-center gap-1">
+                    <Briefcase className="h-5 w-5 text-primary" />
+                    <span className="text-[10px] text-muted-foreground">Jobs</span>
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">{stats.activeJobs}</div>
@@ -138,7 +141,10 @@ export default function Dashboard() {
               <Card className="hover:shadow-lg transition-shadow">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Completed</CardTitle>
-                  <CheckCircle className="h-5 w-5 text-success" />
+                  <div className="flex flex-col items-center gap-1">
+                    <CheckCircle className="h-5 w-5 text-success" />
+                    <span className="text-[10px] text-muted-foreground">Done</span>
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">{stats.completedJobs}</div>
@@ -149,7 +155,10 @@ export default function Dashboard() {
               <Card className="hover:shadow-lg transition-shadow">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Quick Actions</CardTitle>
-                  <Plus className="h-5 w-5 text-accent" />
+                  <div className="flex flex-col items-center gap-1">
+                    <Plus className="h-5 w-5 text-accent" />
+                    <span className="text-[10px] text-muted-foreground">New</span>
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <Button onClick={() => navigate('/post-job')} className="w-full" size="sm">
@@ -310,7 +319,10 @@ export default function Dashboard() {
               >
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Total Earnings</CardTitle>
-                  <DollarSign className="h-5 w-5 text-success" />
+                  <div className="flex flex-col items-center gap-1">
+                    <DollarSign className="h-5 w-5 text-success" />
+                    <span className="text-[10px] text-muted-foreground">Earnings</span>
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">J${stats.totalEarnings.toFixed(2)}</div>
@@ -324,7 +336,10 @@ export default function Dashboard() {
               >
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">My Active Jobs</CardTitle>
-                  <Briefcase className="h-5 w-5 text-warning" />
+                  <div className="flex flex-col items-center gap-1">
+                    <Briefcase className="h-5 w-5 text-warning" />
+                    <span className="text-[10px] text-muted-foreground">Active</span>
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">{stats.myActiveJobs}</div>
@@ -335,7 +350,10 @@ export default function Dashboard() {
               <Card className="hover:shadow-lg transition-shadow">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Find Work</CardTitle>
-                  <Briefcase className="h-5 w-5 text-primary" />
+                  <div className="flex flex-col items-center gap-1">
+                    <Briefcase className="h-5 w-5 text-primary" />
+                    <span className="text-[10px] text-muted-foreground">Browse</span>
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <Button onClick={() => navigate('/browse-jobs')} className="w-full" size="sm">
