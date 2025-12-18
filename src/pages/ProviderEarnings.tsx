@@ -5,7 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/integrations/supabase/client';
-import { DollarSign, CheckCircle, TrendingUp, Calendar } from 'lucide-react';
+import { DollarSign, CheckCircle, TrendingUp, Calendar, Banknote } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface CompletedJob {
@@ -18,10 +18,19 @@ interface CompletedJob {
   payment_status: string;
 }
 
+interface Payout {
+  id: string;
+  amount: number;
+  jobs_count: number;
+  payout_date: string;
+  created_at: string;
+}
+
 export default function ProviderEarnings() {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [completedJobs, setCompletedJobs] = useState<CompletedJob[]>([]);
+  const [payouts, setPayouts] = useState<Payout[]>([]);
   const [stats, setStats] = useState({
     totalEarnings: 0,
     thisMonthEarnings: 0,
@@ -39,6 +48,7 @@ export default function ProviderEarnings() {
     if (!user) return;
 
     try {
+      // Load completed jobs
       const { data: jobsData, error: jobsError } = await supabase
         .from('job_requests')
         .select('*')
@@ -47,6 +57,19 @@ export default function ProviderEarnings() {
         .order('completed_at', { ascending: false });
 
       if (jobsError) throw jobsError;
+
+      // Load payout history
+      const { data: payoutsData, error: payoutsError } = await supabase
+        .from('provider_payouts')
+        .select('*')
+        .eq('provider_id', user.id)
+        .order('payout_date', { ascending: false });
+
+      if (payoutsError) {
+        console.error('Error loading payouts:', payoutsError);
+      } else {
+        setPayouts(payoutsData || []);
+      }
 
       if (jobsData) {
         setCompletedJobs(jobsData as CompletedJob[]);
@@ -146,10 +169,55 @@ export default function ProviderEarnings() {
           </Card>
         </div>
 
+        {/* Payout History */}
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Banknote className="h-5 w-5 text-success" />
+              Payout History
+            </CardTitle>
+            <CardDescription>Your biweekly autopay payouts</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {payouts.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <Banknote className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>No payouts yet</p>
+                <p className="text-sm">Payouts are processed biweekly on Saturdays</p>
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Payout Date</TableHead>
+                    <TableHead>Jobs Included</TableHead>
+                    <TableHead className="text-right">Amount</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {payouts.map((payout) => (
+                    <TableRow key={payout.id}>
+                      <TableCell className="font-medium">
+                        {format(new Date(payout.payout_date), 'MMM d, yyyy')}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="secondary">{payout.jobs_count} job{payout.jobs_count !== 1 ? 's' : ''}</Badge>
+                      </TableCell>
+                      <TableCell className="text-right font-semibold text-success">
+                        J${Number(payout.amount).toLocaleString('en-JM', { minimumFractionDigits: 2 })}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </CardContent>
+        </Card>
+
         {/* Payment History Table */}
         <Card>
           <CardHeader>
-            <CardTitle>Payment History</CardTitle>
+            <CardTitle>Job History</CardTitle>
             <CardDescription>Your completed jobs and earnings</CardDescription>
           </CardHeader>
           <CardContent>
