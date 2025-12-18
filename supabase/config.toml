@@ -20,3 +20,6 @@ verify_jwt = true
 
 [functions.autopay-post-jobs]
 verify_jwt = false
+
+[functions.autopay-provider-payouts]
+verify_jwt = false

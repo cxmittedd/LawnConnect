@@ -608,6 +608,36 @@ export type Database = {
         }
         Relationships: []
       }
+      provider_payouts: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          job_ids: string[]
+          jobs_count: number
+          payout_date: string
+          provider_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          job_ids?: string[]
+          jobs_count?: number
+          payout_date?: string
+          provider_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          job_ids?: string[]
+          jobs_count?: number
+          payout_date?: string
+          provider_id?: string
+        }
+        Relationships: []
+      }
       provider_verifications: {
         Row: {
           created_at: string
