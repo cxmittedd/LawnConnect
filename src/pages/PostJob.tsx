@@ -42,10 +42,16 @@ const JAMAICA_PARISHES = [
 ] as const;
 
 const JOB_TYPES = [
-  'Basic Grass Cutting',
-  'Basic Grass Cutting (overgrown grass)',
-  'Cut + Tree Trimming',
+  { value: 'Regular Lawn Cut', label: 'Regular Lawn Cut', extraCost: 0 },
+  { value: 'Regular Lawn Cut + Cleanup', label: 'Regular Lawn Cut + Cleanup (+$500)', extraCost: 500 },
+  { value: 'Lawn Cut (Overgrown Grass)', label: 'Lawn Cut (Overgrown Grass) (+$1,000)', extraCost: 1000 },
+  { value: 'Lawn Cut (Overgrown Grass) + Cleanup', label: 'Lawn Cut (Overgrown Grass) + Cleanup (+$1,500)', extraCost: 1500 },
 ] as const;
+
+const getJobTypeExtraCost = (jobType: string): number => {
+  const type = JOB_TYPES.find(t => t.value === jobType);
+  return type?.extraCost || 0;
+};
 
 const LAWN_SIZES = [
   { value: 'small', label: 'Small (Up to 1/8 acre)', description: 'Typical scheme house yard', minOffer: 7000 },
@@ -150,7 +156,8 @@ const handleLawnSizeChange = (value: string) => {
   };
 
   const getPaymentAmount = () => {
-    return currentMinOffer;
+    const jobTypeExtra = getJobTypeExtraCost(formData.title);
+    return currentMinOffer + jobTypeExtra;
   };
 
 const handleProceedToPayment = (e: React.FormEvent) => {
@@ -361,6 +368,9 @@ const { data: job, error: jobError } = await supabase
             <JobPaymentForm
               amount={getPaymentAmount()}
               jobTitle={formData.title}
+              lawnSize={formData.lawn_size}
+              lawnSizeCost={currentMinOffer}
+              jobTypeCost={getJobTypeExtraCost(formData.title)}
               onPaymentSuccess={handlePaymentSuccess}
               onCancel={() => setStep('details')}
               loading={loading}
@@ -385,8 +395,8 @@ const { data: job, error: jobError } = await supabase
                     </SelectTrigger>
                     <SelectContent>
                       {JOB_TYPES.map((type) => (
-                        <SelectItem key={type} value={type}>
-                          {type}
+                        <SelectItem key={type.value} value={type.value}>
+                          {type.label}
                         </SelectItem>
                       ))}
                     </SelectContent>
