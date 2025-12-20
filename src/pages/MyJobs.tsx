@@ -23,6 +23,7 @@ interface Job {
   base_price: number;
   customer_offer: number | null;
   final_price: number | null;
+  provider_payout: number | null;
   created_at: string;
 }
 
@@ -165,7 +166,7 @@ export default function MyJobs() {
               <div className="text-xl font-bold text-primary flex items-center gap-1">
                 <DollarSign className="h-5 w-5" />
                 J${isProviderView 
-                  ? ((job.final_price || job.base_price) * 0.70).toFixed(2)
+                  ? (job.provider_payout || (job.final_price || job.base_price) * 0.70).toFixed(2)
                   : (job.final_price || job.base_price).toFixed(2)}
               </div>
             </div>
