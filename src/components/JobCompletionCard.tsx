@@ -417,7 +417,7 @@ export function JobCompletionCard({
         setProviderCompleteDialog(false);
         setLateWarningDialog(true);
       } else {
-        toast.success("Job marked as complete! Waiting for customer confirmation.");
+        toast.success("Job marked as complete! awaiting customer confirmation.");
         setProviderCompleteDialog(false);
       }
 
@@ -860,9 +860,7 @@ export function JobCompletionCard({
                     Completed on{" "}
                     {providerCompletedAt && format(new Date(providerCompletedAt), "MMMM dd, yyyy 'at' h:mm a")}.
                   </p>
-                  <p className="mt-1 text-sm">
-                    Please review the before and after photos and confirm if you're satisfied.
-                  </p>
+                  <p className="mt-1 text-sm">Please review the before and after photos and confirm completion.</p>
                 </AlertDescription>
               </Alert>
 
