@@ -310,10 +310,18 @@ export default function BrowseJobs() {
                   <span className="font-medium">Location:</span> {selectedJob.location}, {selectedJob.parish}
                 </div>
                 {selectedJob.preferred_date && (
-                  <div>
-                    <span className="font-medium">Preferred Date:</span>{' '}
-                    {format(new Date(selectedJob.preferred_date), 'MMMM dd, yyyy')}
-                  </div>
+                  <>
+                    <div>
+                      <span className="font-medium">Preferred Date:</span>{' '}
+                      {format(new Date(selectedJob.preferred_date), 'MMMM dd, yyyy')}
+                    </div>
+                    <div>
+                      <span className="font-medium">Deadline:</span>{' '}
+                      <span className="text-warning font-medium">
+                        {format(new Date(new Date(selectedJob.preferred_date).setDate(new Date(selectedJob.preferred_date).getDate() + 1)), 'MMMM dd, yyyy')}
+                      </span>
+                    </div>
+                  </>
                 )}
                 <div>
                   <span className="font-medium">Your Earnings:</span>{' '}
@@ -321,6 +329,16 @@ export default function BrowseJobs() {
                     J${(selectedJob.base_price * 0.70).toFixed(2)}
                   </span>
                 </div>
+                
+                {selectedJob.preferred_date && (
+                  <Alert className="mt-4">
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertDescription>
+                      <strong>Important:</strong> You must complete this job by {format(new Date(new Date(selectedJob.preferred_date).setDate(new Date(selectedJob.preferred_date).getDate() + 1)), 'MMMM dd, yyyy')} (1 day after the preferred date). 
+                      Completing after this deadline will add a dispute to your account for this month, which may affect your earnings.
+                    </AlertDescription>
+                  </Alert>
+                )}
               </div>
             )}
             <DialogFooter>
@@ -328,7 +346,7 @@ export default function BrowseJobs() {
                 Cancel
               </Button>
               <Button onClick={handleAcceptJob} disabled={confirming}>
-                {confirming ? 'Confirming...' : 'Confirm & Accept Job'}
+                {confirming ? 'Confirming...' : 'I Understand & Accept Job'}
               </Button>
             </DialogFooter>
           </DialogContent>

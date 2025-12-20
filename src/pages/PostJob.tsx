@@ -471,6 +471,9 @@ const { data: job, error: jobError } = await supabase
                       min={new Date().toISOString().split('T')[0]}
                       required
                     />
+                    <p className="text-xs text-muted-foreground">
+                      Note: This is your preferred date, not a guarantee. Providers have until the day after this date to complete the job.
+                    </p>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="preferred_time">Preferred Time</Label>

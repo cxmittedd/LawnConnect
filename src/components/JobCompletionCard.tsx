@@ -329,8 +329,10 @@ export function JobCompletionCard({
     if (!preferredDate) return false;
     const today = new Date();
     today.setHours(0, 0, 0, 0);
+    // Deadline is 1 day after the preferred date
     const dueDate = new Date(preferredDate);
     dueDate.setHours(0, 0, 0, 0);
+    dueDate.setDate(dueDate.getDate() + 1); // Add 1 day grace period
     return today > dueDate;
   };
 
