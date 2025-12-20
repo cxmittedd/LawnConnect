@@ -9,12 +9,15 @@ import { CreditCard, Lock, CheckCircle } from 'lucide-react';
 interface JobPaymentFormProps {
   amount: number;
   jobTitle: string;
+  lawnSize?: string;
+  lawnSizeCost?: number;
+  jobTypeCost?: number;
   onPaymentSuccess: (reference: string, cardInfo: { lastFour: string; name: string }) => void;
   onCancel: () => void;
   loading?: boolean;
 }
 
-export function JobPaymentForm({ amount, jobTitle, onPaymentSuccess, onCancel, loading }: JobPaymentFormProps) {
+export function JobPaymentForm({ amount, jobTitle, lawnSize, lawnSizeCost, jobTypeCost, onPaymentSuccess, onCancel, loading }: JobPaymentFormProps) {
   const [cardNumber, setCardNumber] = useState('');
   const [expiry, setExpiry] = useState('');
   const [cvv, setCvv] = useState('');
@@ -93,9 +96,17 @@ export function JobPaymentForm({ amount, jobTitle, onPaymentSuccess, onCancel, l
           <div className="bg-muted/50 rounded-lg p-4 space-y-3">
             <h3 className="font-medium text-foreground">Order Summary</h3>
             <div className="space-y-2 text-sm">
+              {lawnSize && lawnSizeCost !== undefined && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Lawn Size: {lawnSize}</span>
+                  <span className="text-foreground">J${lawnSizeCost.toLocaleString()}</span>
+                </div>
+              )}
               <div className="flex justify-between">
-                <span className="text-muted-foreground">{jobTitle}</span>
-                <span className="text-foreground">J${amount.toLocaleString()}</span>
+                <span className="text-muted-foreground">Job Type: {jobTitle}</span>
+                <span className="text-foreground">
+                  {jobTypeCost && jobTypeCost > 0 ? `+J$${jobTypeCost.toLocaleString()}` : 'Included'}
+                </span>
               </div>
               <Separator />
               <div className="flex justify-between font-medium">

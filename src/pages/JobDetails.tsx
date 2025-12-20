@@ -292,19 +292,19 @@ export default function JobDetails() {
                   </div>
                 )}
 
-                <div className="pt-4 border-t">
-                  <div className="flex items-center gap-8">
-                    <div>
-                      <div className="text-sm text-muted-foreground">{isProvider ? 'Your Earnings' : 'Job Price'}</div>
-                      <div className="text-xl font-bold text-primary flex items-center gap-1">
-                        <DollarSign className="h-5 w-5" />
-                        J${isProvider 
-                          ? ((job.final_price || job.base_price) * 0.70).toFixed(2)
-                          : (job.final_price || job.base_price).toFixed(2)}
+                {!isProvider && (
+                  <div className="pt-4 border-t">
+                    <div className="flex items-center gap-8">
+                      <div>
+                        <div className="text-sm text-muted-foreground">Job Price</div>
+                        <div className="text-xl font-bold text-primary flex items-center gap-1">
+                          <DollarSign className="h-5 w-5" />
+                          J${(job.final_price || job.base_price).toFixed(2)}
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
+                )}
               </CardContent>
             </Card>
 
