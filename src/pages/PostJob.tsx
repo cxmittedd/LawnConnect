@@ -468,6 +468,7 @@ const { data: job, error: jobError } = await supabase
                       type="date"
                       value={formData.preferred_date}
                       onChange={(e) => setFormData({ ...formData, preferred_date: e.target.value })}
+                      min={new Date().toISOString().split('T')[0]}
                       required
                     />
                   </div>
