@@ -72,8 +72,8 @@ const createJobSchema = (minOffer: number) => z.object({
   description: z.string().trim().max(1000).optional(),
   location: z.string().trim().min(1, 'Location is required').max(300),
   parish: z.string().min(1, 'Parish is required'),
-  lawn_size: z.string().trim().max(100).optional(),
-  preferred_date: z.string().optional(),
+  lawn_size: z.string().trim().min(1, 'Lawn size is required').max(100),
+  preferred_date: z.string().min(1, 'Preferred date is required'),
   preferred_time: z.string().trim().max(50).optional(),
   additional_requirements: z.string().trim().max(500).optional(),
 });
@@ -176,6 +176,16 @@ const handleProceedToPayment = (e: React.FormEvent) => {
 
     if (!formData.location) {
       toast.error('Please enter a location');
+      return;
+    }
+
+    if (!lawnSizeSelection) {
+      toast.error('Please select a lawn size');
+      return;
+    }
+
+    if (!formData.preferred_date) {
+      toast.error('Please select a preferred date');
       return;
     }
 
@@ -417,10 +427,11 @@ const { data: job, error: jobError } = await supabase
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="lawn_size">Lawn Size</Label>
+                    <Label htmlFor="lawn_size">Lawn Size *</Label>
                     <Select
                       value={lawnSizeSelection}
                       onValueChange={handleLawnSizeChange}
+                      required
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select lawn size" />
@@ -443,6 +454,7 @@ const { data: job, error: jobError } = await supabase
                         value={customLawnSize}
                         onChange={(e) => handleCustomLawnSizeChange(e.target.value)}
                         className="mt-2"
+                        required
                       />
                     )}
                   </div>
@@ -450,12 +462,13 @@ const { data: job, error: jobError } = await supabase
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="preferred_date">Preferred Date</Label>
+                    <Label htmlFor="preferred_date">Preferred Date *</Label>
                     <Input
                       id="preferred_date"
                       type="date"
                       value={formData.preferred_date}
                       onChange={(e) => setFormData({ ...formData, preferred_date: e.target.value })}
+                      required
                     />
                   </div>
                   <div className="space-y-2">
