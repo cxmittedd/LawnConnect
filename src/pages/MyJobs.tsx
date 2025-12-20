@@ -7,9 +7,9 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/integrations/supabase/client';
-import { MapPin, Calendar, DollarSign, Briefcase, Eye, CheckCircle } from 'lucide-react';
+import { MapPin, Calendar, DollarSign, Briefcase, Eye, CheckCircle, History } from 'lucide-react';
 import { safeToast } from '@/lib/errorHandler';
-import { format } from 'date-fns';
+import { format, differenceInDays } from 'date-fns';
 
 interface Job {
   id: string;
@@ -25,6 +25,7 @@ interface Job {
   final_price: number | null;
   provider_payout: number | null;
   created_at: string;
+  completed_at: string | null;
 }
 
 export default function MyJobs() {
@@ -32,7 +33,9 @@ export default function MyJobs() {
   const navigate = useNavigate();
   const [userRole, setUserRole] = useState<string>('customer');
   const [postedJobs, setPostedJobs] = useState<Job[]>([]);
+  const [completedPostedJobs, setCompletedPostedJobs] = useState<Job[]>([]);
   const [acceptedJobs, setAcceptedJobs] = useState<Job[]>([]);
+  const [completedAcceptedJobs, setCompletedAcceptedJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -58,26 +61,88 @@ export default function MyJobs() {
             .from('job_requests')
             .select('*')
             .eq('customer_id', user.id)
+            .neq('status', 'completed')
             .order('created_at', { ascending: false });
 
+          // Get completed jobs (last 10, not older than 14 days)
+          const { data: completedPosted } = await supabase
+            .from('job_requests')
+            .select('*')
+            .eq('customer_id', user.id)
+            .eq('status', 'completed')
+            .order('completed_at', { ascending: false })
+            .limit(10);
+
+          // Filter out jobs completed more than 14 days ago
+          const filteredCompleted = (completedPosted || []).filter(job => {
+            if (!job.completed_at) return false;
+            return differenceInDays(new Date(), new Date(job.completed_at)) <= 14;
+          });
+
           setPostedJobs(posted || []);
+          setCompletedPostedJobs(filteredCompleted);
+
+          // Delete old completed jobs (older than 14 days)
+          await cleanupOldCompletedJobs(user.id, 'customer');
         }
 
         if (profile.user_role === 'provider' || profile.user_role === 'both') {
-          // Get accepted jobs (where provider was accepted)
+          // Get active jobs (where provider was accepted, excluding completed)
           const { data: accepted } = await supabase
             .from('job_requests')
             .select('*')
             .eq('accepted_provider_id', user.id)
+            .neq('status', 'completed')
             .order('created_at', { ascending: false });
 
+          // Get completed jobs (last 10, not older than 14 days)
+          const { data: completedAccepted } = await supabase
+            .from('job_requests')
+            .select('*')
+            .eq('accepted_provider_id', user.id)
+            .eq('status', 'completed')
+            .order('completed_at', { ascending: false })
+            .limit(10);
+
+          // Filter out jobs completed more than 14 days ago
+          const filteredCompleted = (completedAccepted || []).filter(job => {
+            if (!job.completed_at) return false;
+            return differenceInDays(new Date(), new Date(job.completed_at)) <= 14;
+          });
+
           setAcceptedJobs(accepted || []);
+          setCompletedAcceptedJobs(filteredCompleted);
         }
       }
     } catch (error) {
       safeToast.error(error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const cleanupOldCompletedJobs = async (userId: string, role: 'customer' | 'provider') => {
+    try {
+      const fourteenDaysAgo = new Date();
+      fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
+
+      if (role === 'customer') {
+        // Get old completed jobs to delete
+        const { data: oldJobs } = await supabase
+          .from('job_requests')
+          .select('id')
+          .eq('customer_id', userId)
+          .eq('status', 'completed')
+          .lt('completed_at', fourteenDaysAgo.toISOString());
+
+        if (oldJobs && oldJobs.length > 0) {
+          // Note: We can only delete if we have proper permissions
+          // For now, we'll just filter them out in the UI
+          console.log(`Found ${oldJobs.length} old completed jobs to clean up`);
+        }
+      }
+    } catch (error) {
+      console.error('Error cleaning up old jobs:', error);
     }
   };
 
@@ -156,6 +221,12 @@ export default function MyJobs() {
                 {format(new Date(job.preferred_date), 'MMM dd, yyyy')}
               </Badge>
             )}
+            {job.completed_at && job.status === 'completed' && (
+              <Badge variant="outline" className="gap-1 bg-success/10">
+                <CheckCircle className="h-3 w-3" />
+                Completed {format(new Date(job.completed_at), 'MMM dd, yyyy')}
+              </Badge>
+            )}
           </div>
 
           <div className="flex items-center justify-between pt-4 border-t">
@@ -180,6 +251,11 @@ export default function MyJobs() {
     );
   };
 
+  // Calculate tab count for grid
+  const customerTabCount = isCustomer ? 2 : 0; // Posted + Completed
+  const providerTabCount = isProvider ? 2 : 0; // My Jobs + Completed
+  const totalTabs = Math.max(customerTabCount, providerTabCount);
+
   return (
     <>
       <Navigation />
@@ -190,57 +266,183 @@ export default function MyJobs() {
         </div>
 
         <Tabs defaultValue={isCustomer ? "posted" : "accepted"} className="w-full">
-          <TabsList className="grid w-full max-w-lg" style={{ gridTemplateColumns: `repeat(${(isCustomer ? 1 : 0) + (isProvider ? 1 : 0)}, 1fr)` }}>
-            {isCustomer && <TabsTrigger value="posted">Posted Jobs</TabsTrigger>}
-            {isProvider && (
-              <TabsTrigger value="accepted" className="gap-1">
-                <CheckCircle className="h-3 w-3" />
-                My Jobs
-              </TabsTrigger>
+          <TabsList className="grid w-full max-w-2xl" style={{ gridTemplateColumns: `repeat(${totalTabs}, 1fr)` }}>
+            {isCustomer && (
+              <>
+                <TabsTrigger value="posted">Posted Jobs</TabsTrigger>
+                <TabsTrigger value="posted-completed" className="gap-1">
+                  <History className="h-3 w-3" />
+                  Completed
+                </TabsTrigger>
+              </>
+            )}
+            {isProvider && !isCustomer && (
+              <>
+                <TabsTrigger value="accepted" className="gap-1">
+                  <Briefcase className="h-3 w-3" />
+                  My Jobs
+                </TabsTrigger>
+                <TabsTrigger value="accepted-completed" className="gap-1">
+                  <History className="h-3 w-3" />
+                  Completed
+                </TabsTrigger>
+              </>
             )}
           </TabsList>
 
           {isCustomer && (
-            <TabsContent value="posted" className="mt-6">
-              {postedJobs.length === 0 ? (
-                <Card>
-                  <CardContent className="flex flex-col items-center justify-center py-12">
-                    <Briefcase className="h-12 w-12 text-muted-foreground mb-4" />
-                    <p className="text-muted-foreground mb-4">You haven't posted any jobs yet</p>
-                  </CardContent>
-                </Card>
-              ) : (
-              <div className="grid gap-6 md:grid-cols-2">
-                  {postedJobs.map((job) => (
-                    <JobCard key={job.id} job={job} />
-                  ))}
+            <>
+              <TabsContent value="posted" className="mt-6">
+                {postedJobs.length === 0 ? (
+                  <Card>
+                    <CardContent className="flex flex-col items-center justify-center py-12">
+                      <Briefcase className="h-12 w-12 text-muted-foreground mb-4" />
+                      <p className="text-muted-foreground mb-4">You haven't posted any active jobs</p>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <div className="grid gap-6 md:grid-cols-2">
+                    {postedJobs.map((job) => (
+                      <JobCard key={job.id} job={job} />
+                    ))}
+                  </div>
+                )}
+              </TabsContent>
+
+              <TabsContent value="posted-completed" className="mt-6">
+                <div className="mb-4">
+                  <p className="text-sm text-muted-foreground">
+                    Showing last 10 completed jobs from the past 14 days
+                  </p>
                 </div>
-              )}
-            </TabsContent>
+                {completedPostedJobs.length === 0 ? (
+                  <Card>
+                    <CardContent className="flex flex-col items-center justify-center py-12">
+                      <CheckCircle className="h-12 w-12 text-muted-foreground mb-4" />
+                      <p className="text-muted-foreground mb-4">No completed jobs in the last 14 days</p>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <div className="grid gap-6 md:grid-cols-2">
+                    {completedPostedJobs.map((job) => (
+                      <JobCard key={job.id} job={job} />
+                    ))}
+                  </div>
+                )}
+              </TabsContent>
+            </>
           )}
 
-          {isProvider && (
-            <TabsContent value="accepted" className="mt-6">
-              {acceptedJobs.length === 0 ? (
-                <Card>
-                  <CardContent className="flex flex-col items-center justify-center py-12">
-                    <CheckCircle className="h-12 w-12 text-muted-foreground mb-4" />
-                    <p className="text-muted-foreground mb-4">You don't have any jobs yet</p>
-                    <Button onClick={() => navigate('/browse-jobs')}>
-                      Browse Available Jobs
-                    </Button>
-                  </CardContent>
-                </Card>
-              ) : (
-                <div className="grid gap-6 md:grid-cols-2">
-                  {acceptedJobs.map((job) => (
-                    <JobCard key={job.id} job={job} isProviderView />
-                  ))}
+          {isProvider && !isCustomer && (
+            <>
+              <TabsContent value="accepted" className="mt-6">
+                {acceptedJobs.length === 0 ? (
+                  <Card>
+                    <CardContent className="flex flex-col items-center justify-center py-12">
+                      <CheckCircle className="h-12 w-12 text-muted-foreground mb-4" />
+                      <p className="text-muted-foreground mb-4">You don't have any active jobs</p>
+                      <Button onClick={() => navigate('/browse-jobs')}>
+                        Browse Available Jobs
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <div className="grid gap-6 md:grid-cols-2">
+                    {acceptedJobs.map((job) => (
+                      <JobCard key={job.id} job={job} isProviderView />
+                    ))}
+                  </div>
+                )}
+              </TabsContent>
+
+              <TabsContent value="accepted-completed" className="mt-6">
+                <div className="mb-4">
+                  <p className="text-sm text-muted-foreground">
+                    Showing last 10 completed jobs from the past 14 days
+                  </p>
                 </div>
-              )}
-            </TabsContent>
+                {completedAcceptedJobs.length === 0 ? (
+                  <Card>
+                    <CardContent className="flex flex-col items-center justify-center py-12">
+                      <History className="h-12 w-12 text-muted-foreground mb-4" />
+                      <p className="text-muted-foreground mb-4">No completed jobs in the last 14 days</p>
+                      <Button onClick={() => navigate('/browse-jobs')}>
+                        Browse Available Jobs
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <div className="grid gap-6 md:grid-cols-2">
+                    {completedAcceptedJobs.map((job) => (
+                      <JobCard key={job.id} job={job} isProviderView />
+                    ))}
+                  </div>
+                )}
+              </TabsContent>
+            </>
           )}
         </Tabs>
+
+        {/* For users who are both customer and provider, show provider section separately */}
+        {isCustomer && isProvider && (
+          <div className="mt-12">
+            <h2 className="text-2xl font-bold text-foreground mb-6">Provider Jobs</h2>
+            <Tabs defaultValue="accepted" className="w-full">
+              <TabsList className="grid w-full max-w-md grid-cols-2">
+                <TabsTrigger value="accepted" className="gap-1">
+                  <Briefcase className="h-3 w-3" />
+                  Active Jobs
+                </TabsTrigger>
+                <TabsTrigger value="accepted-completed" className="gap-1">
+                  <History className="h-3 w-3" />
+                  Completed
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="accepted" className="mt-6">
+                {acceptedJobs.length === 0 ? (
+                  <Card>
+                    <CardContent className="flex flex-col items-center justify-center py-12">
+                      <CheckCircle className="h-12 w-12 text-muted-foreground mb-4" />
+                      <p className="text-muted-foreground mb-4">You don't have any active jobs</p>
+                      <Button onClick={() => navigate('/browse-jobs')}>
+                        Browse Available Jobs
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <div className="grid gap-6 md:grid-cols-2">
+                    {acceptedJobs.map((job) => (
+                      <JobCard key={job.id} job={job} isProviderView />
+                    ))}
+                  </div>
+                )}
+              </TabsContent>
+
+              <TabsContent value="accepted-completed" className="mt-6">
+                <div className="mb-4">
+                  <p className="text-sm text-muted-foreground">
+                    Showing last 10 completed jobs from the past 14 days
+                  </p>
+                </div>
+                {completedAcceptedJobs.length === 0 ? (
+                  <Card>
+                    <CardContent className="flex flex-col items-center justify-center py-12">
+                      <History className="h-12 w-12 text-muted-foreground mb-4" />
+                      <p className="text-muted-foreground mb-4">No completed jobs in the last 14 days</p>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <div className="grid gap-6 md:grid-cols-2">
+                    {completedAcceptedJobs.map((job) => (
+                      <JobCard key={job.id} job={job} isProviderView />
+                    ))}
+                  </div>
+                )}
+              </TabsContent>
+            </Tabs>
+          </div>
+        )}
       </main>
     </>
   );
