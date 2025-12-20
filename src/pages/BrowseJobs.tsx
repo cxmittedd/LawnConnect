@@ -28,6 +28,8 @@ interface Job {
   preferred_time: string | null;
   additional_requirements: string | null;
   base_price: number;
+  final_price: number | null;
+  provider_payout: number | null;
   created_at: string;
 }
 
@@ -89,20 +91,13 @@ export default function BrowseJobs() {
     setConfirming(true);
 
     try {
-      // Calculate platform fee (30%) and provider payout (70%)
-      const jobPrice = selectedJob.base_price;
-      const platformFee = jobPrice * 0.30;
-      const providerPayout = jobPrice * 0.70;
-
-      // Update the job with accepted provider
+      // Use the pre-calculated values from when job was posted (includes job type extras)
+      // Only update status and accepted_provider_id - pricing is already set at job creation
       const { data: jobData, error: jobError } = await supabase
         .from('job_requests')
         .update({
           status: 'accepted',
           accepted_provider_id: user.id,
-          final_price: jobPrice,
-          platform_fee: platformFee,
-          provider_payout: providerPayout,
         })
         .eq('id', selectedJob.id)
         .is('accepted_provider_id', null) // Only update if not already assigned
@@ -279,7 +274,7 @@ export default function BrowseJobs() {
                       <div className="text-xs text-muted-foreground">Your Earnings</div>
                       <div className="text-2xl font-bold text-primary flex items-center gap-1">
                         <DollarSign className="h-5 w-5" />
-                        J${(job.base_price * 0.70).toFixed(2)}
+                        J${(job.provider_payout || (job.final_price || job.base_price) * 0.70).toFixed(2)}
                       </div>
                     </div>
                     <Button onClick={() => handleConfirmJob(job)}>
@@ -326,7 +321,7 @@ export default function BrowseJobs() {
                 <div>
                   <span className="font-medium">Your Earnings:</span>{' '}
                   <span className="text-primary font-bold">
-                    J${(selectedJob.base_price * 0.70).toFixed(2)}
+                    J${(selectedJob.provider_payout || (selectedJob.final_price || selectedJob.base_price) * 0.70).toFixed(2)}
                   </span>
                 </div>
                 

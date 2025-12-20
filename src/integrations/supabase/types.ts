@@ -836,12 +836,14 @@ export type Database = {
           created_at: string
           customer_offer: number
           description: string
+          final_price: number
           id: string
           lawn_size: string
           location: string
           parish: string
           preferred_date: string
           preferred_time: string
+          provider_payout: number
           status: string
           title: string
         }[]
