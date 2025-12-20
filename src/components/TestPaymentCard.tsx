@@ -141,11 +141,13 @@ export function TestPaymentCard({
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Amount to pay */}
-        <div className="bg-muted/50 rounded-lg p-4">
-          <div className="text-sm text-muted-foreground">Amount Due</div>
-          <div className="text-3xl font-bold text-primary">J${amount.toFixed(2)}</div>
-        </div>
+        {/* Amount to pay - only show to customers */}
+        {isCustomer && (
+          <div className="bg-muted/50 rounded-lg p-4">
+            <div className="text-sm text-muted-foreground">Amount Due</div>
+            <div className="text-3xl font-bold text-primary">J${amount.toFixed(2)}</div>
+          </div>
+        )}
 
         {/* Customer View - Pending Payment */}
         {isCustomer && paymentStatus === 'pending' && (
