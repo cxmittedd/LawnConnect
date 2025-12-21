@@ -1,12 +1,13 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { Navigation } from '@/components/Navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/integrations/supabase/client';
-import { DollarSign, CheckCircle, TrendingUp, Calendar, Banknote, Clock } from 'lucide-react';
-import { format, addDays, nextSaturday, differenceInDays } from 'date-fns';
+import { DollarSign, CheckCircle, TrendingUp, Calendar, Banknote, Clock, BarChart3 } from 'lucide-react';
+import { format, addDays, nextSaturday, differenceInDays, subMonths, startOfMonth, endOfMonth } from 'date-fns';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 interface CompletedJob {
   id: string;
@@ -24,6 +25,12 @@ interface Payout {
   jobs_count: number;
   payout_date: string;
   created_at: string;
+}
+
+interface MonthlyEarning {
+  month: string;
+  earnings: number;
+  jobs: number;
 }
 
 export default function ProviderEarnings() {
@@ -69,6 +76,33 @@ export default function ProviderEarnings() {
     };
   };
 
+  // Calculate monthly earnings for the chart (last 6 months)
+  const monthlyEarnings = useMemo((): MonthlyEarning[] => {
+    const months: MonthlyEarning[] = [];
+    const now = new Date();
+    
+    for (let i = 5; i >= 0; i--) {
+      const monthDate = subMonths(now, i);
+      const monthStart = startOfMonth(monthDate);
+      const monthEnd = endOfMonth(monthDate);
+      
+      const monthJobs = completedJobs.filter(job => {
+        if (!job.completed_at) return false;
+        const completedDate = new Date(job.completed_at);
+        return completedDate >= monthStart && completedDate <= monthEnd;
+      });
+      
+      const earnings = monthJobs.reduce((sum, job) => sum + Number(job.provider_payout || 0), 0);
+      
+      months.push({
+        month: format(monthDate, 'MMM'),
+        earnings,
+        jobs: monthJobs.length,
+      });
+    }
+    
+    return months;
+  }, [completedJobs]);
   useEffect(() => {
     if (user) {
       loadEarningsData();
@@ -228,6 +262,75 @@ export default function ProviderEarnings() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Monthly Earnings Chart */}
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <BarChart3 className="h-5 w-5 text-primary" />
+              Monthly Earnings Trend
+            </CardTitle>
+            <CardDescription>Your earnings over the last 6 months</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {completedJobs.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <BarChart3 className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>No earnings data yet</p>
+                <p className="text-sm">Complete jobs to see your earnings trend</p>
+              </div>
+            ) : (
+              <div className="h-[300px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart
+                    data={monthlyEarnings}
+                    margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
+                  >
+                    <defs>
+                      <linearGradient id="earningsGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                    <XAxis 
+                      dataKey="month" 
+                      className="text-xs fill-muted-foreground"
+                      tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                    />
+                    <YAxis 
+                      className="text-xs fill-muted-foreground"
+                      tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                      tickFormatter={(value) => `J$${(value / 1000).toFixed(0)}k`}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: 'hsl(var(--card))',
+                        border: '1px solid hsl(var(--border))',
+                        borderRadius: '8px',
+                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                      }}
+                      labelStyle={{ color: 'hsl(var(--foreground))', fontWeight: 'bold' }}
+                      formatter={(value: number, name: string) => {
+                        if (name === 'earnings') {
+                          return [`J$${value.toLocaleString('en-JM', { minimumFractionDigits: 2 })}`, 'Earnings'];
+                        }
+                        return [value, 'Jobs'];
+                      }}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="earnings"
+                      stroke="hsl(var(--primary))"
+                      strokeWidth={2}
+                      fill="url(#earningsGradient)"
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Payout History */}
         <Card className="mb-8">
