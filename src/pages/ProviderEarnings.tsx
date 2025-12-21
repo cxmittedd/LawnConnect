@@ -5,8 +5,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/integrations/supabase/client';
-import { DollarSign, CheckCircle, TrendingUp, Calendar, Banknote } from 'lucide-react';
-import { format } from 'date-fns';
+import { DollarSign, CheckCircle, TrendingUp, Calendar, Banknote, Clock } from 'lucide-react';
+import { format, addDays, nextSaturday, differenceInDays } from 'date-fns';
 
 interface CompletedJob {
   id: string;
@@ -36,7 +36,38 @@ export default function ProviderEarnings() {
     thisMonthEarnings: 0,
     completedJobsCount: 0,
     averagePerJob: 0,
+    pendingPayout: 0,
   });
+
+  // Calculate next payout date (biweekly on Saturdays)
+  const calculateNextPayoutDate = (lastPayoutDate: Date | null): Date => {
+    const today = new Date();
+    
+    if (lastPayoutDate) {
+      // Next payout is 14 days after last payout
+      let nextPayout = addDays(lastPayoutDate, 14);
+      // If next payout is in the past, find the next upcoming Saturday
+      while (nextPayout <= today) {
+        nextPayout = addDays(nextPayout, 14);
+      }
+      return nextPayout;
+    }
+    
+    // If no payouts yet, find the next Saturday
+    const nextSat = nextSaturday(today);
+    return nextSat;
+  };
+
+  const getNextPayoutInfo = () => {
+    const lastPayout = payouts.length > 0 ? new Date(payouts[0].payout_date) : null;
+    const nextPayoutDate = calculateNextPayoutDate(lastPayout);
+    const daysUntil = differenceInDays(nextPayoutDate, new Date());
+    
+    return {
+      date: nextPayoutDate,
+      daysUntil: Math.max(0, daysUntil),
+    };
+  };
 
   useEffect(() => {
     if (user) {
@@ -85,11 +116,18 @@ export default function ProviderEarnings() {
           .filter(job => job.completed_at && new Date(job.completed_at) >= firstDayOfMonth)
           .reduce((sum, job) => sum + Number(job.provider_payout || 0), 0);
 
+        // Calculate pending payout (jobs completed but not yet paid out)
+        const paidJobIds = payoutsData?.flatMap(p => p.job_ids) || [];
+        const pendingPayout = jobsData
+          .filter(job => !paidJobIds.includes(job.id))
+          .reduce((sum, job) => sum + Number(job.provider_payout || 0), 0);
+
         setStats({
           totalEarnings,
           thisMonthEarnings,
           completedJobsCount,
           averagePerJob,
+          pendingPayout,
         });
       }
     } catch (error) {
@@ -123,7 +161,7 @@ export default function ProviderEarnings() {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-8">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-5 mb-8">
           <Card className="hover:shadow-lg transition-shadow">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Earnings</CardTitle>
@@ -165,6 +203,28 @@ export default function ProviderEarnings() {
             <CardContent>
               <div className="text-2xl font-bold">J${stats.averagePerJob.toLocaleString('en-JM', { minimumFractionDigits: 2 })}</div>
               <p className="text-xs text-muted-foreground mt-1">Per completed job</p>
+            </CardContent>
+          </Card>
+
+          <Card className="hover:shadow-lg transition-shadow border-primary/20 bg-primary/5">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Next Payout</CardTitle>
+              <Clock className="h-5 w-5 text-primary" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-primary">
+                {format(getNextPayoutInfo().date, 'MMM d')}
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                {getNextPayoutInfo().daysUntil === 0 
+                  ? 'Today!' 
+                  : `In ${getNextPayoutInfo().daysUntil} day${getNextPayoutInfo().daysUntil !== 1 ? 's' : ''}`}
+              </p>
+              {stats.pendingPayout > 0 && (
+                <p className="text-xs text-primary font-medium mt-2">
+                  J${stats.pendingPayout.toLocaleString('en-JM', { minimumFractionDigits: 2 })} pending
+                </p>
+              )}
             </CardContent>
           </Card>
         </div>
