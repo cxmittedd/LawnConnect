@@ -4,11 +4,12 @@ import { Navigation } from '@/components/Navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/integrations/supabase/client';
-import { MapPin, Calendar, DollarSign, Scissors, Shield, Clock, AlertTriangle, Wrench } from 'lucide-react';
+import { MapPin, Calendar, DollarSign, Scissors, Shield, Clock, AlertTriangle, Wrench, Filter } from 'lucide-react';
 import { toast } from 'sonner';
 import { safeToast } from '@/lib/errorHandler';
 import { format } from 'date-fns';
@@ -43,6 +44,15 @@ export default function BrowseJobs() {
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
   const [profileDialogOpen, setProfileDialogOpen] = useState(false);
   const [confirming, setConfirming] = useState(false);
+  const [parishFilter, setParishFilter] = useState<string>('all');
+
+  // Get unique parishes from jobs for filter options
+  const availableParishes = [...new Set(jobs.map(job => job.parish))].sort();
+
+  // Filter jobs based on selected parish
+  const filteredJobs = parishFilter === 'all' 
+    ? jobs 
+    : jobs.filter(job => job.parish === parishFilter);
 
   useEffect(() => {
     if (!verificationLoading && isVerified) {
@@ -219,16 +229,48 @@ export default function BrowseJobs() {
           <p className="text-muted-foreground">Find lawn cutting opportunities near you</p>
         </div>
 
-        {jobs.length === 0 ? (
+        {/* Parish Filter */}
+        {jobs.length > 0 && (
+          <div className="flex items-center gap-3 mb-6">
+            <Filter className="h-4 w-4 text-muted-foreground" />
+            <Select value={parishFilter} onValueChange={setParishFilter}>
+              <SelectTrigger className="w-[200px] bg-card">
+                <SelectValue placeholder="Filter by parish" />
+              </SelectTrigger>
+              <SelectContent className="bg-card z-50">
+                <SelectItem value="all">All Parishes</SelectItem>
+                {availableParishes.map((parish) => (
+                  <SelectItem key={parish} value={parish}>{parish}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {parishFilter !== 'all' && (
+              <Badge variant="secondary" className="gap-1">
+                {filteredJobs.length} job{filteredJobs.length !== 1 ? 's' : ''} in {parishFilter}
+              </Badge>
+            )}
+          </div>
+        )}
+
+        {filteredJobs.length === 0 ? (
           <Card>
             <CardContent className="flex flex-col items-center justify-center py-12">
               <Scissors className="h-12 w-12 text-muted-foreground mb-4" />
-              <p className="text-muted-foreground">No jobs available at the moment</p>
+              <p className="text-muted-foreground">
+                {jobs.length === 0 
+                  ? 'No jobs available at the moment' 
+                  : `No jobs available in ${parishFilter}`}
+              </p>
+              {parishFilter !== 'all' && (
+                <Button variant="link" onClick={() => setParishFilter('all')} className="mt-2">
+                  Clear filter
+                </Button>
+              )}
             </CardContent>
           </Card>
         ) : (
           <div className="grid gap-6 md:grid-cols-2">
-            {jobs.map((job) => (
+            {filteredJobs.map((job) => (
               <Card key={job.id} className="bg-card hover:shadow-lg transition-shadow border-border">
                 <CardHeader>
                   <div className="flex justify-between items-start">
