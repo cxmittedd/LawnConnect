@@ -23,3 +23,6 @@ verify_jwt = false
 
 [functions.autopay-provider-payouts]
 verify_jwt = false
+
+[functions.cleanup-old-jobs]
+verify_jwt = false
