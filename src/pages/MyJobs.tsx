@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/integrations/supabase/client';
-import { MapPin, Calendar, DollarSign, Briefcase, Eye, CheckCircle, History } from 'lucide-react';
+import { MapPin, Calendar, DollarSign, Briefcase, Eye, CheckCircle, History, Wrench } from 'lucide-react';
 import { safeToast } from '@/lib/errorHandler';
 import { format, differenceInDays } from 'date-fns';
 
@@ -209,6 +209,10 @@ export default function MyJobs() {
           )}
 
           <div className="flex flex-wrap gap-2">
+            <Badge variant="default" className="gap-1 bg-accent text-accent-foreground">
+              <Wrench className="h-3 w-3" />
+              {job.title}
+            </Badge>
             {job.parish && (
               <Badge variant="outline">{job.parish}</Badge>
             )}
