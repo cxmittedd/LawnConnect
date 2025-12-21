@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/integrations/supabase/client';
-import { MapPin, Calendar, DollarSign, Scissors, Shield, Clock, AlertTriangle } from 'lucide-react';
+import { MapPin, Calendar, DollarSign, Scissors, Shield, Clock, AlertTriangle, Wrench } from 'lucide-react';
 import { toast } from 'sonner';
 import { safeToast } from '@/lib/errorHandler';
 import { format } from 'date-fns';
@@ -248,6 +248,10 @@ export default function BrowseJobs() {
                   )}
 
                   <div className="flex flex-wrap gap-2">
+                    <Badge variant="default" className="gap-1 bg-accent text-accent-foreground">
+                      <Wrench className="h-3 w-3" />
+                      {job.title}
+                    </Badge>
                     {job.lawn_size && (
                       <Badge variant="secondary">{job.lawn_size}</Badge>
                     )}
