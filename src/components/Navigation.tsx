@@ -34,6 +34,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { NotificationBell } from '@/components/NotificationBell';
 
 export function Navigation() {
   const { user, signOut } = useAuth();
@@ -166,6 +167,10 @@ export function Navigation() {
                 </DropdownMenuContent>
               </DropdownMenu>
             )}
+            
+            {/* Notification Bell */}
+            {user && <NotificationBell />}
+            
             <button
               onClick={toggleTheme}
               className="p-2 rounded-md hover:bg-muted transition-colors shrink-0"

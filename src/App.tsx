@@ -8,6 +8,7 @@ import { AdminRoute } from "./lib/adminRoute";
 import { ThemeProvider } from "./hooks/useTheme";
 import { CookieConsent } from "./components/CookieConsent";
 import ErrorBoundary from "./components/ErrorBoundary";
+import { AcceptedJobPopup } from "./components/AcceptedJobPopup";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import ResetPassword from "./pages/ResetPassword";
@@ -158,6 +159,7 @@ const App = () => (
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
+            <AcceptedJobPopup />
           </AuthProvider>
           <CookieConsent />
         </BrowserRouter>
