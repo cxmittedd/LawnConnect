@@ -18,6 +18,14 @@ import { AutopaySetupDialog } from '@/components/AutopaySetupDialog';
 import { sendInvoice } from '@/lib/invoiceService';
 import { useCustomerPreferences } from '@/hooks/useCustomerPreferences';
 import { addDays, setDate, isBefore, startOfDay } from 'date-fns';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 import lawnSmall from '@/assets/lawn-size-small.jpg';
 import lawnMedium from '@/assets/lawn-size-medium.jpg';
@@ -95,6 +103,7 @@ export default function PostJob() {
   const [step, setStep] = useState<'details' | 'payment'>('details');
   const [showAutopayDialog, setShowAutopayDialog] = useState(false);
   const [pendingCardInfo, setPendingCardInfo] = useState<{ lastFour: string; name: string } | null>(null);
+  const [showAutofillPreview, setShowAutofillPreview] = useState(false);
 const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -106,8 +115,8 @@ const [formData, setFormData] = useState({
     additional_requirements: '',
   });
 
-  // Function to autofill from saved preferences
-  const handleAutofill = () => {
+  // Function to apply autofill from saved preferences
+  const applyAutofill = () => {
     if (preferences) {
       const lawnSizeValue = LAWN_SIZES.find(s => s.label === preferences.lawn_size)?.value || '';
       setLawnSizeSelection(lawnSizeValue);
@@ -119,11 +128,24 @@ const [formData, setFormData] = useState({
         title: preferences.job_type || prev.title,
         additional_requirements: preferences.additional_requirements || prev.additional_requirements,
       }));
+      setShowAutofillPreview(false);
       toast.success('Previous job details loaded');
     }
   };
 
   const hasPreferences = preferences && (preferences.location || preferences.parish || preferences.lawn_size || preferences.job_type);
+
+  // Get preview data for autofill dialog
+  const getPreviewItems = () => {
+    if (!preferences) return [];
+    const items: { label: string; value: string }[] = [];
+    if (preferences.job_type) items.push({ label: 'Job Type', value: preferences.job_type });
+    if (preferences.parish) items.push({ label: 'Parish', value: preferences.parish });
+    if (preferences.location) items.push({ label: 'Location', value: preferences.location });
+    if (preferences.lawn_size) items.push({ label: 'Lawn Size', value: preferences.lawn_size });
+    if (preferences.additional_requirements) items.push({ label: 'Additional Requirements', value: preferences.additional_requirements });
+    return items;
+  };
 
   const currentMinOffer = getMinOffer(lawnSizeSelection);
 
@@ -392,13 +414,44 @@ const { data: job, error: jobError } = await supabase
                       type="button"
                       variant="outline"
                       size="sm"
-                      onClick={handleAutofill}
+                      onClick={() => setShowAutofillPreview(true)}
                       className="gap-2"
                     >
                       <Wand2 className="h-4 w-4" />
                       Autofill
                     </Button>
                   )}
+                  
+                  {/* Autofill Preview Dialog */}
+                  <Dialog open={showAutofillPreview} onOpenChange={setShowAutofillPreview}>
+                    <DialogContent className="sm:max-w-md">
+                      <DialogHeader>
+                        <DialogTitle>Autofill from Previous Job</DialogTitle>
+                        <DialogDescription>
+                          The following details will be filled in from your last job:
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="space-y-3 py-4">
+                        {getPreviewItems().map((item, index) => (
+                          <div key={index} className="flex flex-col gap-1 rounded-lg border p-3">
+                            <span className="text-xs font-medium text-muted-foreground">{item.label}</span>
+                            <span className="text-sm">{item.value}</span>
+                          </div>
+                        ))}
+                        {getPreviewItems().length === 0 && (
+                          <p className="text-sm text-muted-foreground">No saved preferences found.</p>
+                        )}
+                      </div>
+                      <DialogFooter className="gap-2 sm:gap-0">
+                        <Button variant="outline" onClick={() => setShowAutofillPreview(false)}>
+                          Cancel
+                        </Button>
+                        <Button onClick={applyAutofill} disabled={getPreviewItems().length === 0}>
+                          Apply
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
