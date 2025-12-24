@@ -11,20 +11,22 @@ import {
 import { Button } from '@/components/ui/button';
 import { CheckCircle, ArrowRight } from 'lucide-react';
 
+const SESSION_KEY = 'accepted_job_popup_shown';
+
 export function AcceptedJobPopup() {
   const navigate = useNavigate();
   const { newlyAcceptedJobs, dismissJob, loading } = useNewlyAcceptedJobs();
   const [currentJobIndex, setCurrentJobIndex] = useState(0);
   const [open, setOpen] = useState(false);
-  const [hasShown, setHasShown] = useState(false);
 
-  // Show popup when newly accepted jobs are detected
+  // Show popup only once per session
   useEffect(() => {
-    if (!loading && newlyAcceptedJobs.length > 0 && !hasShown) {
+    const hasShownThisSession = sessionStorage.getItem(SESSION_KEY) === 'true';
+    if (!loading && newlyAcceptedJobs.length > 0 && !hasShownThisSession) {
       setOpen(true);
-      setHasShown(true);
+      sessionStorage.setItem(SESSION_KEY, 'true');
     }
-  }, [newlyAcceptedJobs, loading, hasShown]);
+  }, [newlyAcceptedJobs, loading]);
 
   const currentJob = newlyAcceptedJobs[currentJobIndex];
 
