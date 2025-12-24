@@ -135,6 +135,24 @@ const [formData, setFormData] = useState({
 
   const hasPreferences = preferences && (preferences.location || preferences.parish || preferences.lawn_size || preferences.job_type);
 
+  // Function to clear all form fields
+  const clearForm = () => {
+    setLawnSizeSelection('');
+    setCustomLawnSize('');
+    setFormData({
+      title: '',
+      description: '',
+      location: '',
+      parish: '',
+      lawn_size: '',
+      preferred_date: '',
+      preferred_time: '',
+      additional_requirements: '',
+    });
+    setPhotos([]);
+    toast.success('Form cleared');
+  };
+
   // Get preview data for autofill dialog
   const getPreviewItems = () => {
     if (!preferences) return [];
@@ -409,18 +427,30 @@ const { data: job, error: jobError } = await supabase
                     <CardTitle>Job Details</CardTitle>
                     <CardDescription>Minimum price: J${currentMinOffer.toLocaleString()}. Pay upfront to post your job.</CardDescription>
                   </div>
-                  {hasPreferences && (
+                  <div className="flex gap-2">
                     <Button
                       type="button"
-                      variant="outline"
+                      variant="ghost"
                       size="sm"
-                      onClick={() => setShowAutofillPreview(true)}
-                      className="gap-2"
+                      onClick={clearForm}
+                      className="gap-2 text-muted-foreground"
                     >
-                      <Wand2 className="h-4 w-4" />
-                      Autofill
+                      <X className="h-4 w-4" />
+                      Clear
                     </Button>
-                  )}
+                    {hasPreferences && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setShowAutofillPreview(true)}
+                        className="gap-2"
+                      >
+                        <Wand2 className="h-4 w-4" />
+                        Autofill
+                      </Button>
+                    )}
+                  </div>
                   
                   {/* Autofill Preview Dialog */}
                   <Dialog open={showAutofillPreview} onOpenChange={setShowAutofillPreview}>
