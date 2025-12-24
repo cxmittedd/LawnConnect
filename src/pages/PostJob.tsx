@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/integrations/supabase/client';
-import { Upload, X, ArrowRight, Sparkles } from 'lucide-react';
+import { Upload, X, ArrowRight, Wand2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { safeToast } from '@/lib/errorHandler';
 import { useNavigate } from 'react-router-dom';
@@ -106,9 +106,9 @@ const [formData, setFormData] = useState({
     additional_requirements: '',
   });
 
-  // Load saved preferences when available
-  useEffect(() => {
-    if (preferences && !prefsLoading) {
+  // Function to autofill from saved preferences
+  const handleAutofill = () => {
+    if (preferences) {
       const lawnSizeValue = LAWN_SIZES.find(s => s.label === preferences.lawn_size)?.value || '';
       setLawnSizeSelection(lawnSizeValue);
       setFormData(prev => ({
@@ -119,8 +119,11 @@ const [formData, setFormData] = useState({
         title: preferences.job_type || prev.title,
         additional_requirements: preferences.additional_requirements || prev.additional_requirements,
       }));
+      toast.success('Previous job details loaded');
     }
-  }, [preferences, prefsLoading]);
+  };
+
+  const hasPreferences = preferences && (preferences.location || preferences.parish || preferences.lawn_size || preferences.job_type);
 
   const currentMinOffer = getMinOffer(lawnSizeSelection);
 
@@ -379,8 +382,24 @@ const { data: job, error: jobError } = await supabase
           <form onSubmit={handleProceedToPayment}>
             <Card>
               <CardHeader>
-                <CardTitle>Job Details</CardTitle>
-                <CardDescription>Minimum price: J${currentMinOffer.toLocaleString()}. Pay upfront to post your job.</CardDescription>
+                <div className="flex items-start justify-between">
+                  <div>
+                    <CardTitle>Job Details</CardTitle>
+                    <CardDescription>Minimum price: J${currentMinOffer.toLocaleString()}. Pay upfront to post your job.</CardDescription>
+                  </div>
+                  {hasPreferences && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={handleAutofill}
+                      className="gap-2"
+                    >
+                      <Wand2 className="h-4 w-4" />
+                      Autofill
+                    </Button>
+                  )}
+                </div>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
