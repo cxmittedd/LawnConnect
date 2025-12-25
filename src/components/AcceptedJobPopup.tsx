@@ -11,24 +11,49 @@ import {
 import { Button } from '@/components/ui/button';
 import { CheckCircle, ArrowRight } from 'lucide-react';
 
-const SESSION_KEY = 'accepted_job_popup_shown';
+const POPUP_SHOWN_KEY = 'lawnconnect_accepted_popup_shown_jobs';
+
+// Helper to get shown popup job IDs from localStorage
+const getShownPopupJobIds = (): Set<string> => {
+  const stored = localStorage.getItem(POPUP_SHOWN_KEY);
+  if (!stored) return new Set();
+  try {
+    return new Set(JSON.parse(stored));
+  } catch {
+    return new Set();
+  }
+};
+
+// Helper to save shown popup job IDs to localStorage
+const saveShownPopupJobIds = (ids: Set<string>) => {
+  localStorage.setItem(POPUP_SHOWN_KEY, JSON.stringify([...ids]));
+};
 
 export function AcceptedJobPopup() {
   const navigate = useNavigate();
   const { newlyAcceptedJobs, dismissJob, loading } = useNewlyAcceptedJobs();
   const [currentJobIndex, setCurrentJobIndex] = useState(0);
   const [open, setOpen] = useState(false);
+  const [jobsToShow, setJobsToShow] = useState<typeof newlyAcceptedJobs>([]);
 
-  // Show popup only once per session
+  // Filter jobs that haven't had popup shown and show popup
   useEffect(() => {
-    const hasShownThisSession = sessionStorage.getItem(SESSION_KEY) === 'true';
-    if (!loading && newlyAcceptedJobs.length > 0 && !hasShownThisSession) {
-      setOpen(true);
-      sessionStorage.setItem(SESSION_KEY, 'true');
+    if (!loading && newlyAcceptedJobs.length > 0) {
+      const shownIds = getShownPopupJobIds();
+      const unshownJobs = newlyAcceptedJobs.filter(job => !shownIds.has(job.id));
+      
+      if (unshownJobs.length > 0) {
+        setJobsToShow(unshownJobs);
+        setOpen(true);
+        
+        // Mark all these jobs as shown
+        unshownJobs.forEach(job => shownIds.add(job.id));
+        saveShownPopupJobIds(shownIds);
+      }
     }
   }, [newlyAcceptedJobs, loading]);
 
-  const currentJob = newlyAcceptedJobs[currentJobIndex];
+  const currentJob = jobsToShow[currentJobIndex];
 
   const handleViewJob = () => {
     if (currentJob) {
@@ -41,7 +66,7 @@ export function AcceptedJobPopup() {
   const handleDismiss = () => {
     if (currentJob) {
       dismissJob(currentJob.id);
-      if (currentJobIndex < newlyAcceptedJobs.length - 1) {
+      if (currentJobIndex < jobsToShow.length - 1) {
         setCurrentJobIndex(prev => prev + 1);
       } else {
         setOpen(false);
@@ -50,7 +75,7 @@ export function AcceptedJobPopup() {
   };
 
   const handleDismissAll = () => {
-    newlyAcceptedJobs.forEach(job => dismissJob(job.id));
+    jobsToShow.forEach(job => dismissJob(job.id));
     setOpen(false);
   };
 
@@ -76,10 +101,10 @@ export function AcceptedJobPopup() {
             <ArrowRight className="h-4 w-4" />
           </Button>
           
-          {newlyAcceptedJobs.length > 1 ? (
+          {jobsToShow.length > 1 ? (
             <div className="flex gap-2">
               <Button variant="outline" onClick={handleDismiss} className="flex-1">
-                Next ({newlyAcceptedJobs.length - 1} more)
+                Next ({jobsToShow.length - 1} more)
               </Button>
               <Button variant="ghost" onClick={handleDismissAll} className="flex-1">
                 Dismiss All
