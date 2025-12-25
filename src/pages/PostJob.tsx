@@ -425,7 +425,7 @@ const { data: job, error: jobError } = await supabase
                 <div className="flex items-start justify-between">
                   <div>
                     <CardTitle>Job Details</CardTitle>
-                    <CardDescription>Minimum price: J${currentMinOffer.toLocaleString()}. Pay upfront to post your job.</CardDescription>
+                    <CardDescription>Pay upfront to post your job.</CardDescription>
                   </div>
                   <div className="flex gap-2">
                     <Button
