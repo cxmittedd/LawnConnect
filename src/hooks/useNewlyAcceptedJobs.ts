@@ -10,6 +10,23 @@ interface AcceptedJob {
 }
 
 const LAST_SEEN_KEY = 'lawnconnect_last_seen_accepted_jobs';
+const DISMISSED_JOBS_KEY = 'lawnconnect_dismissed_job_ids';
+
+// Helper to get dismissed job IDs from localStorage
+const getDismissedJobIds = (): Set<string> => {
+  const stored = localStorage.getItem(DISMISSED_JOBS_KEY);
+  if (!stored) return new Set();
+  try {
+    return new Set(JSON.parse(stored));
+  } catch {
+    return new Set();
+  }
+};
+
+// Helper to save dismissed job IDs to localStorage
+const saveDismissedJobIds = (ids: Set<string>) => {
+  localStorage.setItem(DISMISSED_JOBS_KEY, JSON.stringify([...ids]));
+};
 
 export function useNewlyAcceptedJobs() {
   const { user } = useAuth();
@@ -27,6 +44,9 @@ export function useNewlyAcceptedJobs() {
       // Get last seen timestamp from localStorage
       const lastSeenStr = localStorage.getItem(LAST_SEEN_KEY);
       const lastSeen = lastSeenStr ? new Date(lastSeenStr) : new Date(0);
+      
+      // Get dismissed job IDs
+      const dismissedIds = getDismissedJobIds();
 
       // Fetch jobs that customer posted which were accepted since last seen
       const { data: jobs, error } = await supabase
@@ -49,26 +69,33 @@ export function useNewlyAcceptedJobs() {
       }
 
       if (jobs && jobs.length > 0) {
-        // Fetch provider names for accepted jobs
-        const providerIds = [...new Set(jobs.map(j => j.accepted_provider_id).filter(Boolean))];
+        // Filter out dismissed jobs
+        const filteredJobs = jobs.filter(job => !dismissedIds.has(job.id));
         
-        const { data: providers } = await supabase
-          .from('profiles')
-          .select('id, first_name, company_name')
-          .in('id', providerIds);
+        if (filteredJobs.length > 0) {
+          // Fetch provider names for accepted jobs
+          const providerIds = [...new Set(filteredJobs.map(j => j.accepted_provider_id).filter(Boolean))];
+          
+          const { data: providers } = await supabase
+            .from('profiles')
+            .select('id, first_name, company_name')
+            .in('id', providerIds);
 
-        const providerMap = new Map(
-          providers?.map(p => [p.id, p.company_name || p.first_name || 'A provider']) || []
-        );
+          const providerMap = new Map(
+            providers?.map(p => [p.id, p.company_name || p.first_name || 'A provider']) || []
+          );
 
-        const acceptedJobs: AcceptedJob[] = jobs.map(job => ({
-          id: job.id,
-          title: job.title,
-          providerName: providerMap.get(job.accepted_provider_id!) || 'A provider',
-          acceptedAt: job.updated_at!,
-        }));
+          const acceptedJobs: AcceptedJob[] = filteredJobs.map(job => ({
+            id: job.id,
+            title: job.title,
+            providerName: providerMap.get(job.accepted_provider_id!) || 'A provider',
+            acceptedAt: job.updated_at!,
+          }));
 
-        setNewlyAcceptedJobs(acceptedJobs);
+          setNewlyAcceptedJobs(acceptedJobs);
+        } else {
+          setNewlyAcceptedJobs([]);
+        }
       } else {
         setNewlyAcceptedJobs([]);
       }
@@ -80,14 +107,24 @@ export function useNewlyAcceptedJobs() {
   }, [user]);
 
   const dismissJob = useCallback((jobId: string) => {
+    // Add to dismissed IDs in localStorage
+    const dismissedIds = getDismissedJobIds();
+    dismissedIds.add(jobId);
+    saveDismissedJobIds(dismissedIds);
+    
     setNewlyAcceptedJobs(prev => prev.filter(j => j.id !== jobId));
   }, []);
 
   const dismissAll = useCallback(() => {
+    // Add all current job IDs to dismissed list
+    const dismissedIds = getDismissedJobIds();
+    newlyAcceptedJobs.forEach(job => dismissedIds.add(job.id));
+    saveDismissedJobIds(dismissedIds);
+    
     // Update last seen timestamp to now
     localStorage.setItem(LAST_SEEN_KEY, new Date().toISOString());
     setNewlyAcceptedJobs([]);
-  }, []);
+  }, [newlyAcceptedJobs]);
 
   useEffect(() => {
     checkForNewlyAcceptedJobs();
