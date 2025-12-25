@@ -9,6 +9,7 @@ import { ThemeProvider } from "./hooks/useTheme";
 import { CookieConsent } from "./components/CookieConsent";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { AcceptedJobPopup } from "./components/AcceptedJobPopup";
+import { NativeAppInitializer } from "./components/NativeAppInitializer";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import ResetPassword from "./pages/ResetPassword";
@@ -160,6 +161,7 @@ const App = () => (
               <Route path="*" element={<NotFound />} />
             </Routes>
             <AcceptedJobPopup />
+            <NativeAppInitializer />
           </AuthProvider>
           <CookieConsent />
         </BrowserRouter>
