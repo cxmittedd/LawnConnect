@@ -184,6 +184,7 @@ export default function JobDetails() {
   };
 
   const getStatusLabel = (status: string) => {
+    if (status === 'accepted') return 'In Progress';
     return status.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
   };
 

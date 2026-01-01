@@ -648,7 +648,7 @@ export function JobCompletionCard({
             </div>
             {(status === "accepted" || status === "in_progress") && (
               <Badge className="bg-info text-info-foreground gap-1">
-                <Clock className="h-3 w-3" /> {status === "accepted" ? "Accepted" : "In Progress"}
+                <Clock className="h-3 w-3" /> In Progress
               </Badge>
             )}
             {status === "pending_completion" && (
