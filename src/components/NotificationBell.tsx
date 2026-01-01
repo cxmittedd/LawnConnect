@@ -6,26 +6,100 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import { useUnreadMessages } from '@/hooks/useUnreadMessages';
 import { useNewlyAcceptedJobs } from '@/hooks/useNewlyAcceptedJobs';
 import { useNavigate } from 'react-router-dom';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { MessageSquare, CheckCircle } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/lib/auth';
+
+interface JobWithUnreadMessages {
+  jobId: string;
+  jobTitle: string;
+  unreadCount: number;
+}
 
 export function NotificationBell() {
   const navigate = useNavigate();
-  const unreadMessages = useUnreadMessages();
+  const { user } = useAuth();
   const { newlyAcceptedJobs, dismissJob, dismissAll, hasNewJobs } = useNewlyAcceptedJobs();
+  const [jobsWithUnread, setJobsWithUnread] = useState<JobWithUnreadMessages[]>([]);
   
-  const totalNotifications = unreadMessages + newlyAcceptedJobs.length;
+  useEffect(() => {
+    if (!user) {
+      setJobsWithUnread([]);
+      return;
+    }
+
+    const fetchJobsWithUnread = async () => {
+      // Get jobs where user is either customer or provider
+      const { data: jobs } = await supabase
+        .from('job_requests')
+        .select('id, title, customer_id, accepted_provider_id')
+        .or(`customer_id.eq.${user.id},accepted_provider_id.eq.${user.id}`);
+
+      if (!jobs || jobs.length === 0) {
+        setJobsWithUnread([]);
+        return;
+      }
+
+      // For each job, count unread messages
+      const jobsWithCounts: JobWithUnreadMessages[] = [];
+      
+      for (const job of jobs) {
+        const { count } = await supabase
+          .from('messages')
+          .select('*', { count: 'exact', head: true })
+          .eq('job_id', job.id)
+          .neq('sender_id', user.id)
+          .is('read_at', null);
+
+        if (count && count > 0) {
+          jobsWithCounts.push({
+            jobId: job.id,
+            jobTitle: job.title,
+            unreadCount: count,
+          });
+        }
+      }
+
+      setJobsWithUnread(jobsWithCounts);
+    };
+
+    fetchJobsWithUnread();
+
+    // Subscribe to message changes
+    const channel = supabase
+      .channel('unread-messages-bell')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'messages',
+        },
+        () => {
+          fetchJobsWithUnread();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user]);
+
+  const totalUnreadMessages = jobsWithUnread.reduce((sum, job) => sum + job.unreadCount, 0);
+  const totalNotifications = totalUnreadMessages + newlyAcceptedJobs.length;
 
   const handleJobClick = (jobId: string) => {
     dismissJob(jobId);
     navigate(`/job/${jobId}`);
   };
 
-  const handleMessagesClick = () => {
-    navigate('/my-jobs');
+  const handleMessageJobClick = (jobId: string) => {
+    navigate(`/job/${jobId}`);
   };
 
   return (
@@ -70,26 +144,27 @@ export function NotificationBell() {
             </div>
           ) : (
             <div className="divide-y divide-border">
-              {/* Unread Messages Section */}
-              {unreadMessages > 0 && (
+              {/* Unread Messages Section - Individual jobs */}
+              {jobsWithUnread.map((job) => (
                 <button
-                  onClick={handleMessagesClick}
+                  key={job.jobId}
+                  onClick={() => handleMessageJobClick(job.jobId)}
                   className="w-full p-3 flex items-start gap-3 hover:bg-muted/50 transition-colors text-left"
                 >
                   <div className="p-2 rounded-full bg-primary/10 shrink-0">
                     <MessageSquare className="h-4 w-4 text-primary" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium">Unread Messages</p>
-                    <p className="text-xs text-muted-foreground">
-                      You have {unreadMessages} unread message{unreadMessages !== 1 ? 's' : ''}
+                    <p className="text-sm font-medium truncate">New Message{job.unreadCount > 1 ? 's' : ''}</p>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {job.unreadCount} unread in "{job.jobTitle}"
                     </p>
                   </div>
                   <Badge variant="secondary" className="shrink-0">
-                    {unreadMessages}
+                    {job.unreadCount}
                   </Badge>
                 </button>
-              )}
+              ))}
 
               {/* Newly Accepted Jobs Section */}
               {newlyAcceptedJobs.map((job) => (
@@ -112,19 +187,6 @@ export function NotificationBell() {
             </div>
           )}
         </ScrollArea>
-
-        {totalNotifications > 0 && (
-          <div className="p-2 border-t border-border">
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="w-full text-xs"
-              onClick={handleMessagesClick}
-            >
-              View all activity
-            </Button>
-          </div>
-        )}
       </PopoverContent>
     </Popover>
   );
