@@ -5,6 +5,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { CreditCard, Lock, CheckCircle } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 interface JobPaymentFormProps {
   amount: number;
@@ -46,31 +48,67 @@ export function JobPaymentForm({ amount, jobTitle, lawnSize, lawnSizeCost, jobTy
     
     // Basic validation
     if (cardNumber.replace(/\s/g, '').length < 16) {
+      toast.error('Please enter a valid card number');
       return;
     }
     if (expiry.length < 5) {
+      toast.error('Please enter a valid expiry date');
       return;
     }
     if (cvv.length < 3) {
+      toast.error('Please enter a valid CVV');
       return;
     }
     if (!cardName.trim()) {
+      toast.error('Please enter the cardholder name');
       return;
     }
 
     setProcessing(true);
     
-    // Simulate payment processing
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    // Generate a test payment reference
-    const reference = `TEST-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
-    
-    // Get last 4 digits of card
-    const lastFour = cardNumber.replace(/\s/g, '').slice(-4);
-    
-    onPaymentSuccess(reference, { lastFour, name: cardName });
-    setProcessing(false);
+    try {
+      // Parse expiry date
+      const [expiryMonth, expiryYear] = expiry.split('/');
+      
+      // Call the payment processing edge function
+      const { data, error } = await supabase.functions.invoke('process-payment', {
+        body: {
+          amount,
+          currency: 'JMD',
+          cardNumber: cardNumber.replace(/\s/g, ''),
+          expiryMonth,
+          expiryYear,
+          securityCode: cvv,
+          cardholderName: cardName,
+          orderId: `JOB-${Date.now()}`
+        }
+      });
+
+      if (error) {
+        console.error('Payment error:', error);
+        toast.error('Payment failed. Please try again.');
+        setProcessing(false);
+        return;
+      }
+
+      if (!data.success) {
+        toast.error(data.error || 'Payment declined. Please check your card details.');
+        setProcessing(false);
+        return;
+      }
+
+      // Payment successful
+      toast.success('Payment processed successfully!');
+      onPaymentSuccess(data.transactionReference, { 
+        lastFour: data.lastFour, 
+        name: cardName 
+      });
+    } catch (err) {
+      console.error('Payment processing error:', err);
+      toast.error('Unable to process payment. Please try again.');
+    } finally {
+      setProcessing(false);
+    }
   };
 
   const isFormValid = 
@@ -120,13 +158,13 @@ export function JobPaymentForm({ amount, jobTitle, lawnSize, lawnSizeCost, jobTy
             </p>
           </div>
 
-          {/* Test Mode Banner */}
-          <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3">
-            <p className="text-sm text-yellow-600 dark:text-yellow-400 font-medium">
-              🧪 Test Mode - No real payment will be processed
+          {/* Secure Payment Notice */}
+          <div className="bg-primary/10 border border-primary/30 rounded-lg p-3">
+            <p className="text-sm text-primary font-medium">
+              🔒 Secure Payment Processing
             </p>
-            <p className="text-xs text-yellow-600/80 dark:text-yellow-400/80 mt-1">
-              Use any card number (e.g., 4242 4242 4242 4242)
+            <p className="text-xs text-muted-foreground mt-1">
+              Your payment is encrypted and processed securely
             </p>
           </div>
 
