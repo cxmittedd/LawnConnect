@@ -17,14 +17,16 @@ interface PaymentRequest {
   orderId: string;
 }
 
-// Generate HMAC signature for First Data authentication
+// Generate HMAC signature for First Data/Fiserv authentication
 async function generateHmacSignature(
   apiKey: string,
   apiSecret: string,
+  clientRequestId: string,
   timestamp: string,
   payload: string
 ): Promise<string> {
-  const message = apiKey + timestamp + payload;
+  // Fiserv signature format: apiKey + clientRequestId + timestamp + payload
+  const message = apiKey + clientRequestId + timestamp + payload;
   const encoder = new TextEncoder();
   const keyData = encoder.encode(apiSecret);
   const messageData = encoder.encode(message);
@@ -97,7 +99,7 @@ serve(async (req) => {
     const clientRequestId = `REQ-${timestamp}-${Math.random().toString(36).substring(2, 11)}`;
     
     // Generate HMAC signature
-    const hmacSignature = await generateHmacSignature(apiKey, apiSecret, timestamp, payloadString);
+    const hmacSignature = await generateHmacSignature(apiKey, apiSecret, clientRequestId, timestamp, payloadString);
 
     console.log("Sending payment request to First Data gateway...");
     console.log("Client Request ID:", clientRequestId);
