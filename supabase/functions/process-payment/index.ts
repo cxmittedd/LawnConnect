@@ -90,8 +90,8 @@ serve(async (req) => {
         paymentCard: {
           number: body.cardNumber.replace(/\s/g, ''),
           expiryDate: {
-            month: body.expiryMonth,
-            year: body.expiryYear
+            month: body.expiryMonth.padStart(2, '0'),
+            year: body.expiryYear.length === 4 ? body.expiryYear.slice(-2) : body.expiryYear
           },
           securityCode: body.securityCode
         }
