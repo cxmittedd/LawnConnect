@@ -107,6 +107,31 @@ export function HostedPaymentButton({
         return;
       }
 
+      // Handle HPP form submission fallback
+      if (data?.useHPP && data?.hppUrl && data?.formData) {
+        console.log('Using HPP form submission fallback');
+        toast.success('Redirecting to secure payment page...');
+        
+        // Create and submit a form to Fiserv HPP
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = data.hppUrl;
+        
+        Object.entries(data.formData).forEach(([key, value]) => {
+          if (value !== undefined && value !== null) {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = key;
+            input.value = String(value);
+            form.appendChild(input);
+          }
+        });
+        
+        document.body.appendChild(form);
+        form.submit();
+        return;
+      }
+
       if (!data?.paymentUrl) {
         console.error('No payment URL returned:', data);
         await supabase.from('job_requests').delete().eq('id', job.id);
