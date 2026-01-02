@@ -123,7 +123,7 @@ export function HostedPaymentButton({
           const form = document.createElement('form');
           form.method = 'POST';
           form.action = data.hppUrl;
-          form.target = '_self';
+          form.target = '_top';
           
           Object.entries(data.formData).forEach(([key, value]) => {
             if (value !== undefined && value !== null) {
@@ -292,7 +292,7 @@ export function HostedPaymentButton({
                 ref={formRef}
                 method="POST" 
                 action={hppFormData.hppUrl}
-                target="_blank"
+                target="_top"
               >
                 {Object.entries(hppFormData.formData).map(([key, value]) => (
                   <input key={key} type="hidden" name={key} value={String(value)} />
