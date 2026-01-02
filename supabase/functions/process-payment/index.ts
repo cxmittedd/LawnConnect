@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { encode as base64Encode } from "https://deno.land/std@0.190.0/encoding/base64.ts";
+import { encode as base64Encode, decode as base64Decode } from "https://deno.land/std@0.190.0/encoding/base64.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -17,10 +17,13 @@ interface PaymentRequest {
   orderId: string;
 }
 
+// Store ID for First Data/Fiserv
+const STORE_ID = "72305408";
+
 // Generate HMAC signature for First Data/Fiserv authentication
 async function generateHmacSignature(
   apiKey: string,
-  apiSecret: string,
+  apiSecretBase64: string,
   clientRequestId: string,
   timestamp: string,
   payload: string
@@ -28,7 +31,10 @@ async function generateHmacSignature(
   // Fiserv signature format: apiKey + clientRequestId + timestamp + payload
   const message = apiKey + clientRequestId + timestamp + payload;
   const encoder = new TextEncoder();
-  const keyData = encoder.encode(apiSecret);
+  
+  // Decode the base64-encoded API secret
+  const decodedKey = base64Decode(apiSecretBase64);
+  const keyData = new Uint8Array(decodedKey).buffer;
   const messageData = encoder.encode(message);
   
   const cryptoKey = await crypto.subtle.importKey(
@@ -75,6 +81,7 @@ serve(async (req) => {
     // Construct the payment payload according to First Data API
     const paymentPayload = {
       requestType: "PaymentCardSaleTransaction",
+      storeId: STORE_ID,
       transactionAmount: {
         total: body.amount,
         currency: body.currency || "JMD"
@@ -98,11 +105,12 @@ serve(async (req) => {
     const timestamp = Date.now().toString();
     const clientRequestId = `REQ-${timestamp}-${Math.random().toString(36).substring(2, 11)}`;
     
-    // Generate HMAC signature
+    // Generate HMAC signature with base64-decoded secret
     const hmacSignature = await generateHmacSignature(apiKey, apiSecret, clientRequestId, timestamp, payloadString);
 
     console.log("Sending payment request to First Data gateway...");
     console.log("Client Request ID:", clientRequestId);
+    console.log("Store ID:", STORE_ID);
 
     const response = await fetch("https://cert.api.firstdata.com/gateway/v2/payments", {
       method: "POST",
