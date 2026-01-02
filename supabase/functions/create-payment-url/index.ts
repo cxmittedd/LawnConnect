@@ -23,6 +23,8 @@ interface PaymentUrlRequest {
 }
 
 serve(async (req: Request) => {
+  console.log('create-payment-url function invoked');
+  
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -31,7 +33,10 @@ serve(async (req: Request) => {
   try {
     // Verify JWT token
     const authHeader = req.headers.get('Authorization');
+    console.log('Auth header present:', !!authHeader);
+    
     if (!authHeader) {
+      console.error('No authorization header provided');
       return new Response(
         JSON.stringify({ error: 'Missing authorization header' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -45,9 +50,12 @@ serve(async (req: Request) => {
     );
 
     const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
+    console.log('User auth result:', { userId: user?.id, error: userError?.message });
+    
     if (userError || !user) {
+      console.error('User authentication failed:', userError?.message);
       return new Response(
-        JSON.stringify({ error: 'Unauthorized' }),
+        JSON.stringify({ error: 'Unauthorized', details: userError?.message }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
