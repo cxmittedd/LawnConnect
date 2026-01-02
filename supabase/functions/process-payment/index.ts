@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { encode as base64Encode } from "https://deno.land/std@0.190.0/encoding/base64.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -16,6 +17,30 @@ interface PaymentRequest {
   orderId: string;
 }
 
+// Generate HMAC signature for First Data authentication
+async function generateHmacSignature(
+  apiKey: string,
+  apiSecret: string,
+  timestamp: string,
+  payload: string
+): Promise<string> {
+  const message = apiKey + timestamp + payload;
+  const encoder = new TextEncoder();
+  const keyData = encoder.encode(apiSecret);
+  const messageData = encoder.encode(message);
+  
+  const cryptoKey = await crypto.subtle.importKey(
+    "raw",
+    keyData,
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"]
+  );
+  
+  const signature = await crypto.subtle.sign("HMAC", cryptoKey, messageData);
+  return base64Encode(signature);
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -24,8 +49,10 @@ serve(async (req) => {
 
   try {
     const apiKey = Deno.env.get("PAYMENT_GATEWAY_API_KEY");
-    if (!apiKey) {
-      console.error("PAYMENT_GATEWAY_API_KEY not configured");
+    const apiSecret = Deno.env.get("PAYMENT_GATEWAY_API_SECRET");
+    
+    if (!apiKey || !apiSecret) {
+      console.error("Payment gateway credentials not configured");
       return new Response(
         JSON.stringify({ error: "Payment gateway not configured" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -43,7 +70,7 @@ serve(async (req) => {
       );
     }
 
-    // Construct the payment payload according to the gateway API
+    // Construct the payment payload according to First Data API
     const paymentPayload = {
       requestType: "PaymentCardSaleTransaction",
       transactionAmount: {
@@ -65,15 +92,26 @@ serve(async (req) => {
       }
     };
 
-    console.log("Sending payment request to First Data gateway...");
+    const payloadString = JSON.stringify(paymentPayload);
+    const timestamp = Date.now().toString();
+    const clientRequestId = `REQ-${timestamp}-${Math.random().toString(36).substring(2, 11)}`;
+    
+    // Generate HMAC signature
+    const hmacSignature = await generateHmacSignature(apiKey, apiSecret, timestamp, payloadString);
 
-    const response = await fetch("https://cert.api.firstdata.com/gateway/v2/payment-url", {
+    console.log("Sending payment request to First Data gateway...");
+    console.log("Client Request ID:", clientRequestId);
+
+    const response = await fetch("https://cert.api.firstdata.com/gateway/v2/payments", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "Api-Key": apiKey,
+        "Client-Request-Id": clientRequestId,
+        "Timestamp": timestamp,
+        "Message-Signature": hmacSignature,
       },
-      body: JSON.stringify(paymentPayload)
+      body: payloadString
     });
 
     const responseData = await response.json();
@@ -82,10 +120,13 @@ serve(async (req) => {
 
     if (!response.ok) {
       console.error("Payment gateway error:", responseData);
+      const errorMessage = responseData.error?.message || 
+                          responseData.transactionStatus || 
+                          "Payment was declined. Please check your card details and try again.";
       return new Response(
         JSON.stringify({ 
           success: false, 
-          error: responseData.message || "Payment was declined. Please check your card details and try again."
+          error: errorMessage
         }),
         { status: response.status, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
