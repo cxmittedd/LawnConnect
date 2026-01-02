@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
@@ -44,7 +44,6 @@ export function HostedPaymentButton({
   const [processing, setProcessing] = useState(false);
   const [showManualPayment, setShowManualPayment] = useState(false);
   const [hppFormData, setHppFormData] = useState<{ hppUrl: string; formData: Record<string, string> } | null>(null);
-  const formRef = useRef<HTMLFormElement>(null);
 
   const handlePayNow = async () => {
     setProcessing(true);
@@ -172,8 +171,30 @@ export function HostedPaymentButton({
   };
 
   const handleManualPayment = () => {
-    if (formRef.current) {
-      formRef.current.submit();
+    if (!hppFormData) return;
+
+    try {
+      const form = document.createElement('form');
+      form.method = 'POST';
+      form.action = hppFormData.hppUrl;
+      form.target = '_blank'; // open outside the preview iframe
+
+      Object.entries(hppFormData.formData).forEach(([key, value]) => {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = key;
+        input.value = String(value);
+        form.appendChild(input);
+      });
+
+      document.body.appendChild(form);
+      form.submit();
+      document.body.removeChild(form);
+
+      setShowManualPayment(false);
+    } catch (e) {
+      console.error('Manual payment redirect failed:', e);
+      toast.error('Could not open the payment page. Please try again or disable pop-up blocking.');
     }
   };
 
@@ -287,27 +308,20 @@ export function HostedPaymentButton({
               <p className="text-xs text-muted-foreground mt-1">{jobTitle}</p>
             </div>
 
-            {hppFormData && (
-              <form 
-                ref={formRef}
-                method="POST" 
-                action={hppFormData.hppUrl}
-                target="_top"
-              >
-                {Object.entries(hppFormData.formData).map(([key, value]) => (
-                  <input key={key} type="hidden" name={key} value={String(value)} />
-                ))}
-                
-                <Button 
-                  type="submit" 
-                  className="w-full"
-                  size="lg"
-                >
-                  <ExternalLink className="mr-2 h-4 w-4" />
-                  Continue to Payment
-                </Button>
-              </form>
-            )}
+            <Button
+              type="button"
+              className="w-full"
+              size="lg"
+              onClick={handleManualPayment}
+              disabled={!hppFormData}
+            >
+              <ExternalLink className="mr-2 h-4 w-4" />
+              Continue to Payment
+            </Button>
+
+            <p className="text-xs text-center text-muted-foreground">
+              This opens in a new tab to bypass preview restrictions.
+            </p>
 
             <p className="text-xs text-center text-muted-foreground">
               🔒 You'll be taken to our secure payment partner (Fiserv)
