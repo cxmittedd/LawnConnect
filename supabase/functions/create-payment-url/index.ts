@@ -205,6 +205,7 @@ serve(async (req: Request) => {
 });
 
 // Generate HPP form data with hashExtended for direct form submission
+// Based on Fiserv documentation: https://docs.fiserv.dev/public/docs/payments-generate-a-hash
 async function generateHPPFormData(params: {
   storeId: string;
   sharedSecret: string;
@@ -233,17 +234,16 @@ async function generateHPPFormData(params: {
   const chargetotal = amount.toFixed(2);
   const timezone = 'America/Jamaica';
   const txntype = 'sale';
-  const paymentMethod = 'V'; // Visa/Card payment
   const checkoutoption = 'combinedpage';
-  const transactionNotificationURL = `${Deno.env.get('SUPABASE_URL')}/functions/v1/verify-payment`;
   
-  // Create hashExtended string (alphabetical order of parameter names)
-  // chargetotal|checkoutoption|currency|oid|paymentMethod|responseFailURL|responseSuccessURL|storename|timezone|transactionNotificationURL|txndatetime|txntype
-  const stringToHash = `${chargetotal}|${checkoutoption}|${currencyCode}|${orderId}|${paymentMethod}|${failureUrl}|${successUrl}|${storeId}|${timezone}|${transactionNotificationURL}|${txndatetime}|${txntype}`;
+  // Per Fiserv docs: hashExtended uses ONLY these core fields in alphabetical order
+  // chargetotal|checkoutoption|currency|responseFailURL|responseSuccessURL|storename|timezone|txndatetime|txntype
+  // NOTE: Do NOT include paymentMethod, oid, or transactionNotificationURL unless configured in your store
+  const stringToHash = `${chargetotal}|${checkoutoption}|${currencyCode}|${failureUrl}|${successUrl}|${storeId}|${timezone}|${txndatetime}|${txntype}`;
   
   console.log('HPP hash string:', stringToHash);
   
-  // Generate HMAC-SHA256 hash
+  // Generate HMAC-SHA256 hash using the shared secret
   const encoder = new TextEncoder();
   const keyData = encoder.encode(sharedSecret);
   const messageData = encoder.encode(stringToHash);
@@ -260,6 +260,9 @@ async function generateHPPFormData(params: {
   const signatureArray = new Uint8Array(signature);
   const hashExtended = encodeBase64(signatureArray.buffer);
   
+  console.log('Generated hashExtended:', hashExtended);
+  
+  // Return only the minimum required fields plus a few safe optional ones
   return {
     storename: storeId,
     txntype,
@@ -269,14 +272,12 @@ async function generateHPPFormData(params: {
     hashExtended,
     chargetotal,
     currency: currencyCode,
-    oid: orderId,
-    paymentMethod,
     checkoutoption,
     responseSuccessURL: successUrl,
     responseFailURL: failureUrl,
-    transactionNotificationURL,
+    // Optional fields that don't affect hash calculation
+    oid: orderId,
     dynamicMerchantName: 'LawnConnect',
-    invoiceNumber: orderId,
     comments: jobTitle || 'LawnConnect Job Payment'
   };
 }
