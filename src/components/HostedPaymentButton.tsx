@@ -68,7 +68,7 @@ export function HostedPaymentButton({
           platform_fee: platformFee,
           provider_payout: providerPayout,
           payment_status: 'pending',
-          status: 'pending'
+          status: 'open'  // Jobs start as 'open' until provider accepts
         })
         .select()
         .single();
