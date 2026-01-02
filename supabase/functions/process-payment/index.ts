@@ -32,9 +32,9 @@ async function generateHmacSignature(
   const message = apiKey + clientRequestId + timestamp + payload;
   const encoder = new TextEncoder();
   
-  // Decode the base64-encoded API secret
-  const decodedKey = base64Decode(apiSecretBase64);
-  const keyData = new Uint8Array(decodedKey).buffer;
+  // Try both: first as raw string, the secret may not actually need base64 decoding
+  // Some Fiserv implementations use the secret directly as a string
+  const keyData = encoder.encode(apiSecretBase64);
   const messageData = encoder.encode(message);
   
   const cryptoKey = await crypto.subtle.importKey(
