@@ -29,3 +29,9 @@ verify_jwt = false
 
 [functions.process-payment]
 verify_jwt = false
+
+[functions.create-payment-url]
+verify_jwt = true
+
+[functions.verify-payment]
+verify_jwt = false
