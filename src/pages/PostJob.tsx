@@ -13,7 +13,7 @@ import { toast } from 'sonner';
 import { safeToast } from '@/lib/errorHandler';
 import { useNavigate } from 'react-router-dom';
 import { z } from 'zod';
-import { JobPaymentForm } from '@/components/JobPaymentForm';
+import { HostedPaymentButton } from '@/components/HostedPaymentButton';
 import { AutopaySetupDialog } from '@/components/AutopaySetupDialog';
 import { sendInvoice } from '@/lib/invoiceService';
 import { useCustomerPreferences } from '@/hooks/useCustomerPreferences';
@@ -408,13 +408,15 @@ const { data: job, error: jobError } = await supabase
           </div>
 
           {step === 'payment' ? (
-            <JobPaymentForm
+            <HostedPaymentButton
               amount={getPaymentAmount()}
               jobTitle={formData.title}
               lawnSize={formData.lawn_size}
               lawnSizeCost={currentMinOffer}
               jobTypeCost={getJobTypeExtraCost(formData.title)}
-              onPaymentSuccess={handlePaymentSuccess}
+              jobData={formData}
+              customerId={user!.id}
+              customerEmail={user?.email}
               onCancel={() => setStep('details')}
               loading={loading}
             />
