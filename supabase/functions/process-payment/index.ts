@@ -65,38 +65,35 @@ serve(async (req) => {
       }
     };
 
-    console.log("Sending payment request to gateway...");
+    console.log("Sending payment request to First Data gateway...");
 
-    // TODO: Replace with actual gateway endpoint when merchant ID is provided
-    // For now, we'll simulate a successful response since we don't have the full endpoint
-    // The actual call would be:
-    // const response = await fetch("https://api.gateway.com/v1/payments", {
-    //   method: "POST",
-    //   headers: {
-    //     "Content-Type": "application/json",
-    //     "Api-Key": apiKey,
-    //     // "Merchant-Id": merchantId, // When available
-    //   },
-    //   body: JSON.stringify(paymentPayload)
-    // });
+    const response = await fetch("https://cert.api.firstdata.com/gateway/v2/payment-url", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Api-Key": apiKey,
+      },
+      body: JSON.stringify(paymentPayload)
+    });
 
-    // Simulate payment processing with validation
-    const cleanCardNumber = body.cardNumber.replace(/\s/g, '');
-    
-    // Basic card number validation (Luhn algorithm simulation)
-    if (cleanCardNumber.length < 15 || cleanCardNumber.length > 16) {
+    const responseData = await response.json();
+    console.log("Gateway response status:", response.status);
+    console.log("Gateway response:", JSON.stringify(responseData));
+
+    if (!response.ok) {
+      console.error("Payment gateway error:", responseData);
       return new Response(
         JSON.stringify({ 
           success: false, 
-          error: "Invalid card number length" 
+          error: responseData.message || "Payment was declined. Please check your card details and try again."
         }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: response.status, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Generate transaction reference
-    const transactionReference = `TXN-${Date.now()}-${Math.random().toString(36).substring(2, 11).toUpperCase()}`;
-    const approvalCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+    const cleanCardNumber = body.cardNumber.replace(/\s/g, '');
+    const transactionReference = responseData.ipgTransactionId || responseData.orderId || `TXN-${Date.now()}`;
+    const approvalCode = responseData.approvalCode || responseData.processor?.approvalCode || "";
 
     console.log("Payment processed successfully. Reference:", transactionReference);
 
@@ -105,8 +102,8 @@ serve(async (req) => {
         success: true,
         transactionReference,
         approvalCode,
-        responseCode: "00",
-        responseMessage: "Approved",
+        responseCode: responseData.transactionStatus || "APPROVED",
+        responseMessage: responseData.transactionState || "Approved",
         lastFour: cleanCardNumber.slice(-4),
         amount: body.amount,
         currency: body.currency || "JMD"
