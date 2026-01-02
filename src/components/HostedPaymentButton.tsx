@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { CreditCard, Lock, CheckCircle, ExternalLink, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -41,6 +42,9 @@ export function HostedPaymentButton({
   loading
 }: HostedPaymentButtonProps) {
   const [processing, setProcessing] = useState(false);
+  const [showManualPayment, setShowManualPayment] = useState(false);
+  const [hppFormData, setHppFormData] = useState<{ hppUrl: string; formData: Record<string, string> } | null>(null);
+  const formRef = useRef<HTMLFormElement>(null);
 
   const handlePayNow = async () => {
     setProcessing(true);
@@ -110,25 +114,41 @@ export function HostedPaymentButton({
       // Handle HPP form submission fallback
       if (data?.useHPP && data?.hppUrl && data?.formData) {
         console.log('Using HPP form submission fallback');
-        toast.success('Redirecting to secure payment page...');
         
-        // Create and submit a form to Fiserv HPP
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = data.hppUrl;
+        // Store form data for manual fallback
+        setHppFormData({ hppUrl: data.hppUrl, formData: data.formData });
         
-        Object.entries(data.formData).forEach(([key, value]) => {
-          if (value !== undefined && value !== null) {
-            const input = document.createElement('input');
-            input.type = 'hidden';
-            input.name = key;
-            input.value = String(value);
-            form.appendChild(input);
-          }
-        });
-        
-        document.body.appendChild(form);
-        form.submit();
+        // Try automatic form submission first
+        try {
+          const form = document.createElement('form');
+          form.method = 'POST';
+          form.action = data.hppUrl;
+          form.target = '_self';
+          
+          Object.entries(data.formData).forEach(([key, value]) => {
+            if (value !== undefined && value !== null) {
+              const input = document.createElement('input');
+              input.type = 'hidden';
+              input.name = key;
+              input.value = String(value);
+              form.appendChild(input);
+            }
+          });
+          
+          document.body.appendChild(form);
+          
+          // Set a timeout to show manual fallback if redirect doesn't happen
+          setTimeout(() => {
+            setShowManualPayment(true);
+            setProcessing(false);
+          }, 3000);
+          
+          form.submit();
+        } catch (formError) {
+          console.error('Form submission failed:', formError);
+          setShowManualPayment(true);
+          setProcessing(false);
+        }
         return;
       }
 
@@ -148,6 +168,12 @@ export function HostedPaymentButton({
       console.error('Payment initiation error:', err);
       toast.error('An error occurred. Please try again.');
       setProcessing(false);
+    }
+  };
+
+  const handleManualPayment = () => {
+    if (formRef.current) {
+      formRef.current.submit();
     }
   };
 
@@ -241,6 +267,54 @@ export function HostedPaymentButton({
           </div>
         </div>
       </CardContent>
+
+      {/* Manual Payment Fallback Dialog */}
+      <Dialog open={showManualPayment} onOpenChange={setShowManualPayment}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Lock className="h-5 w-5 text-primary" />
+              Complete Your Payment
+            </DialogTitle>
+            <DialogDescription>
+              Your browser may have blocked the automatic redirect. Click the button below to continue to the secure payment page.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="bg-muted/50 rounded-lg p-3">
+              <p className="text-sm font-medium">Amount: <span className="text-primary">J${amount.toLocaleString()}</span></p>
+              <p className="text-xs text-muted-foreground mt-1">{jobTitle}</p>
+            </div>
+
+            {hppFormData && (
+              <form 
+                ref={formRef}
+                method="POST" 
+                action={hppFormData.hppUrl}
+                target="_blank"
+              >
+                {Object.entries(hppFormData.formData).map(([key, value]) => (
+                  <input key={key} type="hidden" name={key} value={String(value)} />
+                ))}
+                
+                <Button 
+                  type="submit" 
+                  className="w-full"
+                  size="lg"
+                >
+                  <ExternalLink className="mr-2 h-4 w-4" />
+                  Continue to Payment
+                </Button>
+              </form>
+            )}
+
+            <p className="text-xs text-center text-muted-foreground">
+              🔒 You'll be taken to our secure payment partner (Fiserv)
+            </p>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }
