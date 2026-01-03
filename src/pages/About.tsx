@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { Navigation } from '@/components/Navigation';
 import { Card, CardContent } from '@/components/ui/card';
 import { Scissors, DollarSign, Users, Shield } from 'lucide-react';
@@ -85,6 +86,15 @@ export default function About() {
               </p>
             </CardContent>
           </Card>
+
+          <div className="mt-8 text-center">
+            <p className="text-sm text-muted-foreground">
+              By using LawnConnect, you agree to our{' '}
+              <Link to="/terms" className="text-primary hover:underline">Terms of Service</Link>,{' '}
+              <Link to="/privacy" className="text-primary hover:underline">Privacy Policy</Link>, and{' '}
+              <Link to="/refund-policy" className="text-primary hover:underline">Refund & Cancellation Policy</Link>.
+            </p>
+          </div>
         </div>
       </main>
     </>
