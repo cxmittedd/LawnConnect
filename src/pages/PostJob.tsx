@@ -9,6 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/integrations/supabase/client';
 import { Upload, X, ArrowRight, Wand2 } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { safeToast } from '@/lib/errorHandler';
 import { useNavigate } from 'react-router-dom';
@@ -103,7 +105,8 @@ export default function PostJob() {
   const [step, setStep] = useState<'details' | 'payment'>('details');
   const [showAutopayDialog, setShowAutopayDialog] = useState(false);
   const [pendingCardInfo, setPendingCardInfo] = useState<{ lastFour: string; name: string } | null>(null);
-  const [showAutofillPreview, setShowAutofillPreview] = useState(false);
+const [showAutofillPreview, setShowAutofillPreview] = useState(false);
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
 const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -678,7 +681,25 @@ const { data: job, error: jobError } = await supabase
                   </div>
                 </div>
 
-                <Button type="submit" className="w-full" disabled={loading}>
+                <div className="flex items-start space-x-3 p-4 rounded-lg border border-border bg-muted/50">
+                  <Checkbox
+                    id="terms-agreement"
+                    checked={agreedToTerms}
+                    onCheckedChange={(checked) => setAgreedToTerms(checked === true)}
+                  />
+                  <label htmlFor="terms-agreement" className="text-sm leading-relaxed cursor-pointer">
+                    I agree to the{' '}
+                    <Link to="/terms" className="text-primary hover:underline font-medium">
+                      Terms of Service
+                    </Link>{' '}
+                    and{' '}
+                    <Link to="/refund-policy" className="text-primary hover:underline font-medium">
+                      Refund Policy
+                    </Link>
+                  </label>
+                </div>
+
+                <Button type="submit" className="w-full" disabled={loading || !agreedToTerms}>
                   <span>Continue to Payment</span>
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
