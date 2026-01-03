@@ -9,12 +9,20 @@ export const TERMS_LAST_UPDATED = '2026-01-05';
 export default function TermsOfService() {
   const navigate = useNavigate();
 
+  const handleBack = () => {
+    if (window.history.length > 1) {
+      navigate(-1);
+    } else {
+      navigate('/auth');
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-background py-8 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 py-8 px-4">
       <div className="max-w-4xl mx-auto">
         <Button 
           variant="ghost" 
-          onClick={() => navigate(-1)}
+          onClick={handleBack}
           className="mb-4"
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
