@@ -50,15 +50,13 @@ export function CookieConsent() {
               <p className="text-xs text-muted-foreground">
                 We use cookies to enhance your experience, analyze site traffic, and for security. 
                 By clicking "Accept All", you consent to our use of cookies. See our{' '}
-                <a 
-                  href="/privacy-policy" 
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <Link 
+                  to="/privacy"
                   className="text-primary underline hover:no-underline"
                   onClick={(e) => e.stopPropagation()}
                 >
                   Privacy Policy
-                </a>{' '}
+                </Link>{' '}
                 for details.
               </p>
             </div>

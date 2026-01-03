@@ -372,7 +372,6 @@ export default function Auth() {
                     I have read and agree to the{' '}
                     <Link 
                       to="/terms" 
-                      target="_blank" 
                       className="text-primary underline hover:text-primary/80"
                       onClick={(e) => e.stopPropagation()}
                     >
@@ -381,7 +380,6 @@ export default function Auth() {
                     and{' '}
                     <Link 
                       to="/privacy" 
-                      target="_blank" 
                       className="text-primary underline hover:text-primary/80"
                       onClick={(e) => e.stopPropagation()}
                     >
