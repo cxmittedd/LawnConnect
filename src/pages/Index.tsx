@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useAuth } from '@/lib/auth';
@@ -119,6 +119,32 @@ const Index = () => {
           </CardContent>
         </Card>
       </main>
+
+      <footer className="border-t border-border bg-card/50 backdrop-blur-sm py-8">
+        <div className="container mx-auto px-4">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <img src={lawnConnectLogo} alt="LawnConnect" className="h-10 w-10 object-contain" />
+              <span className="text-sm text-muted-foreground">© {new Date().getFullYear()} LawnConnect. All rights reserved.</span>
+            </div>
+            <div className="flex flex-wrap justify-center gap-6 text-sm">
+              <Link to="/terms" className="text-muted-foreground hover:text-primary transition-colors">
+                Terms of Service
+              </Link>
+              <Link to="/privacy" className="text-muted-foreground hover:text-primary transition-colors">
+                Privacy Policy
+              </Link>
+              <Link to="/refund-policy" className="text-muted-foreground hover:text-primary transition-colors">
+                Refund Policy
+              </Link>
+              <Link to="/contact" className="text-muted-foreground hover:text-primary transition-colors">
+                Contact
+              </Link>
+            </div>
+          </div>
+        </div>
+      </footer>
+
       <InstallBanner />
     </div>
   );
