@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 
 export const TERMS_VERSION = '2.0.0';
 export const TERMS_LAST_UPDATED = '2026-01-05';
@@ -92,7 +92,7 @@ export default function TermsOfService() {
               <p>7.2 Unilateral chargebacks without prior notification to LawnConnect may lead to account suspension, restrictions, or collection actions.</p>
               <p>7.3 LawnConnect may retain fees and costs associated with chargebacks, including administrative charges.</p>
               <p>7.4 If a chargeback is reversed in LawnConnect's favor after a dispute/appeal, LawnConnect may reinstate fees or pursue collection.</p>
-              <p>7.5 LawnConnect's Refund & Cancellation Policy governs refund eligibility and is incorporated herein by reference.</p>
+              <p>7.5 LawnConnect's <Link to="/refund-policy" className="text-primary hover:underline">Refund & Cancellation Policy</Link> governs refund eligibility and is incorporated herein by reference.</p>
             </section>
 
             <section>
