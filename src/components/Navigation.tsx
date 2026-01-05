@@ -11,7 +11,6 @@ import {
   LogOut,
   Menu,
   X,
-  User,
   Shield,
   Sun,
   Moon,
@@ -21,6 +20,7 @@ import {
   BarChart3,
   Receipt,
   CalendarDays,
+  Settings as SettingsIcon,
 } from 'lucide-react';
 import lawnConnectLogo from '@/assets/lawnconnect-logo.png';
 import { useState, useEffect } from 'react';
@@ -102,8 +102,7 @@ export function Navigation() {
         ...(isProvider ? [{ path: '/calendar', label: 'Calendar', icon: CalendarDays, badge: 0 }] : []),
         { path: '/my-jobs', label: 'My Jobs', icon: Briefcase, badge: unreadCount },
         ...(isCustomer ? [{ path: '/invoices', label: 'Invoices', icon: Receipt, badge: 0 }] : []),
-        { path: '/profile', label: 'Profile', icon: User, badge: 0 },
-        { path: '/about', label: 'About', icon: Info, badge: 0 },
+        { path: '/settings', label: 'Settings', icon: SettingsIcon, badge: 0 },
         { path: '/contact', label: 'Contact', icon: Mail, badge: 0 },
       ]
     : [
