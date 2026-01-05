@@ -23,15 +23,19 @@ const handler = async (req: Request): Promise<Response> => {
   try {
     const { name, email, subject, message }: ContactEmailRequest = await req.json();
 
+    console.log("Received contact email request:", { name, email, subject });
+
     // Validate inputs
     if (!name || !email || !subject || !message) {
+      console.error("Missing required fields");
       return new Response(
         JSON.stringify({ error: "All fields are required" }),
         { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
 
-    // Send email to LawnConnect
+    // Send email to LawnConnect admin
+    console.log("Sending email to admin...");
     const adminEmailResponse = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
@@ -55,14 +59,18 @@ const handler = async (req: Request): Promise<Response> => {
       }),
     });
 
+    const adminResult = await adminEmailResponse.json();
+    console.log("Admin email response:", adminResult);
+
     if (!adminEmailResponse.ok) {
-      const errorData = await adminEmailResponse.json();
-      throw new Error(errorData.message || "Failed to send email");
+      console.error("Failed to send admin email:", adminResult);
+      throw new Error(adminResult.message || "Failed to send email to admin");
     }
 
     console.log("Contact email sent to admin successfully");
 
     // Send auto-reply confirmation to user
+    console.log("Sending auto-reply to user:", email);
     const autoReplyResponse = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
@@ -107,7 +115,9 @@ const handler = async (req: Request): Promise<Response> => {
     });
 
     if (!autoReplyResponse.ok) {
-      console.error("Failed to send auto-reply email, but main email was sent");
+      const autoReplyResult = await autoReplyResponse.json();
+      console.error("Failed to send auto-reply email:", autoReplyResult);
+      // Don't throw here - the main email was sent successfully
     } else {
       console.log("Auto-reply email sent to user successfully");
     }
