@@ -217,6 +217,11 @@ export default function Settings() {
   const handleRefundSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (!user) {
+      toast.error('You must be logged in to submit a refund request');
+      return;
+    }
+
     const result = refundSchema.safeParse(refundForm);
     if (!result.success) {
       toast.error(result.error.errors[0].message);
@@ -226,7 +231,19 @@ export default function Settings() {
     setSendingRefund(true);
 
     try {
-      const { error } = await supabase.functions.invoke('send-contact-email', {
+      // Insert into database for admin review
+      const { error: dbError } = await supabase
+        .from('refund_requests')
+        .insert({
+          customer_id: user.id,
+          job_id: refundForm.jobId,
+          reason: refundForm.reason,
+        });
+
+      if (dbError) throw dbError;
+
+      // Also send email notification
+      await supabase.functions.invoke('send-contact-email', {
         body: {
           name: refundForm.name,
           email: refundForm.email,
@@ -235,10 +252,8 @@ export default function Settings() {
         },
       });
 
-      if (error) throw error;
-
       toast.success('Refund request submitted successfully! We\'ll review and respond soon.');
-      setRefundForm({ name: '', email: '', jobId: '', reason: '' });
+      setRefundForm({ ...refundForm, jobId: '', reason: '' });
     } catch (error) {
       console.error('Error sending refund request:', error);
       toast.error('Failed to submit refund request. Please try again.');
