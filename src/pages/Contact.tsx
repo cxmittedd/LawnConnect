@@ -5,9 +5,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Mail, MessageSquare, Send } from 'lucide-react';
+import { Mail, Send } from 'lucide-react';
 import { toast } from 'sonner';
 import { z } from 'zod';
+import { supabase } from '@/integrations/supabase/client';
 
 const contactSchema = z.object({
   name: z.string().trim().min(1, 'Name is required').max(100, 'Name too long'),
@@ -36,12 +37,21 @@ export default function Contact() {
 
     setSending(true);
 
-    // Simulate sending email
-    await new Promise((resolve) => setTimeout(resolve, 1500));
+    try {
+      const { data, error } = await supabase.functions.invoke('send-contact-email', {
+        body: formData,
+      });
 
-    toast.success('Message sent successfully! We\'ll get back to you soon.');
-    setFormData({ name: '', email: '', subject: '', message: '' });
-    setSending(false);
+      if (error) throw error;
+
+      toast.success('Message sent successfully! We\'ll get back to you soon.');
+      setFormData({ name: '', email: '', subject: '', message: '' });
+    } catch (error) {
+      console.error('Error sending message:', error);
+      toast.error('Failed to send message. Please try again.');
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
@@ -130,56 +140,15 @@ export default function Contact() {
             <div className="space-y-6">
               <Card>
                 <CardContent className="p-6">
-                  <div className="flex items-start gap-4 mb-6">
+                  <div className="flex items-start gap-4">
                     <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
                       <Mail className="h-6 w-6 text-primary" />
                     </div>
                     <div>
                       <h3 className="font-semibold mb-2">Email Us</h3>
-                      <p className="text-sm text-muted-foreground">support@lawnconnect.jm</p>
+                      <p className="text-sm text-muted-foreground">officiallawnconnect@gmail.com</p>
                       <p className="text-sm text-muted-foreground mt-1">
                         We typically respond within 24 hours
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-4">
-                    <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                      <MessageSquare className="h-6 w-6 text-primary" />
-                    </div>
-                    <div>
-                      <h3 className="font-semibold mb-2">Live Chat</h3>
-                      <p className="text-sm text-muted-foreground">
-                        Available Monday - Friday, 9am - 5pm EST
-                      </p>
-                      <Button variant="outline" size="sm" className="mt-2">
-                        Start Chat
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-primary/5">
-                <CardContent className="p-6">
-                  <h3 className="font-semibold mb-4">Frequently Asked Questions</h3>
-                  <div className="space-y-3">
-                    <div>
-                      <p className="font-medium text-sm mb-1">How do I get started?</p>
-                      <p className="text-sm text-muted-foreground">
-                        Simply sign up for an account and you can start creating services and invoices immediately.
-                      </p>
-                    </div>
-                    <div>
-                      <p className="font-medium text-sm mb-1">Is there a free trial?</p>
-                      <p className="text-sm text-muted-foreground">
-                        Yes! You can use InvoicePro for free with unlimited services and invoices.
-                      </p>
-                    </div>
-                    <div>
-                      <p className="font-medium text-sm mb-1">How secure is my data?</p>
-                      <p className="text-sm text-muted-foreground">
-                        We use industry-standard encryption and security practices to keep your data safe.
                       </p>
                     </div>
                   </div>
