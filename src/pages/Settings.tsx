@@ -11,9 +11,10 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/integrations/supabase/client';
-import { User, Phone, MapPin, Building, Save, Camera, Scissors, DollarSign, Users, Shield, Info, RefreshCw, Mail, ExternalLink } from 'lucide-react';
+import { User, Phone, MapPin, Building, Save, Camera, Scissors, DollarSign, Users, Shield, Info, RefreshCw, Mail, ExternalLink, Send } from 'lucide-react';
 import { toast } from 'sonner';
 import { safeToast } from '@/lib/errorHandler';
+import { z } from 'zod';
 import { ProviderVerification } from '@/components/ProviderVerification';
 import { Link } from 'react-router-dom';
 
@@ -46,8 +47,22 @@ export default function Settings() {
   const [saving, setSaving] = useState(false);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [refundForm, setRefundForm] = useState({
+    name: '',
+    email: '',
+    jobId: '',
+    reason: '',
+  });
+  const [sendingRefund, setSendingRefund] = useState(false);
 
   const defaultTab = searchParams.get('tab') || 'profile';
+
+  const refundSchema = z.object({
+    name: z.string().trim().min(1, 'Name is required').max(100, 'Name too long'),
+    email: z.string().trim().email('Invalid email address').max(255, 'Email too long'),
+    jobId: z.string().trim().min(1, 'Job ID is required').max(100, 'Job ID too long'),
+    reason: z.string().trim().min(1, 'Reason is required').max(1000, 'Reason too long'),
+  });
 
   useEffect(() => {
     loadProfile();
@@ -158,6 +173,39 @@ export default function Settings() {
   };
 
   const isProvider = profile.user_role === 'provider' || profile.user_role === 'both';
+
+  const handleRefundSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    const result = refundSchema.safeParse(refundForm);
+    if (!result.success) {
+      toast.error(result.error.errors[0].message);
+      return;
+    }
+
+    setSendingRefund(true);
+
+    try {
+      const { error } = await supabase.functions.invoke('send-contact-email', {
+        body: {
+          name: refundForm.name,
+          email: refundForm.email,
+          subject: `Refund Request - Job ID: ${refundForm.jobId}`,
+          message: `Job ID: ${refundForm.jobId}\n\nReason for refund:\n${refundForm.reason}`,
+        },
+      });
+
+      if (error) throw error;
+
+      toast.success('Refund request submitted successfully! We\'ll review and respond soon.');
+      setRefundForm({ name: '', email: '', jobId: '', reason: '' });
+    } catch (error) {
+      console.error('Error sending refund request:', error);
+      toast.error('Failed to submit refund request. Please try again.');
+    } finally {
+      setSendingRefund(false);
+    }
+  };
 
   const features = [
     {
@@ -539,29 +587,92 @@ export default function Settings() {
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Request a Refund</CardTitle>
-                <CardDescription>
-                  Need to request a refund or have questions about a past transaction?
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-start gap-4 p-4 bg-muted/50 rounded-lg">
-                  <Mail className="h-5 w-5 text-primary mt-0.5" />
-                  <div>
-                    <p className="font-medium">Email Us</p>
-                    <a 
-                      href="mailto:officiallawnconnect@gmail.com?subject=Refund Request" 
-                      className="text-primary hover:underline text-sm"
-                    >
-                      officiallawnconnect@gmail.com
-                    </a>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Include your job ID and reason for the refund request
-                    </p>
-                  </div>
-                </div>
+            <div className="grid md:grid-cols-2 gap-8">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Request a Refund</CardTitle>
+                  <CardDescription>
+                    Fill out the form and we'll review your request
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <form onSubmit={handleRefundSubmit} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="refund-name">Name</Label>
+                      <Input
+                        id="refund-name"
+                        placeholder="Your name"
+                        value={refundForm.name}
+                        onChange={(e) => setRefundForm({ ...refundForm, name: e.target.value })}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="refund-email">Email</Label>
+                      <Input
+                        id="refund-email"
+                        type="email"
+                        placeholder="your@email.com"
+                        value={refundForm.email}
+                        onChange={(e) => setRefundForm({ ...refundForm, email: e.target.value })}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="refund-jobId">Job ID</Label>
+                      <Input
+                        id="refund-jobId"
+                        placeholder="e.g., abc123-def456"
+                        value={refundForm.jobId}
+                        onChange={(e) => setRefundForm({ ...refundForm, jobId: e.target.value })}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="refund-reason">Reason for Refund</Label>
+                      <Textarea
+                        id="refund-reason"
+                        placeholder="Please explain why you're requesting a refund..."
+                        value={refundForm.reason}
+                        onChange={(e) => setRefundForm({ ...refundForm, reason: e.target.value })}
+                        rows={5}
+                        required
+                      />
+                    </div>
+                    <Button type="submit" className="w-full" disabled={sendingRefund}>
+                      {sendingRefund ? (
+                        <>
+                          <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent mr-2"></div>
+                          Submitting...
+                        </>
+                      ) : (
+                        <>
+                          <Send className="h-4 w-4 mr-2" />
+                          Submit Request
+                        </>
+                      )}
+                    </Button>
+                  </form>
+                </CardContent>
+              </Card>
+
+              <div className="space-y-6">
+                <Card>
+                  <CardContent className="p-6">
+                    <div className="flex items-start gap-4">
+                      <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                        <Mail className="h-6 w-6 text-primary" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold mb-2">Email Us Directly</h3>
+                        <p className="text-sm text-muted-foreground">officiallawnconnect@gmail.com</p>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          We typically respond within 24 hours
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
 
                 <Link to="/refund-policy">
                   <Button variant="outline" className="w-full">
@@ -569,8 +680,8 @@ export default function Settings() {
                     View Full Refund Policy
                   </Button>
                 </Link>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           </TabsContent>
         </Tabs>
       </main>
