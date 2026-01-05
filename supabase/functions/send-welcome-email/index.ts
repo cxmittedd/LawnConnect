@@ -180,7 +180,7 @@ const handler = async (req: Request): Promise<Response> => {
     const htmlContent = createWelcomeEmail(data);
 
     const emailResponse = await resend.emails.send({
-      from: "LawnConnect <welcome@lawnconnect.jm>",
+      from: "LawnConnect <welcome@connectlawn.com>",
       to: [data.email],
       subject: `Welcome to LawnConnect, ${data.firstName}! 🌿`,
       html: htmlContent,

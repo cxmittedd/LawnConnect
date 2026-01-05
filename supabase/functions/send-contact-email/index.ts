@@ -43,7 +43,7 @@ const handler = async (req: Request): Promise<Response> => {
         Authorization: `Bearer ${RESEND_API_KEY}`,
       },
       body: JSON.stringify({
-        from: "LawnConnect <onboarding@resend.dev>",
+        from: "LawnConnect <noreply@connectlawn.com>",
         to: ["officiallawnconnect@gmail.com"],
         subject: `Contact Form: ${subject}`,
         reply_to: email,
@@ -78,7 +78,7 @@ const handler = async (req: Request): Promise<Response> => {
         Authorization: `Bearer ${RESEND_API_KEY}`,
       },
       body: JSON.stringify({
-        from: "LawnConnect <onboarding@resend.dev>",
+        from: "LawnConnect <noreply@connectlawn.com>",
         to: [email],
         subject: "We received your message - LawnConnect",
         html: `

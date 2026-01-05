@@ -264,7 +264,7 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     const emailResponse = await resend.emails.send({
-      from: "LawnConnect <billing@lawnconnect.jm>",
+      from: "LawnConnect <billing@connectlawn.com>",
       to: [invoiceData.customerEmail],
       subject: `Invoice ${invoiceNumber} - Payment Confirmation`,
       html: htmlContent,
