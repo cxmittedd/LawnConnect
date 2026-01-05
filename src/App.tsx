@@ -24,6 +24,7 @@ import ProviderProfile from "./pages/ProviderProfile";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminDisputes from "./pages/AdminDisputes";
 import AdminVerifications from "./pages/AdminVerifications";
+import AdminRefunds from "./pages/AdminRefunds";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
 import Install from "./pages/Install";
@@ -167,6 +168,14 @@ const App = () => (
                 element={
                   <AdminRoute>
                     <AdminVerifications />
+                  </AdminRoute>
+                }
+              />
+              <Route
+                path="/admin/refunds"
+                element={
+                  <AdminRoute>
+                    <AdminRefunds />
                   </AdminRoute>
                 }
               />

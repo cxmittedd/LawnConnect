@@ -21,6 +21,7 @@ import {
   Receipt,
   CalendarDays,
   Settings as SettingsIcon,
+  RefreshCw,
 } from 'lucide-react';
 import lawnConnectLogo from '@/assets/lawnconnect-logo.png';
 import { useState, useEffect } from 'react';
@@ -92,6 +93,7 @@ export function Navigation() {
     { path: '/admin/dashboard', label: 'Dashboard', icon: BarChart3 },
     { path: '/admin/disputes', label: 'Disputes', icon: AlertTriangle },
     { path: '/admin/verifications', label: 'Verifications', icon: UserCheck },
+    { path: '/admin/refunds', label: 'Refunds', icon: RefreshCw },
   ];
 
   const navItems = user
