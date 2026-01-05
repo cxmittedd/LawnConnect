@@ -17,7 +17,7 @@ import PostJob from "./pages/PostJob";
 import BrowseJobs from "./pages/BrowseJobs";
 import MyJobs from "./pages/MyJobs";
 import JobDetails from "./pages/JobDetails";
-import Profile from "./pages/Profile";
+import Settings from "./pages/Settings";
 import ProviderEarnings from "./pages/ProviderEarnings";
 import ProviderCalendar from "./pages/ProviderCalendar";
 import ProviderProfile from "./pages/ProviderProfile";
@@ -99,10 +99,18 @@ const App = () => (
                 }
               />
               <Route
+                path="/settings"
+                element={
+                  <ProtectedRoute>
+                    <Settings />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
                 path="/profile"
                 element={
                   <ProtectedRoute>
-                    <Profile />
+                    <Settings />
                   </ProtectedRoute>
                 }
               />
