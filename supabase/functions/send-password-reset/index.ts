@@ -48,7 +48,7 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     // Validate resetLink is from our domain
-    const allowedDomains = ['lawnconnect.jm', 'localhost', 'lovableproject.com'];
+    const allowedDomains = ['connectlawn.com', 'lawnconnect.jm', 'localhost', 'lovableproject.com'];
     let linkUrl: URL;
     try {
       linkUrl = new URL(resetLink);
@@ -103,7 +103,7 @@ const handler = async (req: Request): Promise<Response> => {
     console.log("Sending password reset email to:", email);
 
     const emailResponse = await resend.emails.send({
-      from: "LawnConnect <noreply@lawnconnect.jm>",
+      from: "LawnConnect <noreply@connectlawn.com>",
       to: [email],
       subject: "Reset Your LawnConnect Password",
       html: `
