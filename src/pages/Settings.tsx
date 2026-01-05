@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/integrations/supabase/client';
 import { User, Phone, MapPin, Building, Save, Camera, Scissors, DollarSign, Users, Shield, Info, RefreshCw, Mail, ExternalLink, Send } from 'lucide-react';
@@ -17,6 +18,12 @@ import { safeToast } from '@/lib/errorHandler';
 import { z } from 'zod';
 import { ProviderVerification } from '@/components/ProviderVerification';
 import { Link } from 'react-router-dom';
+
+interface JobOption {
+  id: string;
+  title: string;
+  created_at: string;
+}
 
 interface ProfileData {
   first_name: string | null;
@@ -54,6 +61,8 @@ export default function Settings() {
     reason: '',
   });
   const [sendingRefund, setSendingRefund] = useState(false);
+  const [userJobs, setUserJobs] = useState<JobOption[]>([]);
+  const [loadingJobs, setLoadingJobs] = useState(false);
 
   const defaultTab = searchParams.get('tab') || 'profile';
 
@@ -66,7 +75,28 @@ export default function Settings() {
 
   useEffect(() => {
     loadProfile();
+    loadUserJobs();
   }, [user]);
+
+  const loadUserJobs = async () => {
+    if (!user) return;
+    
+    setLoadingJobs(true);
+    try {
+      const { data, error } = await supabase
+        .from('job_requests')
+        .select('id, title, created_at')
+        .eq('customer_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setUserJobs(data || []);
+    } catch (error) {
+      console.error('Error loading jobs:', error);
+    } finally {
+      setLoadingJobs(false);
+    }
+  };
 
   const loadProfile = async () => {
     if (!user) return;
@@ -81,9 +111,11 @@ export default function Settings() {
       if (error) throw error;
 
       if (data) {
+        const firstName = (data as any).first_name || '';
+        const lastName = (data as any).last_name || '';
         setProfile({
-          first_name: (data as any).first_name || '',
-          last_name: (data as any).last_name || '',
+          first_name: firstName,
+          last_name: lastName,
           phone_number: data.phone_number || '',
           address: data.address || '',
           company_name: data.company_name || '',
@@ -92,6 +124,14 @@ export default function Settings() {
           bio: (data as any).bio || null,
         });
         setAvatarPreview(data.avatar_url || null);
+        
+        // Pre-fill refund form with user data
+        const fullName = [firstName, lastName].filter(Boolean).join(' ');
+        setRefundForm(prev => ({
+          ...prev,
+          name: fullName,
+          email: user?.email || '',
+        }));
       }
     } catch (error) {
       console.error('Error loading profile:', error);
@@ -619,14 +659,28 @@ export default function Settings() {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="refund-jobId">Job ID</Label>
-                      <Input
-                        id="refund-jobId"
-                        placeholder="e.g., abc123-def456"
+                      <Label htmlFor="refund-jobId">Select Job</Label>
+                      <Select
                         value={refundForm.jobId}
-                        onChange={(e) => setRefundForm({ ...refundForm, jobId: e.target.value })}
-                        required
-                      />
+                        onValueChange={(value) => setRefundForm({ ...refundForm, jobId: value })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder={loadingJobs ? "Loading jobs..." : "Select a job"} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {userJobs.length === 0 ? (
+                            <SelectItem value="no-jobs" disabled>
+                              No jobs found
+                            </SelectItem>
+                          ) : (
+                            userJobs.map((job) => (
+                              <SelectItem key={job.id} value={job.id}>
+                                {job.title} - {new Date(job.created_at).toLocaleDateString()}
+                              </SelectItem>
+                            ))
+                          )}
+                        </SelectContent>
+                      </Select>
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="refund-reason">Reason for Refund</Label>
