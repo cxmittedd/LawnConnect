@@ -37,7 +37,7 @@ serve(async (req) => {
 
     const twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-  <Say>Connecting you now through LawnConnect secure line. Please hold.</Say>
+  <Say voice="alice">Welcome to LawnConnect. Connecting your call now, please hold.</Say>
   <Dial callerId="${callerId}" timeout="30" answerOnBridge="true" action="${statusCallbackUrl}" method="POST">
     <Number>${target}</Number>
   </Dial>
