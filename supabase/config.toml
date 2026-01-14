@@ -53,3 +53,9 @@ verify_jwt = false
 
 [functions.twilio-outbound-status]
 verify_jwt = false
+
+[functions.ezeepay-create-token]
+verify_jwt = false
+
+[functions.ezeepay-webhook]
+verify_jwt = false

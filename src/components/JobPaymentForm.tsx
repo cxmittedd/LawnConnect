@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { Lock, CheckCircle, CreditCard, AlertTriangle } from 'lucide-react';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Lock, CheckCircle, CreditCard, Loader2 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { safeToast } from '@/lib/errorHandler';
 
 interface JobPaymentFormProps {
   amount: number;
@@ -11,25 +12,111 @@ interface JobPaymentFormProps {
   lawnSize?: string;
   lawnSizeCost?: number;
   jobTypeCost?: number;
+  jobId: string;
+  customerEmail: string;
+  customerName?: string;
   onPaymentSuccess: (reference: string, cardInfo: { lastFour: string; name: string }) => void;
   onCancel: () => void;
   loading?: boolean;
 }
 
-export function JobPaymentForm({ amount, jobTitle, lawnSize, lawnSizeCost, jobTypeCost, onPaymentSuccess, onCancel, loading }: JobPaymentFormProps) {
-  const [processing, setProcessing] = useState(false);
+interface EzeePaymentData {
+  platform: string;
+  token: string;
+  amount: number;
+  currency: string;
+  order_id: string;
+  email_address: string;
+  customer_name: string;
+  description: string;
+}
 
-  const handleTestPayment = () => {
+export function JobPaymentForm({ 
+  amount, 
+  jobTitle, 
+  lawnSize, 
+  lawnSizeCost, 
+  jobTypeCost, 
+  jobId,
+  customerEmail,
+  customerName,
+  onPaymentSuccess, 
+  onCancel, 
+  loading 
+}: JobPaymentFormProps) {
+  const [processing, setProcessing] = useState(false);
+  const [paymentData, setPaymentData] = useState<EzeePaymentData | null>(null);
+  const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
+  const formRef = useRef<HTMLFormElement>(null);
+
+  // Check for payment completion on mount (user returned from EzeePay)
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const paymentComplete = urlParams.get('payment_complete');
+    const orderId = urlParams.get('order_id');
+    
+    if (paymentComplete === 'true' && orderId) {
+      // Check payment status from database
+      checkPaymentStatus(orderId);
+    }
+  }, []);
+
+  const checkPaymentStatus = async (orderId: string) => {
+    try {
+      const { data: job, error } = await supabase
+        .from('job_requests')
+        .select('payment_status, payment_reference')
+        .eq('id', orderId)
+        .single();
+
+      if (error) throw error;
+
+      if (job?.payment_status === 'paid') {
+        onPaymentSuccess(job.payment_reference || `EZEE-${Date.now()}`, {
+          lastFour: '****',
+          name: customerName || 'Customer'
+        });
+      }
+    } catch (error) {
+      console.error('Error checking payment status:', error);
+    }
+  };
+
+  const initiatePayment = async () => {
     setProcessing(true);
-    // Simulate payment processing
-    setTimeout(() => {
-      const reference = `TEST-${Date.now()}`;
-      onPaymentSuccess(reference, { 
-        lastFour: '4242', 
-        name: 'Test Customer' 
+
+    try {
+      const { data, error } = await supabase.functions.invoke('ezeepay-create-token', {
+        body: {
+          amount: amount,
+          order_id: jobId,
+          customer_email: customerEmail,
+          customer_name: customerName,
+          description: `Payment for ${jobTitle}`,
+        }
       });
+
+      if (error) throw error;
+
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to initialize payment');
+      }
+
+      setPaymentUrl(data.payment_url);
+      setPaymentData(data.payment_data);
+
+      // Auto-submit the form after state is set
+      setTimeout(() => {
+        if (formRef.current) {
+          formRef.current.submit();
+        }
+      }, 100);
+
+    } catch (error) {
+      console.error('Payment initialization error:', error);
+      safeToast.error(error);
       setProcessing(false);
-    }, 1500);
+    }
   };
 
   return (
@@ -73,28 +160,48 @@ export function JobPaymentForm({ amount, jobTitle, lawnSize, lawnSizeCost, jobTy
             </p>
           </div>
 
-          {/* Test Mode Alert */}
-          <Alert variant="default" className="border-amber-500/50 bg-amber-500/10">
-            <AlertTriangle className="h-4 w-4 text-amber-500" />
-            <AlertDescription className="text-amber-700 dark:text-amber-400">
-              <strong>Test Mode:</strong> Payment processing is simulated. No real charges will be made.
-            </AlertDescription>
-          </Alert>
+          {/* Hidden form for EzeePay redirect */}
+          {paymentUrl && paymentData && (
+            <form 
+              ref={formRef}
+              action={paymentUrl} 
+              method="POST" 
+              style={{ display: 'none' }}
+            >
+              <input type="hidden" name="platform" value={paymentData.platform} />
+              <input type="hidden" name="token" value={paymentData.token} />
+              <input type="hidden" name="amount" value={paymentData.amount} />
+              <input type="hidden" name="currency" value={paymentData.currency} />
+              <input type="hidden" name="order_id" value={paymentData.order_id} />
+              <input type="hidden" name="email_address" value={paymentData.email_address} />
+              <input type="hidden" name="customer_name" value={paymentData.customer_name} />
+              <input type="hidden" name="description" value={paymentData.description} />
+            </form>
+          )}
 
-          {/* Test Payment Button */}
+          {/* Payment Button */}
           <div className="space-y-4">
             <Button 
-              onClick={handleTestPayment}
+              onClick={initiatePayment}
               className="w-full"
               disabled={processing || loading}
               size="lg"
             >
-              <CreditCard className="h-4 w-4 mr-2" />
-              {processing ? 'Processing...' : `Pay J$${amount.toLocaleString()} (Test)`}
+              {processing ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Redirecting to Payment...
+                </>
+              ) : (
+                <>
+                  <CreditCard className="h-4 w-4 mr-2" />
+                  Pay J${amount.toLocaleString()}
+                </>
+              )}
             </Button>
             
             <p className="text-xs text-muted-foreground text-center">
-              Test payment will be processed instantly
+              You will be redirected to EzeePay's secure payment page
             </p>
           </div>
 

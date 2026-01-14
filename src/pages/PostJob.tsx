@@ -105,9 +105,10 @@ export default function PostJob() {
   const [step, setStep] = useState<'details' | 'payment'>('details');
   const [showAutopayDialog, setShowAutopayDialog] = useState(false);
   const [pendingCardInfo, setPendingCardInfo] = useState<{ lastFour: string; name: string } | null>(null);
-const [showAutofillPreview, setShowAutofillPreview] = useState(false);
+  const [showAutofillPreview, setShowAutofillPreview] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
-const [formData, setFormData] = useState({
+  const [pendingJobId, setPendingJobId] = useState<string | null>(null);
+  const [formData, setFormData] = useState({
     title: '',
     description: '',
     location: '',
@@ -206,7 +207,7 @@ const handleLawnSizeChange = (value: string) => {
     return currentMinOffer + jobTypeExtra;
   };
 
-const handleProceedToPayment = (e: React.FormEvent) => {
+const handleProceedToPayment = async (e: React.FormEvent) => {
     e.preventDefault();
 
     const jobSchema = createJobSchema(currentMinOffer);
@@ -242,19 +243,15 @@ const handleProceedToPayment = (e: React.FormEvent) => {
       return;
     }
 
-    setStep('payment');
-  };
-
-  const handlePaymentSuccess = async (paymentReference: string, cardInfo: { lastFour: string; name: string }) => {
+    // Create a pending job first so we have a job ID for payment
     setLoading(true);
-
     try {
       const basePrice = currentMinOffer;
       const paymentAmount = getPaymentAmount();
       const platformFee = Math.round(paymentAmount * 0.30);
       const providerPayout = paymentAmount - platformFee;
       
-const { data: job, error: jobError } = await supabase
+      const { data: job, error: jobError } = await supabase
         .from('job_requests')
         .insert({
           customer_id: user!.id,
@@ -270,12 +267,46 @@ const { data: job, error: jobError } = await supabase
           final_price: paymentAmount,
           platform_fee: platformFee,
           provider_payout: providerPayout,
+          payment_status: 'pending',
+          status: 'pending',
+        })
+        .select()
+        .single();
+
+      if (jobError) throw jobError;
+
+      setPendingJobId(job.id);
+      setStep('payment');
+    } catch (error) {
+      safeToast.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePaymentSuccess = async (paymentReference: string, cardInfo: { lastFour: string; name: string }) => {
+    if (!pendingJobId) {
+      safeToast.error('No pending job found');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const paymentAmount = getPaymentAmount();
+      const platformFee = Math.round(paymentAmount * 0.30);
+      
+      // Update the pending job with payment info
+      const { data: job, error: jobError } = await supabase
+        .from('job_requests')
+        .update({
           payment_status: 'paid',
           payment_reference: paymentReference,
           payment_confirmed_at: new Date().toISOString(),
           payment_confirmed_by: user!.id,
           status: 'open',
         })
+        .eq('id', pendingJobId)
         .select()
         .single();
 
@@ -410,17 +441,24 @@ const { data: job, error: jobError } = await supabase
             <p className="text-muted-foreground">Tell us about your lawn cutting needs</p>
           </div>
 
-          {step === 'payment' ? (
+          {step === 'payment' && pendingJobId ? (
             <JobPaymentForm
               amount={getPaymentAmount()}
               jobTitle={formData.title}
               lawnSize={formData.lawn_size}
               lawnSizeCost={currentMinOffer}
               jobTypeCost={getJobTypeExtraCost(formData.title)}
+              jobId={pendingJobId}
+              customerEmail={user?.email || ''}
+              customerName={user?.user_metadata?.first_name || ''}
               onPaymentSuccess={(paymentReference, cardInfo) => handlePaymentSuccess(paymentReference, cardInfo)}
               onCancel={() => setStep('details')}
               loading={loading}
             />
+          ) : step === 'payment' ? (
+            <div className="flex items-center justify-center p-8">
+              <p className="text-muted-foreground">Loading payment...</p>
+            </div>
           ) : (
           <form onSubmit={handleProceedToPayment}>
             <Card>
