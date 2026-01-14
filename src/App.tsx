@@ -32,8 +32,6 @@ import TermsOfService from "./pages/TermsOfService";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import RefundPolicy from "./pages/RefundPolicy";
 import Invoices from "./pages/Invoices";
-import PaymentSuccess from "./pages/PaymentSuccess";
-import PaymentFailure from "./pages/PaymentFailure";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -57,8 +55,6 @@ const App = () => (
               <Route path="/terms" element={<TermsOfService />} />
               <Route path="/privacy" element={<PrivacyPolicy />} />
               <Route path="/refund-policy" element={<RefundPolicy />} />
-              <Route path="/payment-success" element={<PaymentSuccess />} />
-              <Route path="/payment-failure" element={<PaymentFailure />} />
               <Route
                 path="/dashboard"
                 element={
