@@ -135,9 +135,25 @@ serve(async (req) => {
       return phone.startsWith("+") ? phone : `+${digits}`;
     };
 
+    const isValidE164 = (phone: string): boolean => /^\+1\d{10}$/.test(phone);
+
     const callerPhoneE164 = formatE164(callerProfile.phone_number);
     const targetPhoneE164 = formatE164(targetProfile.phone_number);
     const twilioPhoneE164 = formatE164(twilioPhoneNumber);
+
+    if (!isValidE164(callerPhoneE164)) {
+      return new Response(
+        JSON.stringify({ error: "Your phone number looks invalid. Please update it in Settings (use 876-XXX-XXXX)." }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (!isValidE164(targetPhoneE164)) {
+      return new Response(
+        JSON.stringify({ error: "The other party's phone number looks invalid. Ask them to update it in Settings before calling." }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     console.log("Initiating secure call:", {
       jobId,
@@ -204,10 +220,15 @@ serve(async (req) => {
     console.log("Call initiated successfully:", callData.sid);
 
     return new Response(
-      JSON.stringify({ 
-        success: true, 
+      JSON.stringify({
+        success: true,
         message: "Call initiated! Your phone will ring shortly.",
-        callSid: callData.sid 
+        callSid: callData.sid,
+        target: {
+          userId: targetUserId,
+          firstName: targetProfile.first_name ?? null,
+          last4: targetPhoneE164.slice(-4),
+        },
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );

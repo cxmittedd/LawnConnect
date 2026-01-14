@@ -161,6 +161,24 @@ export default function Settings() {
   const handleSave = async () => {
     if (!user) return;
 
+    const normalizePhoneToE164 = (input: string): string | null => {
+      const digits = input.replace(/\D/g, "");
+      if (digits.length === 10) return `+1${digits}`;
+      if (digits.length === 11 && digits.startsWith("1")) return `+${digits}`;
+      if (digits.length === 12 && digits.startsWith("1876")) return `+${digits}`;
+      if (input.trim().startsWith("+") && /^\+1\d{10}$/.test(input.trim())) return input.trim();
+      return null;
+    };
+
+    const normalizedPhone = profile.phone_number?.trim()
+      ? normalizePhoneToE164(profile.phone_number)
+      : null;
+
+    if (profile.phone_number?.trim() && !normalizedPhone) {
+      toast.error("Please enter a valid Jamaican number (e.g., 876-555-1234).");
+      return;
+    }
+
     setSaving(true);
     try {
       let uploadedAvatarUrl = profile.avatar_url;
@@ -192,7 +210,7 @@ export default function Settings() {
       const { error } = await supabase
         .from('profiles')
         .update({
-          phone_number: profile.phone_number || null,
+          phone_number: normalizedPhone,
           address: profile.address || null,
           company_name: profile.company_name || null,
           avatar_url: uploadedAvatarUrl,
@@ -202,7 +220,7 @@ export default function Settings() {
 
       if (error) throw error;
 
-      setProfile(prev => ({ ...prev, avatar_url: uploadedAvatarUrl }));
+      setProfile(prev => ({ ...prev, avatar_url: uploadedAvatarUrl, phone_number: normalizedPhone || '' }));
       setAvatarFile(null);
       toast.success('Profile updated successfully!');
     } catch (error) {

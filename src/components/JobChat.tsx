@@ -6,6 +6,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { MessageCircle, Send, User, Phone, MapPin, Shield, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
@@ -49,10 +59,15 @@ export const JobChat = ({ jobId, customerId, providerId, isCustomer, jobStatus }
   const [proxySession, setProxySession] = useState<ProxySession | null>(null);
   const [proxyLoading, setProxyLoading] = useState(false);
   const [callLoading, setCallLoading] = useState(false);
+  const [confirmCallOpen, setConfirmCallOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // Check if job allows calling (accepted, in_progress, pending_completion)
   const canCall = ["accepted", "in_progress", "pending_completion"].includes(jobStatus || "");
+
+  const otherPhoneLast4 = otherParticipant?.phone_number
+    ? otherParticipant.phone_number.replace(/\D/g, "").slice(-4)
+    : null;
 
   useEffect(() => {
     loadMessages();
@@ -254,7 +269,7 @@ export const JobChat = ({ jobId, customerId, providerId, isCustomer, jobStatus }
                       
                       {/* Call Now Button - Uses server-initiated call for accurate job routing */}
                       <Button 
-                        onClick={initiateSecureCall}
+                        onClick={() => setConfirmCallOpen(true)}
                         disabled={callLoading}
                         className="w-full bg-green-600 hover:bg-green-700 text-white"
                         size="lg"
@@ -271,6 +286,42 @@ export const JobChat = ({ jobId, customerId, providerId, isCustomer, jobStatus }
                           </>
                         )}
                       </Button>
+
+                      <AlertDialog open={confirmCallOpen} onOpenChange={setConfirmCallOpen}>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Confirm call</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              You’re about to call the {isCustomer ? "provider" : "customer"}{" "}
+                              <span className="font-medium text-foreground">
+                                {otherParticipant.full_name || "(name unavailable)"}
+                              </span>
+                              {otherPhoneLast4 ? (
+                                <> (number ending {otherPhoneLast4})</>
+                              ) : (
+                                <> (no phone number on file)</>
+                              )}
+                              . If this doesn’t look right, cancel and ask them to update their phone number in Settings.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={(e) => {
+                                e.preventDefault();
+                                if (!otherPhoneLast4) {
+                                  toast.error("Cannot call: the other party has no phone number on file.");
+                                  return;
+                                }
+                                setConfirmCallOpen(false);
+                                initiateSecureCall();
+                              }}
+                            >
+                              Call
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                       
                       <p className="text-xs text-muted-foreground text-center">
                         Your real number stays private • Expires {format(new Date(proxySession.expiresAt), "MMM d, yyyy")}
