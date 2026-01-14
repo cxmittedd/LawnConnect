@@ -220,21 +220,28 @@ export const JobChat = ({ jobId, customerId, providerId, isCustomer, jobStatus }
                   </div>
                   
                   {proxySession ? (
-                    <div className="bg-primary/10 rounded-md p-3">
-                      <p className="text-xs text-muted-foreground mb-1">
-                        Call or text this number to reach the {isCustomer ? "provider" : "customer"}:
-                      </p>
-                      <div className="flex items-center gap-2">
-                        <Phone className="h-4 w-4 text-primary" />
-                        <a 
-                          href={`tel:${proxySession.proxyNumber}`}
-                          className="text-sm font-medium text-primary hover:underline"
-                        >
-                          {proxySession.proxyNumber}
-                        </a>
+                    <div className="bg-primary/10 rounded-md p-3 space-y-3">
+                      <div>
+                        <p className="text-xs text-muted-foreground mb-1">
+                          Secure line to reach the {isCustomer ? "provider" : "customer"}:
+                        </p>
+                        <p className="text-sm font-medium text-primary">{proxySession.proxyNumber}</p>
                       </div>
-                      <p className="text-xs text-muted-foreground mt-2">
-                        Your real number stays private. Expires {format(new Date(proxySession.expiresAt), "MMM d, yyyy")}
+                      
+                      {/* Call Now Button */}
+                      <Button 
+                        asChild
+                        className="w-full bg-green-600 hover:bg-green-700 text-white"
+                        size="lg"
+                      >
+                        <a href={`tel:${proxySession.proxyNumber}`}>
+                          <Phone className="h-5 w-5 mr-2" />
+                          Call Now
+                        </a>
+                      </Button>
+                      
+                      <p className="text-xs text-muted-foreground text-center">
+                        Your real number stays private • Expires {format(new Date(proxySession.expiresAt), "MMM d, yyyy")}
                       </p>
                     </div>
                   ) : (
