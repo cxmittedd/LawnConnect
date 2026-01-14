@@ -52,11 +52,12 @@ export default function Dashboard() {
         setUserRole(profile.user_role);
 
         if (profile.user_role === 'customer' || profile.user_role === 'both') {
-          // Load customer stats
+          // Load customer stats - only count paid jobs
           const { data: jobs } = await supabase
             .from('job_requests')
             .select('*')
-            .eq('customer_id', user.id);
+            .eq('customer_id', user.id)
+            .eq('payment_status', 'paid');
 
           const activeJobs = jobs?.filter(j => ['open', 'accepted', 'in_progress'].includes(j.status)).length || 0;
           const completedJobs = jobs?.filter(j => j.status === 'completed').length || 0;
