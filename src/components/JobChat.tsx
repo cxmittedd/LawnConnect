@@ -65,10 +65,6 @@ export const JobChat = ({ jobId, customerId, providerId, isCustomer, jobStatus }
   // Check if job allows calling (accepted, in_progress, pending_completion)
   const canCall = ["accepted", "in_progress", "pending_completion"].includes(jobStatus || "");
 
-  const otherPhoneLast4 = otherParticipant?.phone_number
-    ? otherParticipant.phone_number.replace(/\D/g, "").slice(-4)
-    : null;
-
   useEffect(() => {
     loadMessages();
     loadOtherParticipant();
@@ -296,11 +292,6 @@ export const JobChat = ({ jobId, customerId, providerId, isCustomer, jobStatus }
                               <span className="font-medium text-foreground">
                                 {otherParticipant.full_name || "(name unavailable)"}
                               </span>
-                              {otherPhoneLast4 ? (
-                                <> (number ending {otherPhoneLast4})</>
-                              ) : (
-                                <> (no phone number on file)</>
-                              )}
                               . If this doesn’t look right, cancel and ask them to update their phone number in Settings.
                             </AlertDialogDescription>
                           </AlertDialogHeader>
@@ -309,7 +300,7 @@ export const JobChat = ({ jobId, customerId, providerId, isCustomer, jobStatus }
                             <AlertDialogAction
                               onClick={(e) => {
                                 e.preventDefault();
-                                if (!otherPhoneLast4) {
+                                if (!otherParticipant?.phone_number) {
                                   toast.error("Cannot call: the other party has no phone number on file.");
                                   return;
                                 }
