@@ -27,6 +27,11 @@ const signUpSchema = z.object({
   firstName: z.string().trim().min(1, { message: 'First name is required' }).max(50),
   lastName: z.string().trim().min(1, { message: 'Last name is required' }).max(50),
   email: z.string().trim().email({ message: 'Invalid email address' }),
+  phoneNumber: z.string()
+    .trim()
+    .min(7, { message: 'Phone number is required' })
+    .max(20, { message: 'Phone number is too long' })
+    .regex(/^[\d\s\-+()]+$/, { message: 'Please enter a valid phone number' }),
   password: z.string()
     .min(8, { message: 'Password must be at least 8 characters' })
     .regex(/[A-Z]/, { message: 'Password must contain at least one uppercase letter' })
@@ -129,6 +134,7 @@ export default function Auth() {
     firstName: '',
     lastName: '',
     email: '',
+    phoneNumber: '',
     password: '',
     confirmPassword: '',
     userRole: 'customer' as 'customer' | 'provider',
@@ -177,7 +183,15 @@ export default function Auth() {
 
     setLoading(true);
     const fullName = `${signUpData.firstName} ${signUpData.lastName}`.trim();
-    const { error, data } = await signUp(signUpData.email, signUpData.password, fullName, signUpData.userRole);
+    const { error, data } = await signUp(
+      signUpData.email, 
+      signUpData.password, 
+      fullName, 
+      signUpData.userRole,
+      signUpData.phoneNumber,
+      signUpData.firstName,
+      signUpData.lastName
+    );
     
     if (error) {
       setLoading(false);
@@ -317,6 +331,20 @@ export default function Auth() {
                     onChange={(e) => setSignUpData({ ...signUpData, email: e.target.value })}
                     required
                   />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="signup-phone">Phone Number</Label>
+                  <Input
+                    id="signup-phone"
+                    type="tel"
+                    placeholder="+1 (876) 555-1234"
+                    value={signUpData.phoneNumber}
+                    onChange={(e) => setSignUpData({ ...signUpData, phoneNumber: e.target.value })}
+                    required
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Required for communication. Your number will be kept private through our secure masking system.
+                  </p>
                 </div>
                 <PasswordStrengthField 
                   value={signUpData.password}
