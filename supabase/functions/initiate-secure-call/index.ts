@@ -169,6 +169,9 @@ serve(async (req) => {
     const callerRole = isCustomer ? "customer" : "provider";
     const twimlUrl = `${supabaseUrl}/functions/v1/twilio-call-connect?target=${encodeURIComponent(targetPhoneE164)}&callerId=${encodeURIComponent(twilioPhoneE164)}&jobId=${encodeURIComponent(jobId)}&callerRole=${encodeURIComponent(callerRole)}`;
 
+    // Status callback for the FIRST leg (Twilio -> caller). Helps debug “phone never rang”.
+    const outboundStatusUrl = `${supabaseUrl}/functions/v1/twilio-outbound-status?jobId=${encodeURIComponent(jobId)}`;
+
     // Initiate outbound call to the caller using Twilio REST API
     const twilioApiUrl = `https://api.twilio.com/2010-04-01/Accounts/${twilioAccountSid}/Calls.json`;
     const auth = btoa(`${twilioAccountSid}:${twilioAuthToken}`);
@@ -179,6 +182,14 @@ serve(async (req) => {
     callParams.append("Url", twimlUrl);
     callParams.append("Method", "GET");
     callParams.append("Timeout", "30");
+
+    // Webhook events: queued/ringing/answered/completed + failed
+    callParams.append("StatusCallback", outboundStatusUrl);
+    callParams.append("StatusCallbackMethod", "POST");
+    callParams.append("StatusCallbackEvent", "initiated");
+    callParams.append("StatusCallbackEvent", "ringing");
+    callParams.append("StatusCallbackEvent", "answered");
+    callParams.append("StatusCallbackEvent", "completed");
 
     const callResponse = await fetch(twilioApiUrl, {
       method: "POST",

@@ -50,3 +50,6 @@ verify_jwt = false
 
 [functions.twilio-call-status]
 verify_jwt = false
+
+[functions.twilio-outbound-status]
+verify_jwt = false
