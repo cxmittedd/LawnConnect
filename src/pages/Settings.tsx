@@ -319,6 +319,23 @@ export default function Settings() {
 
           {/* Profile Tab */}
           <TabsContent value="profile" className="space-y-6">
+            {/* Phone Number Alert for existing users */}
+            {!loading && !profile.phone_number && (
+              <Card className="border-amber-500 bg-amber-50 dark:bg-amber-950/30">
+                <CardHeader className="pb-2">
+                  <CardTitle className="flex items-center gap-2 text-amber-700 dark:text-amber-400">
+                    <Phone className="h-5 w-5" />
+                    Phone Number Required
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-amber-600 dark:text-amber-300 mb-2">
+                    A phone number is now required to use secure calling features. Please add your phone number below to enable direct communication with customers and providers through our masked calling system.
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+
             {/* Profile Photo - Required for Providers */}
             {isProvider && (
               <Card>
@@ -416,17 +433,27 @@ export default function Settings() {
                 </p>
 
                 <div className="space-y-2">
-                  <Label htmlFor="phone_number">Phone Number</Label>
+                  <Label htmlFor="phone_number" className="flex items-center gap-2">
+                    Phone Number
+                    {!profile.phone_number && (
+                      <Badge variant="destructive" className="text-xs">Required</Badge>
+                    )}
+                  </Label>
                   <div className="relative">
                     <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
                       id="phone_number"
                       placeholder="e.g., 876-555-1234"
-                      className="pl-10"
+                      className={`pl-10 ${!profile.phone_number ? 'border-amber-500 focus:ring-amber-500' : ''}`}
                       value={profile.phone_number || ''}
                       onChange={(e) => setProfile({ ...profile, phone_number: e.target.value })}
                     />
                   </div>
+                  {!profile.phone_number && (
+                    <p className="text-xs text-amber-600 dark:text-amber-400">
+                      Required for secure calling with customers/providers
+                    </p>
+                  )}
                 </div>
 
                 {!isProvider && (

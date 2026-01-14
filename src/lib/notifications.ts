@@ -12,7 +12,8 @@ type NotificationType =
   | 'late_completion_apology'
   | 'completion_confirmation_needed'
   | 'dispute_opened'
-  | 'dispute_response';
+  | 'dispute_response'
+  | 'secure_call_enabled';
 
 interface NotificationParams {
   type: NotificationType;
@@ -27,6 +28,8 @@ interface NotificationParams {
     lateJobsThisMonth?: number;
     preferredDate?: string;
     disputeReason?: string;
+    proxyNumber?: string;
+    enabledByName?: string;
   };
 }
 
