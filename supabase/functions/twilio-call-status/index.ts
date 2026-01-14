@@ -27,23 +27,26 @@ serve(async (req) => {
       
       switch (dialCallStatus) {
         case "busy":
-          message = "The other party's line is busy. Please try again later.";
+          message = "LawnConnect: The other party's line is busy. Please try again later.";
           break;
         case "no-answer":
-          message = "The other party did not answer. Please try again later.";
+          message = "LawnConnect: The other party did not answer. Please try again later.";
           break;
         case "failed":
-          message = "The call could not be completed. Please check the phone number is correct.";
+          message = "LawnConnect: The call could not be completed. Please check the phone number is correct.";
           break;
         case "canceled":
-          message = "The call was canceled.";
+          message = "LawnConnect: The call was canceled.";
+          break;
+        default:
+          message = "LawnConnect: We could not connect your call. Please try again.";
           break;
       }
 
       return new Response(
         `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-  <Say>${message}</Say>
+  <Say voice="alice">${message}</Say>
   <Hangup/>
 </Response>`,
         { headers: { ...corsHeaders, "Content-Type": "text/xml" } }

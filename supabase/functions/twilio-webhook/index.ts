@@ -142,7 +142,7 @@ serve(async (req) => {
         return new Response(
           `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-  <Say>We could not connect your call. Please confirm the other party can receive calls and that their phone number is correct in the app.</Say>
+  <Say voice="alice">LawnConnect: We could not connect your call. Please confirm the other party can receive calls and that their phone number is correct in the app.</Say>
   <Hangup/>
 </Response>`,
           { headers: { ...corsHeaders, "Content-Type": "text/xml" } },
@@ -195,7 +195,7 @@ serve(async (req) => {
 
       const twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-  <Say>Connecting you now through LawnConnect secure line.</Say>
+  <Say voice="alice">Welcome to LawnConnect. Connecting your call now, please hold.</Say>
   <Dial action="${actionUrl}" method="POST" timeout="25" answerOnBridge="true" callerId="${proxyCallerIdE164 || twilioPhoneNumber}">
     <Number>${targetPhoneE164}</Number>
   </Dial>
@@ -261,7 +261,7 @@ serve(async (req) => {
 function generateTwiMLResponse(message: string): string {
   return `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-  <Say>${message}</Say>
+  <Say voice="alice">LawnConnect: ${message}</Say>
   <Hangup/>
 </Response>`;
 }
