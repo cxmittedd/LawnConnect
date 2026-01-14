@@ -38,7 +38,7 @@ serve(async (req) => {
       const recipientHears = callerRole === "customer" ? "customer" : "service provider";
       const recipientTwiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-  <Pause length="2"/>
+  <Pause length="1"/>
   <Say voice="alice">Thank you for calling LawnConnect. Please hold while we securely connect you to your ${recipientHears}.</Say>
 </Response>`;
       console.log("Returning recipient greeting TwiML:", recipientTwiml);
@@ -68,7 +68,7 @@ serve(async (req) => {
 
     const twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-  <Pause length="2"/>
+  <Pause length="1"/>
   <Say voice="alice">Thank you for calling LawnConnect. Please hold while we securely connect you to your ${callerHears}.</Say>
   <Dial callerId="${xmlEscapeAttr(callerId)}" timeout="30" answerOnBridge="true" action="${xmlEscapeAttr(statusCallbackUrl)}" method="POST">
     <Number url="${xmlEscapeAttr(recipientGreetingUrl)}">${target}</Number>
