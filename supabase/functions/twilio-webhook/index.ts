@@ -33,8 +33,9 @@ serve(async (req) => {
     const callSid = formData.get("CallSid") as string;
     const messageSid = formData.get("MessageSid") as string;
     const body = formData.get("Body") as string; // For SMS
+    const dialCallStatus = formData.get("DialCallStatus") as string | null;
 
-    console.log("Twilio webhook received:", { from, to, callSid, messageSid });
+    console.log("Twilio webhook received:", { from, to, callSid, messageSid, dialCallStatus });
 
     // Verify the call/SMS is to our Twilio number
     if (!twilioPhoneNumber || normalizePhoneNumber(to) !== normalizePhoneNumber(twilioPhoneNumber)) {
@@ -97,6 +98,29 @@ serve(async (req) => {
     const isCustomer = callerProfile.id === proxySession.customer_id;
     const targetUserId = isCustomer ? proxySession.provider_id : proxySession.customer_id;
 
+    // Use the proxy number stored on the session (falls back to env)
+    const proxyCallerId = proxySession.twilio_proxy_number || twilioPhoneNumber;
+
+    // If Twilio is calling us back after a <Dial>, report the result
+    if (dialCallStatus && callSid) {
+      console.log("Dial finished with status:", dialCallStatus);
+
+      if (dialCallStatus !== "completed") {
+        return new Response(
+          `<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+  <Say>We could not connect your call. Please try again, or confirm the other party can receive calls.</Say>
+  <Hangup/>
+</Response>`,
+          { headers: { ...corsHeaders, "Content-Type": "text/xml" } },
+        );
+      }
+
+      return new Response(`<?xml version="1.0" encoding="UTF-8"?><Response></Response>`, {
+        headers: { ...corsHeaders, "Content-Type": "text/xml" },
+      });
+    }
+
     // Get target's phone number
     const { data: targetProfile, error: targetError } = await supabaseClient
       .from("profiles")
@@ -127,14 +151,16 @@ serve(async (req) => {
     };
 
     const targetPhoneE164 = formatE164(targetProfile.phone_number);
-    console.log("Forwarding call to:", targetPhoneE164);
+    const proxyCallerIdE164 = proxyCallerId ? formatE164(proxyCallerId) : undefined;
+
+    console.log("Forwarding call to:", targetPhoneE164, "callerId:", proxyCallerIdE164);
 
     // For calls, forward to the target
     if (callSid) {
       const twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
   <Say>Connecting you now through LawnConnect secure line.</Say>
-  <Dial callerId="${twilioPhoneNumber}">
+  <Dial action="${req.url}" method="POST" timeout="25" answerOnBridge="true" callerId="${proxyCallerIdE164 || twilioPhoneNumber}">
     <Number>${targetPhoneE164}</Number>
   </Dial>
 </Response>`;
@@ -161,7 +187,7 @@ serve(async (req) => {
       const auth = btoa(`${twilioAccountSid}:${twilioAuthToken}`);
 
       const smsBody = new URLSearchParams();
-      smsBody.append("From", twilioPhoneNumber);
+      smsBody.append("From", proxyCallerIdE164 || twilioPhoneNumber);
       smsBody.append("To", targetPhoneE164);
       smsBody.append("Body", `[LawnConnect] ${body}`);
 
