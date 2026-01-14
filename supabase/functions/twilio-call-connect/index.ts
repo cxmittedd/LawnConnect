@@ -50,8 +50,16 @@ serve(async (req) => {
     // Generate TwiML to connect the caller to the target
     // The caller has already answered (Twilio called them), now we dial the target
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+
+    const xmlEscapeAttr = (value: string) =>
+      value
+        .replace(/&/g, "&amp;")
+        .replace(/"/g, "&quot;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+
     const statusCallbackUrl = `${supabaseUrl}/functions/v1/twilio-call-status?jobId=${encodeURIComponent(jobId || "")}`;
-    
+
     // URL for the recipient's greeting when they answer
     const recipientGreetingUrl = `${supabaseUrl}/functions/v1/twilio-call-connect?target=${encodeURIComponent(target)}&callerId=${encodeURIComponent(callerId)}&jobId=${encodeURIComponent(jobId || "")}&callerRole=${encodeURIComponent(callerRole || "")}&forRecipient=true`;
 
@@ -62,8 +70,8 @@ serve(async (req) => {
 <Response>
   <Pause length="2"/>
   <Say voice="alice">Thank you for calling LawnConnect. Please hold while we securely connect you to your ${callerHears}.</Say>
-  <Dial callerId="${callerId}" timeout="30" answerOnBridge="true" action="${statusCallbackUrl}" method="POST">
-    <Number url="${recipientGreetingUrl}">${target}</Number>
+  <Dial callerId="${xmlEscapeAttr(callerId)}" timeout="30" answerOnBridge="true" action="${xmlEscapeAttr(statusCallbackUrl)}" method="POST">
+    <Number url="${xmlEscapeAttr(recipientGreetingUrl)}">${target}</Number>
   </Dial>
 </Response>`;
 
