@@ -224,11 +224,6 @@ serve(async (req) => {
         success: true,
         message: "Call initiated! Your phone will ring shortly.",
         callSid: callData.sid,
-        target: {
-          userId: targetUserId,
-          firstName: targetProfile.first_name ?? null,
-          last4: targetPhoneE164.slice(-4),
-        },
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
