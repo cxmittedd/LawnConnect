@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { Lock, CheckCircle, ExternalLink } from 'lucide-react';
+import { Lock, CheckCircle, CreditCard, AlertTriangle } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface JobPaymentFormProps {
   amount: number;
@@ -16,28 +17,19 @@ interface JobPaymentFormProps {
 }
 
 export function JobPaymentForm({ amount, jobTitle, lawnSize, lawnSizeCost, jobTypeCost, onPaymentSuccess, onCancel, loading }: JobPaymentFormProps) {
-  const [paymentInitiated, setPaymentInitiated] = useState(false);
-  const [confirming, setConfirming] = useState(false);
+  const [processing, setProcessing] = useState(false);
 
-  const handlePayNowClick = () => {
-    // Open EzeePay payment page in new tab
-    window.open('https://secure-test.ezeepayments.com/?DHXgXFE', '_blank');
-    setPaymentInitiated(true);
-  };
-
-  const handleConfirmPayment = () => {
-    setConfirming(true);
-    // Generate a reference for the payment
-    const reference = `EZEE-${Date.now()}`;
-    
-    // Simulate brief processing
+  const handleTestPayment = () => {
+    setProcessing(true);
+    // Simulate payment processing
     setTimeout(() => {
+      const reference = `TEST-${Date.now()}`;
       onPaymentSuccess(reference, { 
-        lastFour: '****', 
-        name: 'EzeePay Customer' 
+        lastFour: '4242', 
+        name: 'Test Customer' 
       });
-      setConfirming(false);
-    }, 1000);
+      setProcessing(false);
+    }, 1500);
   };
 
   return (
@@ -81,61 +73,29 @@ export function JobPaymentForm({ amount, jobTitle, lawnSize, lawnSizeCost, jobTy
             </p>
           </div>
 
-          {/* Payment Section */}
+          {/* Test Mode Alert */}
+          <Alert variant="default" className="border-amber-500/50 bg-amber-500/10">
+            <AlertTriangle className="h-4 w-4 text-amber-500" />
+            <AlertDescription className="text-amber-700 dark:text-amber-400">
+              <strong>Test Mode:</strong> Payment processing is simulated. No real charges will be made.
+            </AlertDescription>
+          </Alert>
+
+          {/* Test Payment Button */}
           <div className="space-y-4">
-            {!paymentInitiated ? (
-              <>
-                <p className="text-sm text-muted-foreground text-center">
-                  Click below to securely pay via EzeePay
-                </p>
-                
-                {/* EzeePay Button */}
-                <div className="flex justify-center">
-                  <button
-                    onClick={handlePayNowClick}
-                    disabled={loading}
-                    className="transition-transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <img 
-                      src="https://my-test.ezeepayments.com/btn-images/pay-now.png" 
-                      alt="Pay Now with EzeePay"
-                      className="h-12"
-                    />
-                  </button>
-                </div>
-
-                <p className="text-xs text-muted-foreground text-center">
-                  You'll be redirected to EzeePay's secure payment page
-                </p>
-              </>
-            ) : (
-              <>
-                <div className="bg-primary/10 border border-primary/30 rounded-lg p-4 text-center space-y-2">
-                  <ExternalLink className="h-6 w-6 text-primary mx-auto" />
-                  <p className="text-sm font-medium text-foreground">
-                    Complete your payment on EzeePay
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    After completing payment, click the button below to confirm
-                  </p>
-                </div>
-
-                <Button 
-                  onClick={handleConfirmPayment}
-                  className="w-full"
-                  disabled={confirming || loading}
-                >
-                  {confirming ? 'Confirming...' : 'I\'ve Completed Payment'}
-                </Button>
-
-                <button
-                  onClick={handlePayNowClick}
-                  className="text-sm text-primary hover:underline w-full text-center"
-                >
-                  Open payment page again
-                </button>
-              </>
-            )}
+            <Button 
+              onClick={handleTestPayment}
+              className="w-full"
+              disabled={processing || loading}
+              size="lg"
+            >
+              <CreditCard className="h-4 w-4 mr-2" />
+              {processing ? 'Processing...' : `Pay J$${amount.toLocaleString()} (Test)`}
+            </Button>
+            
+            <p className="text-xs text-muted-foreground text-center">
+              Test payment will be processed instantly
+            </p>
           </div>
 
           <div className="flex gap-3 pt-2">
@@ -144,7 +104,7 @@ export function JobPaymentForm({ amount, jobTitle, lawnSize, lawnSizeCost, jobTy
               variant="outline" 
               className="w-full"
               onClick={onCancel}
-              disabled={confirming || loading}
+              disabled={processing || loading}
             >
               Back
             </Button>
