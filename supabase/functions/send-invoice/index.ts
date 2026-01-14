@@ -48,8 +48,8 @@ const generateInvoiceNumber = (jobId: string, paymentDate: string): string => {
 };
 
 const createInvoiceEmail = (data: InvoiceRequest, invoiceNumber: string): string => {
-  const logoUrl = `${Deno.env.get("SUPABASE_URL")}/storage/v1/object/public/assets/lawnconnect-logo.png`;
-  const appUrl = "https://lawnconnect.jm";
+  const logoUrl = "https://connectlawn.com/pwa-512x512.png";
+  const appUrl = "https://connectlawn.com";
 
   return `
     <!DOCTYPE html>
@@ -175,7 +175,7 @@ const createInvoiceEmail = (data: InvoiceRequest, invoiceNumber: string): string
                   </a>
                   <p style="color: #a1a1aa; margin: 24px 0 0 0; font-size: 11px;">
                     LawnConnect • Jamaica's Lawn Care Marketplace<br>
-                    <a href="mailto:support@lawnconnect.jm" style="color: #16a34a; text-decoration: none;">support@lawnconnect.jm</a>
+                    <a href="mailto:officiallawnconnect@gmail.com" style="color: #16a34a; text-decoration: none;">officiallawnconnect@gmail.com</a>
                   </p>
                 </td>
               </tr>
