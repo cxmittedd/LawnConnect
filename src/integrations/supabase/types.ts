@@ -686,6 +686,47 @@ export type Database = {
         }
         Relationships: []
       }
+      proxy_sessions: {
+        Row: {
+          created_at: string
+          customer_id: string
+          expires_at: string
+          id: string
+          job_id: string
+          provider_id: string
+          status: string
+          twilio_proxy_number: string
+        }
+        Insert: {
+          created_at?: string
+          customer_id: string
+          expires_at?: string
+          id?: string
+          job_id: string
+          provider_id: string
+          status?: string
+          twilio_proxy_number: string
+        }
+        Update: {
+          created_at?: string
+          customer_id?: string
+          expires_at?: string
+          id?: string
+          job_id?: string
+          provider_id?: string
+          status?: string
+          twilio_proxy_number?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "proxy_sessions_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: true
+            referencedRelation: "job_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       push_subscriptions: {
         Row: {
           auth: string

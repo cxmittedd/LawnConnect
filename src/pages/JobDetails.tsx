@@ -371,6 +371,7 @@ export default function JobDetails() {
                 customerId={job.customer_id}
                 providerId={job.accepted_provider_id}
                 isCustomer={isCustomer}
+                jobStatus={job.status}
               />
             )}
           </div>
