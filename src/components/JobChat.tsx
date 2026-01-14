@@ -48,6 +48,7 @@ export const JobChat = ({ jobId, customerId, providerId, isCustomer, jobStatus }
   const [otherParticipant, setOtherParticipant] = useState<ParticipantInfo | null>(null);
   const [proxySession, setProxySession] = useState<ProxySession | null>(null);
   const [proxyLoading, setProxyLoading] = useState(false);
+  const [callLoading, setCallLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // Check if job allows calling (accepted, in_progress, pending_completion)
@@ -186,6 +187,32 @@ export const JobChat = ({ jobId, customerId, providerId, isCustomer, jobStatus }
     setSending(false);
   };
 
+  const initiateSecureCall = async () => {
+    setCallLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('initiate-secure-call', {
+        body: { jobId }
+      });
+
+      if (error) {
+        console.error('Failed to initiate call:', error);
+        toast.error('Failed to initiate call. Please try again.');
+        return;
+      }
+
+      if (data?.success) {
+        toast.success(data.message || 'Your phone will ring shortly!');
+      } else if (data?.error) {
+        toast.error(data.error);
+      }
+    } catch (error) {
+      console.error('Error initiating call:', error);
+      toast.error('Failed to initiate call. Please try again.');
+    } finally {
+      setCallLoading(false);
+    }
+  };
+
   return (
     <Card className="mt-6">
       <CardHeader className="pb-3">
@@ -221,23 +248,28 @@ export const JobChat = ({ jobId, customerId, providerId, isCustomer, jobStatus }
                   
                   {proxySession ? (
                     <div className="bg-primary/10 rounded-md p-3 space-y-3">
-                      <div>
-                        <p className="text-xs text-muted-foreground mb-1">
-                          Secure line to reach the {isCustomer ? "provider" : "customer"}:
-                        </p>
-                        <p className="text-sm font-medium text-primary">{proxySession.proxyNumber}</p>
-                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Tap below to securely call the {isCustomer ? "provider" : "customer"}. Your phone will ring and connect you automatically.
+                      </p>
                       
-                      {/* Call Now Button */}
+                      {/* Call Now Button - Uses server-initiated call for accurate job routing */}
                       <Button 
-                        asChild
+                        onClick={initiateSecureCall}
+                        disabled={callLoading}
                         className="w-full bg-green-600 hover:bg-green-700 text-white"
                         size="lg"
                       >
-                        <a href={`tel:${proxySession.proxyNumber}`}>
-                          <Phone className="h-5 w-5 mr-2" />
-                          Call Now
-                        </a>
+                        {callLoading ? (
+                          <>
+                            <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                            Calling...
+                          </>
+                        ) : (
+                          <>
+                            <Phone className="h-5 w-5 mr-2" />
+                            Call Now
+                          </>
+                        )}
                       </Button>
                       
                       <p className="text-xs text-muted-foreground text-center">
