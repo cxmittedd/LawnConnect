@@ -41,3 +41,12 @@ verify_jwt = false
 
 [functions.twilio-webhook]
 verify_jwt = false
+
+[functions.initiate-secure-call]
+verify_jwt = false
+
+[functions.twilio-call-connect]
+verify_jwt = false
+
+[functions.twilio-call-status]
+verify_jwt = false
