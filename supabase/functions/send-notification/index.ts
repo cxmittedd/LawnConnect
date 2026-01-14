@@ -12,7 +12,7 @@ const corsHeaders = {
 
 // Zod schema for input validation
 const notificationSchema = z.object({
-  type: z.enum(['proposal_received', 'proposal_accepted', 'job_confirmed', 'payment_submitted', 'payment_confirmed', 'job_completed', 'review_received', 'late_completion_warning', 'late_completion_apology', 'completion_confirmation_needed', 'dispute_opened', 'dispute_response']),
+  type: z.enum(['proposal_received', 'proposal_accepted', 'job_confirmed', 'payment_submitted', 'payment_confirmed', 'job_completed', 'review_received', 'late_completion_warning', 'late_completion_apology', 'completion_confirmation_needed', 'dispute_opened', 'dispute_response', 'secure_call_enabled']),
   recipientId: z.string().uuid(),
   jobTitle: z.string().min(1).max(200),
   jobId: z.string().uuid(),
@@ -24,6 +24,8 @@ const notificationSchema = z.object({
     lateJobsThisMonth: z.number().optional(),
     preferredDate: z.string().optional(),
     disputeReason: z.string().max(500).optional(),
+    proxyNumber: z.string().max(50).optional(),
+    enabledByName: z.string().max(100).optional(),
   }).optional(),
 });
 
@@ -500,6 +502,54 @@ const getEmailContent = (type: string, jobTitle: string, jobId: string, addition
           `,
           jobUrl,
           'View Response'
+        )
+      };
+
+    case 'secure_call_enabled':
+      return {
+        subject: `Secure Calling Enabled for "${jobTitle}"`,
+        html: createBrandedEmail(
+          'linear-gradient(135deg, #22c55e, #16a34a)',
+          '📞',
+          'Secure Calling Enabled',
+          `
+            <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 26px; color: #3f3f46;">
+              Secure calling has been enabled for the following job:
+            </p>
+            <div style="background: #f0fdf4; padding: 16px 20px; border-radius: 10px; border-left: 4px solid #16a34a; margin-bottom: 16px;">
+              <p style="margin: 0; font-size: 18px; font-weight: 600; color: #166534;">${jobTitle}</p>
+            </div>
+            ${additionalData?.enabledByName ? `
+              <p style="margin: 0 0 8px 0; font-size: 14px; color: #52525b;">
+                <strong>Enabled by:</strong> ${additionalData.enabledByName}
+              </p>
+            ` : ''}
+            ${additionalData?.proxyNumber ? `
+              <div style="background: #eff6ff; padding: 16px 20px; border-radius: 10px; margin-bottom: 16px;">
+                <p style="margin: 0 0 8px 0; font-size: 14px; color: #1e40af; font-weight: 600;">
+                  📱 Secure Proxy Number:
+                </p>
+                <p style="margin: 0; font-size: 20px; color: #2563eb; font-weight: 700; letter-spacing: 1px;">
+                  ${additionalData.proxyNumber}
+                </p>
+              </div>
+            ` : ''}
+            <div style="background: #fef3c7; padding: 14px 18px; border-radius: 8px; margin-bottom: 16px;">
+              <p style="margin: 0 0 8px 0; font-size: 14px; font-weight: 600; color: #92400e;">
+                How it works:
+              </p>
+              <ul style="margin: 0; padding-left: 20px; font-size: 13px; color: #92400e;">
+                <li>Call or text this number to reach the other party</li>
+                <li>Your real phone number stays private</li>
+                <li>This connection expires after 7 days</li>
+              </ul>
+            </div>
+            <p style="margin: 0; font-size: 14px; color: #71717a;">
+              You can find this number in the job chat at any time.
+            </p>
+          `,
+          jobUrl,
+          'View Job'
         )
       };
 
