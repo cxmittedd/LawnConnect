@@ -37,7 +37,7 @@ verify_jwt = true
 verify_jwt = false
 
 [functions.create-proxy-session]
-verify_jwt = true
+verify_jwt = false
 
 [functions.twilio-webhook]
 verify_jwt = false
