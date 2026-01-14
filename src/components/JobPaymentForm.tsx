@@ -158,13 +158,13 @@ export function JobPaymentForm({ amount, jobTitle, lawnSize, lawnSizeCost, jobTy
             </p>
           </div>
 
-          {/* Secure Payment Notice */}
-          <div className="bg-primary/10 border border-primary/30 rounded-lg p-3">
-            <p className="text-sm text-primary font-medium">
-              🔒 Secure Payment Processing
+          {/* Test Mode Notice */}
+          <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3">
+            <p className="text-sm text-amber-600 font-medium">
+              🧪 Test Mode
             </p>
             <p className="text-xs text-muted-foreground mt-1">
-              Your payment is encrypted and processed securely
+              This is a test payment. Enter any card details to simulate a successful payment.
             </p>
           </div>
 
