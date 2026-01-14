@@ -268,7 +268,7 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
           platform_fee: platformFee,
           provider_payout: providerPayout,
           payment_status: 'pending',
-          status: 'pending',
+          status: 'open',
         })
         .select()
         .single();
