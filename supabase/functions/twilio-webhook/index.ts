@@ -157,10 +157,13 @@ serve(async (req) => {
 
     // For calls, forward to the target
     if (callSid) {
+      // Twilio requires a publicly reachable HTTPS callback URL
+      const actionUrl = `${supabaseUrl}/functions/v1/twilio-webhook`;
+
       const twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
   <Say>Connecting you now through LawnConnect secure line.</Say>
-  <Dial action="${req.url}" method="POST" timeout="25" answerOnBridge="true" callerId="${proxyCallerIdE164 || twilioPhoneNumber}">
+  <Dial action="${actionUrl}" method="POST" timeout="25" answerOnBridge="true" callerId="${proxyCallerIdE164 || twilioPhoneNumber}">
     <Number>${targetPhoneE164}</Number>
   </Dial>
 </Response>`;
