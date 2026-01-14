@@ -1,12 +1,8 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
-import { CreditCard, Lock, CheckCircle } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
+import { Lock, CheckCircle, ExternalLink } from 'lucide-react';
 
 interface JobPaymentFormProps {
   amount: number;
@@ -20,102 +16,29 @@ interface JobPaymentFormProps {
 }
 
 export function JobPaymentForm({ amount, jobTitle, lawnSize, lawnSizeCost, jobTypeCost, onPaymentSuccess, onCancel, loading }: JobPaymentFormProps) {
-  const [cardNumber, setCardNumber] = useState('');
-  const [expiry, setExpiry] = useState('');
-  const [cvv, setCvv] = useState('');
-  const [cardName, setCardName] = useState('');
-  const [processing, setProcessing] = useState(false);
+  const [paymentInitiated, setPaymentInitiated] = useState(false);
+  const [confirming, setConfirming] = useState(false);
 
-  const platformFee = Math.round(amount * 0.1);
-  const providerPayout = amount - platformFee;
-
-  const formatCardNumber = (value: string) => {
-    const numbers = value.replace(/\D/g, '');
-    const groups = numbers.match(/.{1,4}/g) || [];
-    return groups.join(' ').slice(0, 19);
+  const handlePayNowClick = () => {
+    // Open EzeePay payment page in new tab
+    window.open('https://secure-test.ezeepayments.com/?DHXgXFE', '_blank');
+    setPaymentInitiated(true);
   };
 
-  const formatExpiry = (value: string) => {
-    const numbers = value.replace(/\D/g, '');
-    if (numbers.length >= 2) {
-      return numbers.slice(0, 2) + '/' + numbers.slice(2, 4);
-    }
-    return numbers;
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleConfirmPayment = () => {
+    setConfirming(true);
+    // Generate a reference for the payment
+    const reference = `EZEE-${Date.now()}`;
     
-    // Basic validation
-    if (cardNumber.replace(/\s/g, '').length < 16) {
-      toast.error('Please enter a valid card number');
-      return;
-    }
-    if (expiry.length < 5) {
-      toast.error('Please enter a valid expiry date');
-      return;
-    }
-    if (cvv.length < 3) {
-      toast.error('Please enter a valid CVV');
-      return;
-    }
-    if (!cardName.trim()) {
-      toast.error('Please enter the cardholder name');
-      return;
-    }
-
-    setProcessing(true);
-    
-    try {
-      // Parse expiry date
-      const [expiryMonth, expiryYear] = expiry.split('/');
-      
-      // Call the payment processing edge function
-      const { data, error } = await supabase.functions.invoke('process-payment', {
-        body: {
-          amount,
-          currency: 'JMD',
-          cardNumber: cardNumber.replace(/\s/g, ''),
-          expiryMonth,
-          expiryYear,
-          securityCode: cvv,
-          cardholderName: cardName,
-          orderId: `JOB-${Date.now()}`
-        }
+    // Simulate brief processing
+    setTimeout(() => {
+      onPaymentSuccess(reference, { 
+        lastFour: '****', 
+        name: 'EzeePay Customer' 
       });
-
-      if (error) {
-        console.error('Payment error:', error);
-        toast.error('Payment failed. Please try again.');
-        setProcessing(false);
-        return;
-      }
-
-      if (!data.success) {
-        toast.error(data.error || 'Payment declined. Please check your card details.');
-        setProcessing(false);
-        return;
-      }
-
-      // Payment successful
-      toast.success('Payment processed successfully!');
-      onPaymentSuccess(data.transactionReference, { 
-        lastFour: data.lastFour, 
-        name: cardName 
-      });
-    } catch (err) {
-      console.error('Payment processing error:', err);
-      toast.error('Unable to process payment. Please try again.');
-    } finally {
-      setProcessing(false);
-    }
+      setConfirming(false);
+    }, 1000);
   };
-
-  const isFormValid = 
-    cardNumber.replace(/\s/g, '').length >= 16 &&
-    expiry.length >= 5 &&
-    cvv.length >= 3 &&
-    cardName.trim().length > 0;
 
   return (
     <Card className="w-full">
@@ -158,88 +81,74 @@ export function JobPaymentForm({ amount, jobTitle, lawnSize, lawnSizeCost, jobTy
             </p>
           </div>
 
-          {/* Test Mode Notice */}
-          <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3">
-            <p className="text-sm text-amber-600 font-medium">
-              🧪 Test Mode
-            </p>
-            <p className="text-xs text-muted-foreground mt-1">
-              This is a test payment. Enter any card details to simulate a successful payment.
-            </p>
+          {/* Payment Section */}
+          <div className="space-y-4">
+            {!paymentInitiated ? (
+              <>
+                <p className="text-sm text-muted-foreground text-center">
+                  Click below to securely pay via EzeePay
+                </p>
+                
+                {/* EzeePay Button */}
+                <div className="flex justify-center">
+                  <button
+                    onClick={handlePayNowClick}
+                    disabled={loading}
+                    className="transition-transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <img 
+                      src="https://my-test.ezeepayments.com/btn-images/pay-now.png" 
+                      alt="Pay Now with EzeePay"
+                      className="h-12"
+                    />
+                  </button>
+                </div>
+
+                <p className="text-xs text-muted-foreground text-center">
+                  You'll be redirected to EzeePay's secure payment page
+                </p>
+              </>
+            ) : (
+              <>
+                <div className="bg-primary/10 border border-primary/30 rounded-lg p-4 text-center space-y-2">
+                  <ExternalLink className="h-6 w-6 text-primary mx-auto" />
+                  <p className="text-sm font-medium text-foreground">
+                    Complete your payment on EzeePay
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    After completing payment, click the button below to confirm
+                  </p>
+                </div>
+
+                <Button 
+                  onClick={handleConfirmPayment}
+                  className="w-full"
+                  disabled={confirming || loading}
+                >
+                  {confirming ? 'Confirming...' : 'I\'ve Completed Payment'}
+                </Button>
+
+                <button
+                  onClick={handlePayNowClick}
+                  className="text-sm text-primary hover:underline w-full text-center"
+                >
+                  Open payment page again
+                </button>
+              </>
+            )}
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="cardName">Cardholder Name</Label>
-              <Input
-                id="cardName"
-                placeholder="John Doe"
-                value={cardName}
-                onChange={(e) => setCardName(e.target.value)}
-                disabled={processing || loading}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="cardNumber">Card Number</Label>
-              <div className="relative">
-                <Input
-                  id="cardNumber"
-                  placeholder="4242 4242 4242 4242"
-                  value={cardNumber}
-                  onChange={(e) => setCardNumber(formatCardNumber(e.target.value))}
-                  maxLength={19}
-                  disabled={processing || loading}
-                />
-                <CreditCard className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="expiry">Expiry Date</Label>
-                <Input
-                  id="expiry"
-                  placeholder="MM/YY"
-                  value={expiry}
-                  onChange={(e) => setExpiry(formatExpiry(e.target.value))}
-                  maxLength={5}
-                  disabled={processing || loading}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="cvv">CVV</Label>
-                <Input
-                  id="cvv"
-                  placeholder="123"
-                  value={cvv}
-                  onChange={(e) => setCvv(e.target.value.replace(/\D/g, '').slice(0, 4))}
-                  maxLength={4}
-                  type="password"
-                  disabled={processing || loading}
-                />
-              </div>
-            </div>
-
-            <div className="flex gap-3 pt-4">
-              <Button 
-                type="button" 
-                variant="outline" 
-                className="flex-1"
-                onClick={onCancel}
-                disabled={processing || loading}
-              >
-                Back
-              </Button>
-              <Button 
-                type="submit" 
-                className="flex-1"
-                disabled={!isFormValid || processing || loading}
-              >
-                {processing ? 'Processing...' : `Pay J$${amount.toLocaleString()}`}
-              </Button>
-            </div>
-          </form>
+          <div className="flex gap-3 pt-2">
+            <Button 
+              type="button" 
+              variant="outline" 
+              className="w-full"
+              onClick={onCancel}
+              disabled={confirming || loading}
+            >
+              Back
+            </Button>
+          </div>
         </div>
       </CardContent>
     </Card>
