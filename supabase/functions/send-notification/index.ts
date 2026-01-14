@@ -38,7 +38,7 @@ const createBrandedEmail = (
   ctaUrl?: string,
   ctaText?: string
 ) => {
-  const logoUrl = `${Deno.env.get("SUPABASE_URL")}/storage/v1/object/public/assets/lawnconnect-logo.png`;
+  const logoUrl = "https://connectlawn.com/pwa-512x512.png";
   const currentYear = new Date().getFullYear();
   
   return `
@@ -110,7 +110,7 @@ const createBrandedEmail = (
                     © ${currentYear} LawnConnect. All rights reserved.
                   </p>
                   <p style="margin: 8px 0 0 0; font-size: 11px; color: #a1a1aa;">
-                    Questions? Contact us at <a href="mailto:support@lawnconnect.jm" style="color: #16a34a;">support@lawnconnect.jm</a>
+                    Questions? Contact us at <a href="mailto:officiallawnconnect@gmail.com" style="color: #16a34a;">officiallawnconnect@gmail.com</a>
                   </p>
                 </td>
               </tr>
@@ -124,7 +124,7 @@ const createBrandedEmail = (
 };
 
 const getEmailContent = (type: string, jobTitle: string, jobId: string, additionalData?: NotificationRequest['additionalData']) => {
-  const appUrl = "https://lawnconnect.jm";
+  const appUrl = "https://connectlawn.com";
   const jobUrl = `${appUrl}/job/${jobId}`;
   
   switch (type) {
