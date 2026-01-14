@@ -33,9 +33,10 @@ serve(async (req) => {
     const callSid = formData.get("CallSid") as string;
     const messageSid = formData.get("MessageSid") as string;
     const body = formData.get("Body") as string; // For SMS
-    const dialCallStatus = formData.get("DialCallStatus") as string | null;
+    const dialCallStatus = (formData.get("DialCallStatus") as string | null) ?? null;
+    const dialCallSid = (formData.get("DialCallSid") as string | null) ?? null;
 
-    console.log("Twilio webhook received:", { from, to, callSid, messageSid, dialCallStatus });
+    console.log("Twilio webhook received:", { from, to, callSid, messageSid, dialCallStatus, dialCallSid });
 
     // Verify the call/SMS is to our Twilio number
     if (!twilioPhoneNumber || normalizePhoneNumber(to) !== normalizePhoneNumber(twilioPhoneNumber)) {
@@ -105,11 +106,43 @@ serve(async (req) => {
     if (dialCallStatus && callSid) {
       console.log("Dial finished with status:", dialCallStatus);
 
+      // When Twilio provides the child call SID, fetch details for logging (helps diagnose carrier/trial/format issues)
+      if (dialCallStatus !== "completed" && dialCallSid) {
+        try {
+          const twilioAccountSid = Deno.env.get("TWILIO_ACCOUNT_SID");
+          const twilioAuthToken = Deno.env.get("TWILIO_AUTH_TOKEN");
+
+          if (twilioAccountSid && twilioAuthToken) {
+            const auth = btoa(`${twilioAccountSid}:${twilioAuthToken}`);
+            const callDetailsUrl = `https://api.twilio.com/2010-04-01/Accounts/${twilioAccountSid}/Calls/${dialCallSid}.json`;
+            const resp = await fetch(callDetailsUrl, {
+              headers: { Authorization: `Basic ${auth}` },
+            });
+
+            if (resp.ok) {
+              const details = await resp.json();
+              console.log("Dial failed details:", {
+                dialCallSid,
+                status: details?.status,
+                error_code: details?.error_code,
+                error_message: details?.error_message,
+                to: details?.to,
+                from: details?.from,
+              });
+            } else {
+              console.log("Failed to fetch Twilio call details:", await resp.text());
+            }
+          }
+        } catch (e) {
+          console.log("Error fetching Twilio call details:", e);
+        }
+      }
+
       if (dialCallStatus !== "completed") {
         return new Response(
           `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-  <Say>We could not connect your call. Please try again, or confirm the other party can receive calls.</Say>
+  <Say>We could not connect your call. Please confirm the other party can receive calls and that their phone number is correct in the app.</Say>
   <Hangup/>
 </Response>`,
           { headers: { ...corsHeaders, "Content-Type": "text/xml" } },
