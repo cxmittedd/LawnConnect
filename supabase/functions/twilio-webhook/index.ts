@@ -6,9 +6,12 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Helper to format phone number for comparison
+// Helper to format phone number for comparison - extract last 10 digits
 function normalizePhoneNumber(phone: string): string {
-  return phone.replace(/[\s\-+()]/g, "").slice(-10);
+  // Remove all non-digits
+  const digitsOnly = phone.replace(/\D/g, "");
+  // Return last 10 digits (handles +1, 1, or no country code)
+  return digitsOnly.slice(-10);
 }
 
 serve(async (req) => {
@@ -43,20 +46,34 @@ serve(async (req) => {
 
     // Find the caller's phone in profiles to identify them
     const normalizedFrom = normalizePhoneNumber(from);
+    console.log("Looking for caller with normalized phone:", normalizedFrom);
     
-    const { data: callerProfile, error: profileError } = await supabaseClient
+    // Get all profiles with phone numbers and find matching one
+    const { data: profiles, error: profileError } = await supabaseClient
       .from("profiles")
       .select("id, phone_number, user_role")
-      .like("phone_number", `%${normalizedFrom}%`)
-      .limit(1)
-      .single();
+      .not("phone_number", "is", null);
 
-    if (profileError || !callerProfile) {
-      console.log("Caller not found in system:", normalizedFrom);
+    if (profileError) {
+      console.error("Error fetching profiles:", profileError);
+      return new Response(generateTwiMLResponse("An error occurred. Please try again."), {
+        headers: { ...corsHeaders, "Content-Type": "text/xml" },
+      });
+    }
+
+    // Find caller by comparing normalized phone numbers
+    const callerProfile = profiles?.find(p => 
+      p.phone_number && normalizePhoneNumber(p.phone_number) === normalizedFrom
+    );
+
+    if (!callerProfile) {
+      console.log("Caller not found in system:", normalizedFrom, "Available phones:", profiles?.map(p => p.phone_number));
       return new Response(generateTwiMLResponse("Your phone number is not registered in our system."), {
         headers: { ...corsHeaders, "Content-Type": "text/xml" },
       });
     }
+    
+    console.log("Found caller:", callerProfile.id);
 
     // Find an active proxy session for this user
     const { data: proxySession, error: sessionError } = await supabaseClient
@@ -88,11 +105,29 @@ serve(async (req) => {
       .single();
 
     if (targetError || !targetProfile?.phone_number) {
-      console.log("Target phone number not found");
+      console.log("Target phone number not found for user:", targetUserId);
       return new Response(generateTwiMLResponse("The other party's phone number is not available."), {
         headers: { ...corsHeaders, "Content-Type": "text/xml" },
       });
     }
+
+    // Format phone number to E.164 format for Twilio
+    const formatE164 = (phone: string): string => {
+      const digits = phone.replace(/\D/g, "");
+      // If already has country code (11+ digits starting with 1), add +
+      if (digits.length >= 11 && digits.startsWith("1")) {
+        return `+${digits}`;
+      }
+      // Otherwise assume Jamaica (+1) country code
+      if (digits.length === 10) {
+        return `+1${digits}`;
+      }
+      // Return with + prefix if not already there
+      return phone.startsWith("+") ? phone : `+${digits}`;
+    };
+
+    const targetPhoneE164 = formatE164(targetProfile.phone_number);
+    console.log("Forwarding call to:", targetPhoneE164);
 
     // For calls, forward to the target
     if (callSid) {
@@ -100,9 +135,10 @@ serve(async (req) => {
 <Response>
   <Say>Connecting you now through LawnConnect secure line.</Say>
   <Dial callerId="${twilioPhoneNumber}">
-    <Number>${targetProfile.phone_number}</Number>
+    <Number>${targetPhoneE164}</Number>
   </Dial>
 </Response>`;
+      console.log("Returning TwiML:", twiml);
       return new Response(twiml, {
         headers: { ...corsHeaders, "Content-Type": "text/xml" },
       });
@@ -126,7 +162,7 @@ serve(async (req) => {
 
       const smsBody = new URLSearchParams();
       smsBody.append("From", twilioPhoneNumber);
-      smsBody.append("To", targetProfile.phone_number);
+      smsBody.append("To", targetPhoneE164);
       smsBody.append("Body", `[LawnConnect] ${body}`);
 
       const smsResponse = await fetch(twilioApiUrl, {
