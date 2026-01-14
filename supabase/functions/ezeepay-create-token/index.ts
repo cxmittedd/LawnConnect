@@ -54,26 +54,25 @@ serve(async (req) => {
     const projectPreviewUrl = 'https://id-preview--d707b523-89ba-4b25-b85c-199e9d5645a9.lovable.app';
     const functionBaseUrl = `${supabaseUrl}/functions/v1`;
     
-    // Create token request to EzeePay
-    const tokenPayload = {
-      amount: amount,
-      currency: 'JMD',
-      order_id: order_id,
-      post_back_url: `${functionBaseUrl}/ezeepay-webhook`,
-      return_url: `${projectPreviewUrl}/post-job?payment_complete=true&order_id=${order_id}`,
-      cancel_url: `${projectPreviewUrl}/post-job?payment_cancelled=true`,
-    };
+    // Create form data for EzeePay (API expects form-urlencoded, not JSON)
+    const formData = new URLSearchParams();
+    formData.append('amount', amount.toString());
+    formData.append('currency', 'JMD');
+    formData.append('order_id', order_id);
+    formData.append('post_back_url', `${functionBaseUrl}/ezeepay-webhook`);
+    formData.append('return_url', `${projectPreviewUrl}/post-job?payment_complete=true&order_id=${order_id}`);
+    formData.append('cancel_url', `${projectPreviewUrl}/post-job?payment_cancelled=true`);
 
-    console.log('Requesting EzeePay token with payload:', tokenPayload);
+    console.log('Requesting EzeePay token with form data:', Object.fromEntries(formData));
 
     const tokenResponse = await fetch('https://api-test.ezeepayments.com/v1/custom_token/', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
+        'Content-Type': 'application/x-www-form-urlencoded',
         'licence_key': licenceKey,
         'site': site,
       },
-      body: JSON.stringify(tokenPayload),
+      body: formData.toString(),
     });
 
     const tokenData = await tokenResponse.json();
