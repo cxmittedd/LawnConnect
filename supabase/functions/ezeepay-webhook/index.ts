@@ -21,49 +21,71 @@ serve(async (req) => {
 
     // Parse the webhook payload from EzeePay
     const rawBody = await req.text();
+    console.log('Raw webhook body:', rawBody);
+    
     let payload: Record<string, string> = {};
     
-    // Try form data first
-    try {
-      const formData = new URLSearchParams(rawBody);
-      formData.forEach((value, key) => {
-        payload[key] = value;
-      });
-    } catch {
-      // Try JSON format
+    // Check if the body looks like JSON (starts with { or [)
+    const trimmedBody = rawBody.trim();
+    if (trimmedBody.startsWith('{') || trimmedBody.startsWith('[')) {
+      // Parse as JSON
       try {
-        payload = JSON.parse(rawBody);
-      } catch {
-        console.error('Failed to parse webhook body');
-        return new Response(
-          JSON.stringify({ success: false, error: 'Invalid payload format' }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        payload = JSON.parse(trimmedBody);
+        console.log('Parsed as JSON:', payload);
+      } catch (e) {
+        console.error('Failed to parse JSON:', e);
+      }
+    } else {
+      // Try form data (URL encoded)
+      try {
+        const formData = new URLSearchParams(rawBody);
+        formData.forEach((value, key) => {
+          // Check if the key itself looks like JSON (EzeePay sometimes sends JSON as form key)
+          if (key.startsWith('{') && value === '') {
+            try {
+              const jsonFromKey = JSON.parse(key);
+              Object.assign(payload, jsonFromKey);
+              console.log('Parsed JSON from form key:', jsonFromKey);
+            } catch {
+              payload[key] = value;
+            }
+          } else {
+            payload[key] = value;
+          }
+        });
+        console.log('Parsed as form data:', payload);
+      } catch (e) {
+        console.error('Failed to parse form data:', e);
       }
     }
 
-    console.log('EzeePay webhook received:', JSON.stringify(payload, null, 2));
+    console.log('Final parsed payload:', JSON.stringify(payload, null, 2));
 
+    // EzeePay sends CustomOrderId, not order_id
     const {
       ResponseCode,
       ResponseDescription,
       TransactionNumber,
+      CustomOrderId,
       order_id,
     } = payload;
 
+    // Use CustomOrderId if order_id is not present (EzeePay uses CustomOrderId)
+    const orderId = CustomOrderId || order_id;
+
     // Validate required fields
-    if (!order_id) {
-      console.error('Missing order_id in webhook payload');
+    if (!orderId) {
+      console.error('Missing order_id/CustomOrderId in webhook payload. Available keys:', Object.keys(payload));
       return new Response(
-        JSON.stringify({ success: false, error: 'Missing order_id' }),
+        JSON.stringify({ success: false, error: 'Missing order_id', received_keys: Object.keys(payload) }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     // Validate order_id format (should be a valid UUID)
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    if (!uuidRegex.test(order_id)) {
-      console.error('Invalid order_id format:', order_id);
+    if (!uuidRegex.test(orderId)) {
+      console.error('Invalid order_id format:', orderId);
       return new Response(
         JSON.stringify({ success: false, error: 'Invalid order_id format' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -71,7 +93,7 @@ serve(async (req) => {
     }
 
     // Create idempotency key to prevent replay attacks
-    const idempotencyKey = `${order_id}-${TransactionNumber || 'no-txn'}`;
+    const idempotencyKey = `${orderId}-${TransactionNumber || 'no-txn'}`;
     
     // Check if we've already processed this webhook
     if (processedWebhooks.has(idempotencyKey)) {
@@ -86,11 +108,11 @@ serve(async (req) => {
     const { data: existingJob, error: fetchError } = await supabase
       .from('job_requests')
       .select('id, payment_status, customer_id, base_price')
-      .eq('id', order_id)
+      .eq('id', orderId)
       .single();
 
     if (fetchError || !existingJob) {
-      console.error('Job not found for order_id:', order_id, fetchError);
+      console.error('Job not found for order_id:', orderId, fetchError);
       return new Response(
         JSON.stringify({ success: false, error: 'Job not found' }),
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -135,7 +157,7 @@ serve(async (req) => {
           payment_confirmed_at: new Date().toISOString(),
           status: 'open',
         })
-        .eq('id', order_id)
+        .eq('id', orderId)
         .eq('payment_status', 'pending') // Double-check to prevent race conditions
         .select()
         .single();
@@ -167,7 +189,7 @@ serve(async (req) => {
         .update({
           payment_status: 'failed',
         })
-        .eq('id', order_id)
+        .eq('id', orderId)
         .eq('payment_status', 'pending');
 
       if (failError) {
