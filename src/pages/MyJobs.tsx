@@ -157,6 +157,8 @@ export default function MyJobs() {
         return 'bg-success text-success-foreground';
       case 'cancelled':
         return 'bg-muted text-muted-foreground';
+      case 'disputed':
+        return 'bg-destructive text-destructive-foreground';
       default:
         return 'bg-secondary text-secondary-foreground';
     }
@@ -164,6 +166,7 @@ export default function MyJobs() {
 
   const getStatusLabel = (status: string) => {
     if (status === 'accepted') return 'In Progress';
+    if (status === 'disputed') return 'Under Dispute';
     return status.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
   };
 

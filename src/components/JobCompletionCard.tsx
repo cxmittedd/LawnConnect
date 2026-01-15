@@ -102,6 +102,9 @@ export function JobCompletionCard({
   const [activeDispute, setActiveDispute] = useState<Dispute | null>(null);
   const [disputePhotos, setDisputePhotos] = useState<{ id: string; photo_url: string }[]>([]);
   const [disputeResponses, setDisputeResponses] = useState<DisputeResponse[]>([]);
+  const [disputeMessages, setDisputeMessages] = useState<{ id: string; sender_type: string; message: string; created_at: string }[]>([]);
+  const [customerMessage, setCustomerMessage] = useState("");
+  const [sendingMessage, setSendingMessage] = useState(false);
   const [selectedDisputeFiles, setSelectedDisputeFiles] = useState<File[]>([]);
   const [previewDisputeUrls, setPreviewDisputeUrls] = useState<string[]>([]);
   const [selectedResponseFiles, setSelectedResponseFiles] = useState<File[]>([]);
@@ -176,6 +179,7 @@ export function JobCompletionCard({
       setActiveDispute(data);
       await loadDisputePhotos(data.id);
       await loadDisputeResponses(data.id);
+      await loadDisputeMessages(data.id);
     }
   };
 
@@ -207,6 +211,47 @@ export function JobCompletionCard({
 
     if (!error && data) {
       setDisputeResponses(data);
+    }
+  };
+
+  const loadDisputeMessages = async (disputeId: string) => {
+    const { data, error } = await supabase
+      .from("dispute_messages")
+      .select("*")
+      .eq("dispute_id", disputeId)
+      .order("created_at", { ascending: true });
+
+    if (!error && data) {
+      setDisputeMessages(data);
+    }
+  };
+
+  const handleSendCustomerMessage = async () => {
+    if (!customerMessage.trim() || !activeDispute) return;
+
+    setSendingMessage(true);
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
+      const { error } = await supabase.from("dispute_messages").insert({
+        dispute_id: activeDispute.id,
+        sender_id: user.id,
+        sender_type: "customer",
+        message: customerMessage.trim(),
+      });
+
+      if (error) throw error;
+
+      setCustomerMessage("");
+      await loadDisputeMessages(activeDispute.id);
+      toast.success("Message sent to support");
+    } catch (error) {
+      safeToast.error(error);
+    } finally {
+      setSendingMessage(false);
     }
   };
 
@@ -513,30 +558,20 @@ export function JobCompletionCard({
         if (dbError) throw dbError;
       }
 
-      // Update job status back to in_progress
+      // Update job status to disputed
       const { error: jobError } = await supabase
         .from("job_requests")
         .update({
-          status: "in_progress",
-          provider_completed_at: null,
+          status: "disputed",
         })
         .eq("id", jobId);
 
       if (jobError) throw jobError;
 
-      // Send notification to provider
-      sendNotification({
-        type: "dispute_opened",
-        recipientId: providerId,
-        jobTitle,
-        jobId,
-        additionalData: {
-          customerName,
-          disputeReason: disputeReason.trim(),
-        },
-      });
+      // Note: Provider notifications removed - admin will handle the dispute
+      // Admins will see this in the Admin Disputes dashboard
 
-      toast.success("Dispute submitted. The provider will be notified to address your concerns.");
+      toast.success("Issue reported to LawnConnect support. We will review and contact you shortly.");
       setDisputeDialog(false);
       setDisputeReason("");
       setSelectedDisputeFiles([]);
@@ -624,7 +659,7 @@ export function JobCompletionCard({
   const beforePhotos = completionPhotos.filter((p) => p.photo_type === "before");
   const afterPhotos = completionPhotos.filter((p) => p.photo_type === "after");
 
-  if (status !== "accepted" && status !== "in_progress" && status !== "pending_completion" && status !== "completed") {
+  if (status !== "accepted" && status !== "in_progress" && status !== "pending_completion" && status !== "completed" && status !== "disputed") {
     return null;
   }
 
@@ -643,7 +678,9 @@ export function JobCompletionCard({
                   ? "This job has been completed"
                   : status === "pending_completion"
                     ? "Awaiting customer confirmation"
-                    : "Mark job as complete when finished"}
+                    : status === "disputed"
+                      ? "This job is under review by LawnConnect"
+                      : "Mark job as complete when finished"}
               </CardDescription>
             </div>
             {(status === "accepted" || status === "in_progress") && (
@@ -659,6 +696,11 @@ export function JobCompletionCard({
             {status === "completed" && (
               <Badge className="bg-success text-success-foreground gap-1">
                 <CheckCircle className="h-3 w-3" /> Completed
+              </Badge>
+            )}
+            {status === "disputed" && (
+              <Badge className="bg-destructive text-destructive-foreground gap-1">
+                <AlertTriangle className="h-3 w-3" /> Under Dispute
               </Badge>
             )}
           </div>
@@ -938,6 +980,139 @@ export function JobCompletionCard({
                 <div className="space-y-2">
                   <p className="text-sm font-medium flex items-center gap-2">
                     <Image className="h-4 w-4" /> Completion photos
+                  </p>
+                  <div className="grid grid-cols-3 gap-2">
+                    {afterPhotos.map((photo) => (
+                      <img
+                        key={photo.id}
+                        src={photo.photo_url}
+                        alt="Completion photo"
+                        className="w-full h-20 object-cover rounded-md cursor-pointer hover:opacity-90"
+                        onClick={() => window.open(photo.photo_url, "_blank")}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Customer View - Disputed */}
+          {isCustomer && status === "disputed" && (
+            <div className="space-y-4">
+              <Alert className="border-destructive/50 bg-destructive/10">
+                <AlertTriangle className="h-4 w-4 text-destructive" />
+                <AlertDescription>
+                  <strong>Issue Reported</strong>
+                  <p className="mt-1 text-sm">
+                    Your issue has been submitted to LawnConnect support. Our team is reviewing your case.
+                  </p>
+                  {activeDispute && (
+                    <p className="mt-1 text-sm font-medium">
+                      Reported on: {format(new Date(activeDispute.created_at), "MMMM dd, yyyy 'at' h:mm a")}
+                    </p>
+                  )}
+                </AlertDescription>
+              </Alert>
+
+              {/* Support Messages */}
+              {disputeMessages.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-sm font-medium flex items-center gap-2">
+                    <MessageSquare className="h-4 w-4" /> Support Messages
+                  </p>
+                  <div className="space-y-2 max-h-[200px] overflow-y-auto border rounded-md p-3">
+                    {disputeMessages.map((msg) => (
+                      <div
+                        key={msg.id}
+                        className={`p-2 rounded-md text-sm ${
+                          msg.sender_type === "admin"
+                            ? "bg-primary/10 mr-4"
+                            : "bg-muted ml-4"
+                        }`}
+                      >
+                        <div className="flex justify-between items-center mb-1">
+                          <span className="text-xs font-medium">
+                            {msg.sender_type === "admin" ? "Support" : "You"}
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            {format(new Date(msg.created_at), "MMM dd, h:mm a")}
+                          </span>
+                        </div>
+                        <p>{msg.message}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Send Message to Support */}
+              <div className="space-y-2">
+                <Textarea
+                  placeholder="Send a message to support..."
+                  value={customerMessage}
+                  onChange={(e) => setCustomerMessage(e.target.value)}
+                  rows={2}
+                />
+                <Button
+                  onClick={handleSendCustomerMessage}
+                  disabled={sendingMessage || !customerMessage.trim()}
+                  variant="outline"
+                  className="w-full"
+                >
+                  <MessageSquare className="h-4 w-4 mr-2" />
+                  {sendingMessage ? "Sending..." : "Send Message to Support"}
+                </Button>
+              </div>
+
+              {/* Show completion photos for reference */}
+              {afterPhotos.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-sm font-medium flex items-center gap-2">
+                    <Image className="h-4 w-4" /> Provider's completion photos
+                  </p>
+                  <div className="grid grid-cols-3 gap-2">
+                    {afterPhotos.map((photo) => (
+                      <img
+                        key={photo.id}
+                        src={photo.photo_url}
+                        alt="Completion photo"
+                        className="w-full h-20 object-cover rounded-md cursor-pointer hover:opacity-90"
+                        onClick={() => window.open(photo.photo_url, "_blank")}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Provider View - Disputed */}
+          {isProvider && status === "disputed" && (
+            <div className="space-y-4">
+              <Alert className="border-destructive/50 bg-destructive/10">
+                <AlertTriangle className="h-4 w-4 text-destructive" />
+                <AlertDescription>
+                  <strong>Job Under Review</strong>
+                  <p className="mt-1 text-sm">
+                    The customer has reported an issue with this job. LawnConnect support is reviewing the case.
+                  </p>
+                  {activeDispute && (
+                    <>
+                      <p className="mt-2 text-sm font-medium">Issue: {activeDispute.reason}</p>
+                      <p className="mt-1 text-sm">
+                        Reported on: {format(new Date(activeDispute.created_at), "MMMM dd, yyyy 'at' h:mm a")}
+                      </p>
+                    </>
+                  )}
+                </AlertDescription>
+              </Alert>
+
+              {/* Show completion photos */}
+              {afterPhotos.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-sm font-medium flex items-center gap-2">
+                    <Image className="h-4 w-4" /> Your completion photos
                   </p>
                   <div className="grid grid-cols-3 gap-2">
                     {afterPhotos.map((photo) => (

@@ -30,6 +30,14 @@ interface DisputeResponse {
   photos: { id: string; photo_url: string }[];
 }
 
+interface DisputeMessage {
+  id: string;
+  sender_id: string;
+  sender_type: string;
+  message: string;
+  created_at: string;
+}
+
 interface Dispute {
   id: string;
   job_id: string;
@@ -45,6 +53,7 @@ interface Dispute {
   final_price?: number;
   photos?: DisputePhoto[];
   responses?: DisputeResponse[];
+  messages?: DisputeMessage[];
 }
 
 type ResolutionType = 'favor_customer' | 'favor_provider' | 'partial_refund' | 'dismiss';
@@ -62,6 +71,8 @@ export default function AdminDisputes() {
   const [resolutionType, setResolutionType] = useState<ResolutionType>('favor_customer');
   const [refundPercentage, setRefundPercentage] = useState(50);
   const [submitting, setSubmitting] = useState(false);
+  const [newMessage, setNewMessage] = useState('');
+  const [sendingMessage, setSendingMessage] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -152,6 +163,13 @@ export default function AdminDisputes() {
             })
           );
 
+          // Load dispute messages
+          const { data: messagesData } = await supabase
+            .from('dispute_messages')
+            .select('*')
+            .eq('dispute_id', dispute.id)
+            .order('created_at', { ascending: true });
+
           return {
             ...dispute,
             job_title: jobData?.title || 'Unknown Job',
@@ -161,6 +179,7 @@ export default function AdminDisputes() {
             final_price: jobData?.final_price,
             photos: photosData || [],
             responses: responsesWithPhotos,
+            messages: messagesData || [],
           };
         })
       );
@@ -254,6 +273,43 @@ export default function AdminDisputes() {
       safeToast.error(error);
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleSendMessage = async () => {
+    if (!newMessage.trim() || !selectedDispute || !user) return;
+
+    setSendingMessage(true);
+    try {
+      const { error } = await supabase
+        .from('dispute_messages')
+        .insert({
+          dispute_id: selectedDispute.id,
+          sender_id: user.id,
+          sender_type: 'admin',
+          message: newMessage.trim(),
+        });
+
+      if (error) throw error;
+
+      // Refresh the selected dispute's messages
+      const { data: messagesData } = await supabase
+        .from('dispute_messages')
+        .select('*')
+        .eq('dispute_id', selectedDispute.id)
+        .order('created_at', { ascending: true });
+
+      setSelectedDispute({
+        ...selectedDispute,
+        messages: messagesData || [],
+      });
+
+      setNewMessage('');
+      toast.success('Message sent to customer');
+    } catch (error) {
+      safeToast.error(error);
+    } finally {
+      setSendingMessage(false);
     }
   };
 
@@ -492,10 +548,11 @@ export default function AdminDisputes() {
           {selectedDispute && (
             <ScrollArea className="max-h-[60vh]">
               <Tabs defaultValue="details" className="w-full">
-                <TabsList className="grid w-full grid-cols-3">
+                <TabsList className="grid w-full grid-cols-4">
                   <TabsTrigger value="details">Details</TabsTrigger>
-                  <TabsTrigger value="customer">Customer Evidence</TabsTrigger>
-                  <TabsTrigger value="provider">Provider Response</TabsTrigger>
+                  <TabsTrigger value="customer">Evidence</TabsTrigger>
+                  <TabsTrigger value="provider">Provider</TabsTrigger>
+                  <TabsTrigger value="messages">Messages</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="details" className="space-y-4 mt-4">
@@ -592,6 +649,58 @@ export default function AdminDisputes() {
                     ))
                   ) : (
                     <p className="text-muted-foreground text-sm">No response from provider yet</p>
+                  )}
+                </TabsContent>
+
+                <TabsContent value="messages" className="space-y-4 mt-4">
+                  <div className="space-y-3">
+                    {selectedDispute.messages && selectedDispute.messages.length > 0 ? (
+                      <div className="space-y-2 max-h-[200px] overflow-y-auto">
+                        {selectedDispute.messages.map((msg) => (
+                          <div
+                            key={msg.id}
+                            className={`p-3 rounded-md ${
+                              msg.sender_type === 'admin'
+                                ? 'bg-primary/10 ml-4'
+                                : 'bg-muted mr-4'
+                            }`}
+                          >
+                            <div className="flex justify-between items-center mb-1">
+                              <span className="text-xs font-medium">
+                                {msg.sender_type === 'admin' ? 'Support' : 'Customer'}
+                              </span>
+                              <span className="text-xs text-muted-foreground">
+                                {format(new Date(msg.created_at), 'MMM dd, h:mm a')}
+                              </span>
+                            </div>
+                            <p className="text-sm">{msg.message}</p>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-muted-foreground text-sm text-center py-4">
+                        No messages yet. Send a message to the customer below.
+                      </p>
+                    )}
+                  </div>
+
+                  {selectedDispute.status === 'open' && (
+                    <div className="space-y-2 border-t pt-4">
+                      <Textarea
+                        placeholder="Type your message to the customer..."
+                        value={newMessage}
+                        onChange={(e) => setNewMessage(e.target.value)}
+                        rows={3}
+                      />
+                      <Button
+                        onClick={handleSendMessage}
+                        disabled={sendingMessage || !newMessage.trim()}
+                        className="w-full"
+                      >
+                        <MessageSquare className="h-4 w-4 mr-2" />
+                        {sendingMessage ? 'Sending...' : 'Send Message'}
+                      </Button>
+                    </div>
                   )}
                 </TabsContent>
               </Tabs>
