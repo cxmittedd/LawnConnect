@@ -124,6 +124,11 @@ export default function PostJob() {
     additional_requirements: '',
   });
 
+  const parseYmdToLocalDate = (ymd: string) => {
+    const [year, month, day] = ymd.split('-').map((v) => Number(v));
+    return new Date(year, month - 1, day);
+  };
+
   // Check for cancelled payment on mount
   // Check for payment return on mount
   useEffect(() => {
@@ -719,13 +724,13 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
                           )}
                         >
                           <CalendarIcon className="mr-2 h-4 w-4" />
-                          {formData.preferred_date ? format(new Date(formData.preferred_date), "PPP") : <span>Pick a date</span>}
+                          {formData.preferred_date ? format(parseYmdToLocalDate(formData.preferred_date), "PPP") : <span>Pick a date</span>}
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent className="w-auto p-0" align="start">
                         <Calendar
                           mode="single"
-                          selected={formData.preferred_date ? new Date(formData.preferred_date) : undefined}
+                          selected={formData.preferred_date ? parseYmdToLocalDate(formData.preferred_date) : undefined}
                           onSelect={(date) => {
                             setFormData({ ...formData, preferred_date: date ? format(date, 'yyyy-MM-dd') : '' });
                             setCalendarOpen(false);
