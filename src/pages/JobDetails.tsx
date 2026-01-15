@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { Navigation } from '@/components/Navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -54,6 +54,7 @@ interface ProviderInfo {
 export default function JobDetails() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { user } = useAuth();
   const [job, setJob] = useState<JobDetails | null>(null);
   const [providerInfo, setProviderInfo] = useState<ProviderInfo | null>(null);
@@ -61,6 +62,16 @@ export default function JobDetails() {
   const [loading, setLoading] = useState(true);
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [cancelling, setCancelling] = useState(false);
+
+  // Handle payment completion redirect
+  useEffect(() => {
+    if (searchParams.get('payment_complete') === 'true') {
+      toast.success('Payment successful! Your job is now live and visible to providers.');
+      // Clean up the URL
+      searchParams.delete('payment_complete');
+      setSearchParams(searchParams, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
 
   useEffect(() => {
     if (id) loadJobDetails();

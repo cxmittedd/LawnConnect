@@ -64,8 +64,8 @@ serve(async (req) => {
     formData.append('currency', 'JMD');
     formData.append('order_id', order_id);
     formData.append('post_back_url', `${functionBaseUrl}/ezeepay-webhook`);
-    formData.append('return_url', `${baseUrl}/post-job?payment_complete=true&order_id=${order_id}`);
-    formData.append('cancel_url', `${baseUrl}/post-job?payment_cancelled=true`);
+    formData.append('return_url', `${baseUrl}/job/${order_id}?payment_complete=true`);
+    formData.append('cancel_url', `${baseUrl}/post-job?payment_cancelled=true&order_id=${order_id}`);
 
     console.log('Requesting EzeePay token with form data:', Object.fromEntries(formData));
 
