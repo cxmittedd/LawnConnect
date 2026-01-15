@@ -12,57 +12,73 @@ serve(async (req) => {
 
   try {
     const url = new URL(req.url);
-    const jobId = url.searchParams.get("jobId");
+    const jobId = url.searchParams.get("jobId") || "";
 
-    // Parse form data from Twilio callback
+    // Parse the form data from Twilio's POST
     const formData = await req.formData();
-    const dialCallStatus = formData.get("DialCallStatus") as string | null;
-    const callSid = formData.get("CallSid") as string | null;
+    const dialCallStatus = formData.get("DialCallStatus") as string || "";
+    const callSid = formData.get("CallSid") as string || "";
+    const dialSipResponseCode = formData.get("DialSipResponseCode") as string || "";
+    const dialCallSid = formData.get("DialCallSid") as string || "";
 
-    console.log("twilio-call-status received:", { jobId, dialCallStatus, callSid });
+    console.log("twilio-call-status received:", {
+      jobId,
+      dialCallStatus,
+      callSid,
+      dialSipResponseCode,
+      dialCallSid,
+    });
 
-    // If the dial didn't complete successfully, inform the caller
-    if (dialCallStatus && dialCallStatus !== "completed") {
-      let message = "We could not connect your call.";
+    // Handle different dial outcomes
+    const failedStatuses = ["busy", "no-answer", "failed", "canceled"];
+    
+    if (failedStatuses.includes(dialCallStatus)) {
+      let message = "LawnConnect: ";
       
       switch (dialCallStatus) {
         case "busy":
-          message = "LawnConnect: The other party's line is busy. Please try again later.";
+          message += "The other party is on another call. Please try again later.";
           break;
         case "no-answer":
-          message = "LawnConnect: The other party did not answer. Please try again later.";
-          break;
-        case "failed":
-          message = "LawnConnect: The call could not be completed. Please check the phone number is correct.";
+          message += "The other party didn't answer. Please try again later or send them a message.";
           break;
         case "canceled":
-          message = "LawnConnect: The call was canceled.";
+          message += "The call was cancelled.";
+          break;
+        case "failed":
+          // This often means Twilio couldn't reach the number
+          message += "We couldn't connect your call. Please verify the other party's phone number is correct in their profile.";
+          console.log("Call failed - possible reasons: geographic permissions, invalid number, or carrier issue");
           break;
         default:
-          message = "LawnConnect: We could not connect your call. Please try again.";
-          break;
+          message += "The call could not be completed.";
       }
 
-      return new Response(
-        `<?xml version="1.0" encoding="UTF-8"?>
+      const twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
   <Say voice="alice">${message}</Say>
   <Hangup/>
-</Response>`,
-        { headers: { ...corsHeaders, "Content-Type": "text/xml" } }
-      );
+</Response>`;
+
+      return new Response(twiml, {
+        headers: { ...corsHeaders, "Content-Type": "text/xml" },
+      });
     }
 
-    // Call completed successfully, just end gracefully
+    // For completed calls or other statuses, just hang up gracefully
     return new Response(
-      `<?xml version="1.0" encoding="UTF-8"?><Response></Response>`,
+      `<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+</Response>`,
       { headers: { ...corsHeaders, "Content-Type": "text/xml" } }
     );
 
   } catch (error) {
-    console.error("Error:", error);
+    console.error("Error in twilio-call-status:", error);
     return new Response(
-      `<?xml version="1.0" encoding="UTF-8"?><Response></Response>`,
+      `<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+</Response>`,
       { headers: { ...corsHeaders, "Content-Type": "text/xml" } }
     );
   }
