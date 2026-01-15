@@ -105,12 +105,13 @@ export default function PostJob() {
   const [photos, setPhotos] = useState<File[]>([]);
   const [lawnSizeSelection, setLawnSizeSelection] = useState('');
   const [customLawnSize, setCustomLawnSize] = useState('');
-  const [step, setStep] = useState<'details' | 'payment'>('details');
+  const [step, setStep] = useState<'details' | 'payment' | 'failed'>('details');
   const [showAutopayDialog, setShowAutopayDialog] = useState(false);
   const [pendingCardInfo, setPendingCardInfo] = useState<{ lastFour: string; name: string } | null>(null);
   const [showAutofillPreview, setShowAutofillPreview] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [pendingJobId, setPendingJobId] = useState<string | null>(null);
+  const [failedJobId, setFailedJobId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -121,6 +122,41 @@ export default function PostJob() {
     preferred_time: '',
     additional_requirements: '',
   });
+
+  // Check for cancelled payment on mount
+  // Check for payment return on mount
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const paymentComplete = urlParams.get('payment_complete');
+    const paymentCancelled = urlParams.get('payment_cancelled');
+    const orderId = urlParams.get('order_id');
+    
+    if (paymentCancelled === 'true' && orderId) {
+      handlePaymentCancelled(orderId);
+      window.history.replaceState({}, '', '/post-job');
+    } else if (paymentComplete === 'true' && orderId) {
+      setPendingJobId(orderId);
+      setStep('payment'); // This will trigger JobPaymentForm to check status
+      window.history.replaceState({}, '', '/post-job');
+    }
+  }, []);
+
+  const handlePaymentCancelled = async (jobId: string) => {
+    toast.error('Payment was cancelled');
+    setStep('failed');
+    setFailedJobId(jobId);
+    
+    // Delete the cancelled job from the database
+    try {
+      await supabase
+        .from('job_requests')
+        .delete()
+        .eq('id', jobId)
+        .eq('payment_status', 'pending');
+    } catch (error) {
+      console.error('Error cleaning up cancelled job:', error);
+    }
+  };
 
   // Function to apply autofill from saved preferences
   const applyAutofill = () => {
@@ -434,6 +470,28 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
     }
   };
 
+  const handlePaymentFailed = async (jobId: string) => {
+    setFailedJobId(jobId);
+    setStep('failed');
+    
+    // Delete the failed job from the database
+    try {
+      await supabase
+        .from('job_requests')
+        .delete()
+        .eq('id', jobId)
+        .eq('payment_status', 'failed');
+    } catch (error) {
+      console.error('Error cleaning up failed job:', error);
+    }
+  };
+
+  const handleRetryPayment = () => {
+    setFailedJobId(null);
+    setPendingJobId(null);
+    setStep('details');
+  };
+
   return (
     <>
       <Navigation />
@@ -444,7 +502,37 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
             <p className="text-muted-foreground">Tell us about your lawn cutting needs</p>
           </div>
 
-          {step === 'payment' && pendingJobId ? (
+          {step === 'failed' ? (
+            <Card className="border-destructive">
+              <CardHeader className="text-center">
+                <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-destructive/10">
+                  <X className="h-8 w-8 text-destructive" />
+                </div>
+                <CardTitle className="text-destructive">Payment Failed</CardTitle>
+                <CardDescription>
+                  Your payment could not be processed. No charges have been made to your account.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="rounded-lg bg-muted/50 p-4 text-sm text-muted-foreground">
+                  <p className="font-medium text-foreground mb-2">What happened?</p>
+                  <ul className="list-disc list-inside space-y-1">
+                    <li>Your card may have been declined</li>
+                    <li>There may have been insufficient funds</li>
+                    <li>The transaction was cancelled</li>
+                  </ul>
+                </div>
+                <div className="flex flex-col gap-3">
+                  <Button onClick={handleRetryPayment} className="w-full">
+                    Try Again
+                  </Button>
+                  <Button variant="outline" onClick={() => navigate('/my-jobs')} className="w-full">
+                    Go to My Jobs
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ) : step === 'payment' && pendingJobId ? (
             <JobPaymentForm
               amount={getPaymentAmount()}
               jobTitle={formData.title}
@@ -455,6 +543,7 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
               customerEmail={user?.email || ''}
               customerName={user?.user_metadata?.first_name || ''}
               onPaymentSuccess={(paymentReference, cardInfo) => handlePaymentSuccess(paymentReference, cardInfo)}
+              onPaymentFailed={handlePaymentFailed}
               onCancel={() => setStep('details')}
               loading={loading}
             />
