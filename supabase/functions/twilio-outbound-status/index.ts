@@ -7,7 +7,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 serve(async (req) => {
   // Twilio sends application/x-www-form-urlencoded
   if (req.method !== "POST") {
-    return new Response("", { status: 405 });
+    return new Response(null, { status: 200 });
   }
 
   try {
@@ -32,10 +32,9 @@ serve(async (req) => {
 
     console.log("twilio-outbound-status received:", payload);
 
-    // 204 is a common choice for webhooks with no response body
-    return new Response("", { status: 204 });
+    return new Response(null, { status: 200 });
   } catch (error) {
     console.error("twilio-outbound-status error:", error);
-    return new Response("", { status: 204 });
+    return new Response(null, { status: 200 });
   }
 });
