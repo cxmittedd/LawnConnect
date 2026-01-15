@@ -86,6 +86,9 @@ export function JobPaymentForm({
     setProcessing(true);
 
     try {
+      // Pass the current origin so redirects come back to the same domain
+      const originUrl = window.location.origin;
+      
       const { data, error } = await supabase.functions.invoke('ezeepay-create-token', {
         body: {
           amount: amount,
@@ -93,6 +96,7 @@ export function JobPaymentForm({
           customer_email: customerEmail,
           customer_name: customerName,
           description: `Payment for ${jobTitle}`,
+          origin_url: originUrl,
         }
       });
 

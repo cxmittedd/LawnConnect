@@ -12,6 +12,7 @@ interface TokenRequest {
   customer_email: string;
   customer_name?: string;
   description?: string;
+  origin_url?: string; // The URL where the payment was initiated from
 }
 
 serve(async (req) => {
@@ -37,7 +38,7 @@ serve(async (req) => {
       throw new Error('Unauthorized');
     }
 
-    const { amount, order_id, customer_email, customer_name, description }: TokenRequest = await req.json();
+    const { amount, order_id, customer_email, customer_name, description, origin_url }: TokenRequest = await req.json();
 
     if (!amount || !order_id || !customer_email) {
       throw new Error('Missing required fields: amount, order_id, customer_email');
@@ -50,9 +51,12 @@ serve(async (req) => {
       throw new Error('EzeePay credentials not configured');
     }
 
-    // Get the project preview URL for callbacks
-    const projectPreviewUrl = 'https://id-preview--d707b523-89ba-4b25-b85c-199e9d5645a9.lovable.app';
+    // Use the origin URL from the request, or fall back to known URLs
+    // This ensures users are redirected back to the same domain they started from
+    const baseUrl = origin_url || 'https://client-vault-pro.lovable.app';
     const functionBaseUrl = `${supabaseUrl}/functions/v1`;
+    
+    console.log('Using base URL for redirects:', baseUrl);
     
     // Create form data for EzeePay (API expects form-urlencoded, not JSON)
     const formData = new URLSearchParams();
@@ -60,8 +64,8 @@ serve(async (req) => {
     formData.append('currency', 'JMD');
     formData.append('order_id', order_id);
     formData.append('post_back_url', `${functionBaseUrl}/ezeepay-webhook`);
-    formData.append('return_url', `${projectPreviewUrl}/post-job?payment_complete=true&order_id=${order_id}`);
-    formData.append('cancel_url', `${projectPreviewUrl}/post-job?payment_cancelled=true`);
+    formData.append('return_url', `${baseUrl}/post-job?payment_complete=true&order_id=${order_id}`);
+    formData.append('cancel_url', `${baseUrl}/post-job?payment_cancelled=true`);
 
     console.log('Requesting EzeePay token with form data:', Object.fromEntries(formData));
 
