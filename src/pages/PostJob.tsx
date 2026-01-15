@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/integrations/supabase/client';
-import { Upload, X, ArrowRight, Wand2 } from 'lucide-react';
+import { Upload, X, ArrowRight, Wand2, CalendarIcon } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -19,7 +19,7 @@ import { JobPaymentForm } from '@/components/JobPaymentForm';
 import { AutopaySetupDialog } from '@/components/AutopaySetupDialog';
 import { sendInvoice } from '@/lib/invoiceService';
 import { useCustomerPreferences } from '@/hooks/useCustomerPreferences';
-import { addDays, setDate, isBefore, startOfDay } from 'date-fns';
+import { addDays, setDate, isBefore, startOfDay, format } from 'date-fns';
 import {
   Dialog,
   DialogContent,
@@ -28,6 +28,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { cn } from '@/lib/utils';
 
 import lawnSmall from '@/assets/lawn-size-small.jpg';
 import lawnMedium from '@/assets/lawn-size-medium.jpg';
@@ -616,14 +619,30 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="preferred_date">Preferred Date *</Label>
-                    <Input
-                      id="preferred_date"
-                      type="date"
-                      value={formData.preferred_date}
-                      onChange={(e) => setFormData({ ...formData, preferred_date: e.target.value })}
-                      min={new Date().toISOString().split('T')[0]}
-                      required
-                    />
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className={cn(
+                            "w-full justify-start text-left font-normal",
+                            !formData.preferred_date && "text-muted-foreground"
+                          )}
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {formData.preferred_date ? format(new Date(formData.preferred_date), "PPP") : <span>Pick a date</span>}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={formData.preferred_date ? new Date(formData.preferred_date) : undefined}
+                          onSelect={(date) => setFormData({ ...formData, preferred_date: date ? format(date, 'yyyy-MM-dd') : '' })}
+                          disabled={(date) => isBefore(date, startOfDay(new Date()))}
+                          initialFocus
+                          className="pointer-events-auto"
+                        />
+                      </PopoverContent>
+                    </Popover>
                     <p className="text-xs text-muted-foreground">
                       Note: This is your preferred date, not a guarantee. Providers have until the day after this date to complete the job.
                     </p>
