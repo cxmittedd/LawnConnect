@@ -7,7 +7,18 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/integrations/supabase/client';
-import { MapPin, Calendar, DollarSign, Briefcase, Eye, CheckCircle, History, Wrench, XCircle } from 'lucide-react';
+import { MapPin, Calendar, DollarSign, Briefcase, Eye, CheckCircle, History, Wrench, XCircle, Trash2 } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { safeToast } from '@/lib/errorHandler';
 import { format, differenceInDays } from 'date-fns';
 
@@ -198,7 +209,25 @@ export default function MyJobs() {
   const isCustomer = userRole === 'customer' || userRole === 'both';
   const isProvider = userRole === 'provider' || userRole === 'both';
 
-  const JobCard = ({ job, isProviderView = false }: { job: Job; isProviderView?: boolean }) => {
+  const handleDeleteCancelledJob = async (jobId: string) => {
+    try {
+      const { error } = await supabase
+        .from('job_requests')
+        .delete()
+        .eq('id', jobId)
+        .eq('customer_id', user?.id)
+        .eq('status', 'cancelled');
+
+      if (error) throw error;
+
+      setCancelledJobs(prev => prev.filter(job => job.id !== jobId));
+      safeToast.success('Job permanently deleted');
+    } catch (error) {
+      safeToast.error(error);
+    }
+  };
+
+  const JobCard = ({ job, isProviderView = false, onDelete }: { job: Job; isProviderView?: boolean; onDelete?: (jobId: string) => void }) => {
     return (
       <Card 
         className="hover:shadow-lg transition-shadow cursor-pointer" 
@@ -260,10 +289,40 @@ export default function MyJobs() {
                   : (job.final_price || job.base_price).toFixed(2)}
               </div>
             </div>
-            <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); navigate(`/job/${job.id}`); }}>
-              <Eye className="h-4 w-4 mr-1" />
-              View
-            </Button>
+            <div className="flex gap-2">
+              {onDelete && (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button 
+                      variant="destructive" 
+                      size="sm" 
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <Trash2 className="h-4 w-4 mr-1" />
+                      Delete
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Delete cancelled job?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This will permanently remove this job from your history. This action cannot be undone.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction onClick={() => onDelete(job.id)}>
+                        Delete
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
+              <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); navigate(`/job/${job.id}`); }}>
+                <Eye className="h-4 w-4 mr-1" />
+                View
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -355,6 +414,11 @@ export default function MyJobs() {
               </TabsContent>
 
               <TabsContent value="cancelled" className="mt-6">
+                <div className="mb-4">
+                  <p className="text-sm text-muted-foreground">
+                    You can permanently delete cancelled jobs from your history
+                  </p>
+                </div>
                 {cancelledJobs.length === 0 ? (
                   <Card>
                     <CardContent className="flex flex-col items-center justify-center py-12">
@@ -365,7 +429,7 @@ export default function MyJobs() {
                 ) : (
                   <div className="grid gap-6 md:grid-cols-2">
                     {cancelledJobs.map((job) => (
-                      <JobCard key={job.id} job={job} />
+                      <JobCard key={job.id} job={job} onDelete={handleDeleteCancelledJob} />
                     ))}
                   </div>
                 )}
