@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/integrations/supabase/client';
-import { MapPin, Calendar, DollarSign, Briefcase, Eye, CheckCircle, History, Wrench } from 'lucide-react';
+import { MapPin, Calendar, DollarSign, Briefcase, Eye, CheckCircle, History, Wrench, XCircle } from 'lucide-react';
 import { safeToast } from '@/lib/errorHandler';
 import { format, differenceInDays } from 'date-fns';
 
@@ -34,6 +34,7 @@ export default function MyJobs() {
   const [userRole, setUserRole] = useState<string>('customer');
   const [postedJobs, setPostedJobs] = useState<Job[]>([]);
   const [completedPostedJobs, setCompletedPostedJobs] = useState<Job[]>([]);
+  const [cancelledJobs, setCancelledJobs] = useState<Job[]>([]);
   const [acceptedJobs, setAcceptedJobs] = useState<Job[]>([]);
   const [completedAcceptedJobs, setCompletedAcceptedJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
@@ -61,7 +62,7 @@ export default function MyJobs() {
             .from('job_requests')
             .select('*')
             .eq('customer_id', user.id)
-            .neq('status', 'completed')
+            .not('status', 'in', '("completed","cancelled")')
             .order('created_at', { ascending: false });
 
           // Get completed jobs (last 10, not older than 14 days)
@@ -73,6 +74,15 @@ export default function MyJobs() {
             .order('completed_at', { ascending: false })
             .limit(10);
 
+          // Get cancelled jobs
+          const { data: cancelled } = await supabase
+            .from('job_requests')
+            .select('*')
+            .eq('customer_id', user.id)
+            .eq('status', 'cancelled')
+            .order('updated_at', { ascending: false })
+            .limit(20);
+
           // Filter out jobs completed more than 14 days ago
           const filteredCompleted = (completedPosted || []).filter(job => {
             if (!job.completed_at) return false;
@@ -81,6 +91,7 @@ export default function MyJobs() {
 
           setPostedJobs(posted || []);
           setCompletedPostedJobs(filteredCompleted);
+          setCancelledJobs(cancelled || []);
 
           // Delete old completed jobs (older than 14 days)
           await cleanupOldCompletedJobs(user.id, 'customer');
@@ -260,7 +271,7 @@ export default function MyJobs() {
   };
 
   // Calculate tab count for grid
-  const customerTabCount = isCustomer ? 2 : 0; // Posted + Completed
+  const customerTabCount = isCustomer ? 3 : 0; // Posted + Completed + Cancelled
   const providerTabCount = isProvider ? 2 : 0; // My Jobs + Completed
   const totalTabs = Math.max(customerTabCount, providerTabCount);
 
@@ -281,6 +292,10 @@ export default function MyJobs() {
                 <TabsTrigger value="posted-completed" className="gap-1">
                   <History className="h-3 w-3" />
                   Completed
+                </TabsTrigger>
+                <TabsTrigger value="cancelled" className="gap-1">
+                  <XCircle className="h-3 w-3" />
+                  Cancelled
                 </TabsTrigger>
               </>
             )}
@@ -333,6 +348,23 @@ export default function MyJobs() {
                 ) : (
                   <div className="grid gap-6 md:grid-cols-2">
                     {completedPostedJobs.map((job) => (
+                      <JobCard key={job.id} job={job} />
+                    ))}
+                  </div>
+                )}
+              </TabsContent>
+
+              <TabsContent value="cancelled" className="mt-6">
+                {cancelledJobs.length === 0 ? (
+                  <Card>
+                    <CardContent className="flex flex-col items-center justify-center py-12">
+                      <XCircle className="h-12 w-12 text-muted-foreground mb-4" />
+                      <p className="text-muted-foreground mb-4">No cancelled jobs</p>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <div className="grid gap-6 md:grid-cols-2">
+                    {cancelledJobs.map((job) => (
                       <JobCard key={job.id} job={job} />
                     ))}
                   </div>
