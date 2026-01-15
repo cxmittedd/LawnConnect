@@ -164,10 +164,7 @@ serve(async (req) => {
     });
 
     // Create TwiML URL that will connect to the target
-    // We'll use a TwiML Bin-style approach by encoding the target in the URL
-    // Pass callerRole so the greeting can be customized
-    const callerRole = isCustomer ? "customer" : "provider";
-    const twimlUrl = `${supabaseUrl}/functions/v1/twilio-call-connect?target=${encodeURIComponent(targetPhoneE164)}&callerId=${encodeURIComponent(twilioPhoneE164)}&jobId=${encodeURIComponent(jobId)}&callerRole=${encodeURIComponent(callerRole)}`;
+    const twimlUrl = `${supabaseUrl}/functions/v1/twilio-call-connect?target=${encodeURIComponent(targetPhoneE164)}&callerId=${encodeURIComponent(twilioPhoneE164)}&jobId=${encodeURIComponent(jobId)}`;
 
     // Status callback for the FIRST leg (Twilio -> caller). Helps debug “phone never rang”.
     const outboundStatusUrl = `${supabaseUrl}/functions/v1/twilio-outbound-status?jobId=${encodeURIComponent(jobId)}`;
