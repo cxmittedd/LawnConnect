@@ -16,6 +16,7 @@ interface JobPaymentFormProps {
   customerEmail: string;
   customerName?: string;
   onPaymentSuccess: (reference: string, cardInfo: { lastFour: string; name: string }) => void;
+  onPaymentFailed?: (jobId: string) => void;
   onCancel: () => void;
   loading?: boolean;
 }
@@ -40,46 +41,91 @@ export function JobPaymentForm({
   jobId,
   customerEmail,
   customerName,
-  onPaymentSuccess, 
+  onPaymentSuccess,
+  onPaymentFailed,
   onCancel, 
   loading 
 }: JobPaymentFormProps) {
   const [processing, setProcessing] = useState(false);
   const [paymentData, setPaymentData] = useState<EzeePaymentData | null>(null);
   const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
+  const [checkingStatus, setCheckingStatus] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
 
   // Check for payment completion on mount (user returned from EzeePay)
+  // This checks the jobId status immediately if there's no paymentUrl set (meaning we didn't just initiate payment)
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const paymentComplete = urlParams.get('payment_complete');
-    const orderId = urlParams.get('order_id');
+    const urlOrderId = urlParams.get('order_id');
     
-    if (paymentComplete === 'true' && orderId) {
-      // Check payment status from database
-      checkPaymentStatus(orderId);
+    // If URL has payment_complete and order_id matches, or if we're returning from payment
+    if ((paymentComplete === 'true' && urlOrderId === jobId) || 
+        (paymentComplete === 'true' && !urlOrderId)) {
+      // Check payment status from database with polling
+      checkPaymentStatusWithRetry(jobId);
     }
-  }, []);
+  }, [jobId]);
 
-  const checkPaymentStatus = async (orderId: string) => {
-    try {
-      const { data: job, error } = await supabase
-        .from('job_requests')
-        .select('payment_status, payment_reference')
-        .eq('id', orderId)
-        .single();
-
-      if (error) throw error;
-
-      if (job?.payment_status === 'paid') {
-        onPaymentSuccess(job.payment_reference || `EZEE-${Date.now()}`, {
-          lastFour: '****',
-          name: customerName || 'Customer'
-        });
+  // Also check immediately if this component was mounted after a redirect
+  useEffect(() => {
+    // If we have a jobId but no payment data, it means we're returning from payment
+    // Check the status right away
+    const checkOnMount = async () => {
+      if (jobId && !paymentData && !processing) {
+        const { data: job } = await supabase
+          .from('job_requests')
+          .select('payment_status')
+          .eq('id', jobId)
+          .single();
+        
+        // If the job is already paid or failed, trigger status check
+        if (job?.payment_status === 'paid' || job?.payment_status === 'failed') {
+          checkPaymentStatusWithRetry(jobId);
+        }
       }
-    } catch (error) {
-      console.error('Error checking payment status:', error);
+    };
+    checkOnMount();
+  }, [jobId]);
+
+  const checkPaymentStatusWithRetry = async (orderId: string, retries = 5, delay = 1000) => {
+    setCheckingStatus(true);
+    
+    for (let attempt = 0; attempt < retries; attempt++) {
+      try {
+        const { data: job, error } = await supabase
+          .from('job_requests')
+          .select('payment_status, payment_reference')
+          .eq('id', orderId)
+          .single();
+
+        if (error) throw error;
+
+        if (job?.payment_status === 'paid') {
+          setCheckingStatus(false);
+          onPaymentSuccess(job.payment_reference || `EZEE-${Date.now()}`, {
+            lastFour: '****',
+            name: customerName || 'Customer'
+          });
+          return;
+        } else if (job?.payment_status === 'failed') {
+          setCheckingStatus(false);
+          onPaymentFailed?.(orderId);
+          return;
+        }
+        
+        // Still pending, wait and retry (webhook may not have processed yet)
+        if (attempt < retries - 1) {
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
+      } catch (error) {
+        console.error('Error checking payment status:', error);
+      }
     }
+    
+    // After all retries, if still pending, treat as potential failure
+    setCheckingStatus(false);
+    safeToast.error('Payment verification timed out. Please check your job status.');
   };
 
   const initiatePayment = async () => {
@@ -122,6 +168,19 @@ export function JobPaymentForm({
       setProcessing(false);
     }
   };
+
+  // Show loading state while checking payment status
+  if (checkingStatus) {
+    return (
+      <Card className="w-full">
+        <CardContent className="flex flex-col items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
+          <p className="text-lg font-medium text-foreground">Verifying Payment...</p>
+          <p className="text-sm text-muted-foreground mt-2">Please wait while we confirm your transaction</p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="w-full">
