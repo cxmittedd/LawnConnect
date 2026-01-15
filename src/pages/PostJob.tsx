@@ -112,6 +112,7 @@ export default function PostJob() {
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [pendingJobId, setPendingJobId] = useState<string | null>(null);
   const [failedJobId, setFailedJobId] = useState<string | null>(null);
+  const [calendarOpen, setCalendarOpen] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -708,7 +709,7 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="preferred_date">Preferred Date *</Label>
-                    <Popover>
+                    <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
                       <PopoverTrigger asChild>
                         <Button
                           variant="outline"
@@ -725,10 +726,12 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
                         <Calendar
                           mode="single"
                           selected={formData.preferred_date ? new Date(formData.preferred_date) : undefined}
-                          onSelect={(date) => setFormData({ ...formData, preferred_date: date ? format(date, 'yyyy-MM-dd') : '' })}
+                          onSelect={(date) => {
+                            setFormData({ ...formData, preferred_date: date ? format(date, 'yyyy-MM-dd') : '' });
+                            setCalendarOpen(false);
+                          }}
                           disabled={(date) => isBefore(date, startOfDay(new Date()))}
                           initialFocus
-                          className="pointer-events-auto"
                         />
                       </PopoverContent>
                     </Popover>
