@@ -189,6 +189,8 @@ export default function JobDetails() {
         return 'bg-success text-success-foreground';
       case 'cancelled':
         return 'bg-muted text-muted-foreground';
+      case 'disputed':
+        return 'bg-destructive text-destructive-foreground';
       default:
         return 'bg-secondary text-secondary-foreground';
     }
@@ -196,14 +198,15 @@ export default function JobDetails() {
 
   const getStatusLabel = (status: string) => {
     if (status === 'accepted') return 'In Progress';
+    if (status === 'disputed') return 'Under Dispute';
     return status.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
   };
 
   const isCustomer = job?.customer_id === user?.id;
   const isProvider = job?.accepted_provider_id === user?.id;
   const canCancelJob = isCustomer && job?.status === 'open' && !job?.accepted_provider_id;
-  const showPaymentCard = job?.status === 'accepted' || job?.status === 'in_progress' || job?.status === 'pending_completion' || job?.status === 'completed';
-  const showCompletionCard = (job?.status === 'accepted' || job?.status === 'in_progress' || job?.status === 'pending_completion' || job?.status === 'completed') && job?.payment_status === 'paid';
+  const showPaymentCard = job?.status === 'accepted' || job?.status === 'in_progress' || job?.status === 'pending_completion' || job?.status === 'completed' || job?.status === 'disputed';
+  const showCompletionCard = (job?.status === 'accepted' || job?.status === 'in_progress' || job?.status === 'pending_completion' || job?.status === 'completed' || job?.status === 'disputed') && job?.payment_status === 'paid';
   const showReviewCard = job?.status === 'completed';
 
   if (loading) {

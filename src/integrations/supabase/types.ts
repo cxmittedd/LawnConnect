@@ -143,6 +143,41 @@ export type Database = {
         }
         Relationships: []
       }
+      dispute_messages: {
+        Row: {
+          created_at: string
+          dispute_id: string
+          id: string
+          message: string
+          sender_id: string
+          sender_type: string
+        }
+        Insert: {
+          created_at?: string
+          dispute_id: string
+          id?: string
+          message: string
+          sender_id: string
+          sender_type: string
+        }
+        Update: {
+          created_at?: string
+          dispute_id?: string
+          id?: string
+          message?: string
+          sender_id?: string
+          sender_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dispute_messages_dispute_id_fkey"
+            columns: ["dispute_id"]
+            isOneToOne: false
+            referencedRelation: "job_disputes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       dispute_photos: {
         Row: {
           created_at: string
