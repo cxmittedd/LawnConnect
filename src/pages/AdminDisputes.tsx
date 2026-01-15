@@ -208,6 +208,9 @@ export default function AdminDisputes() {
 
       if (error) throw error;
 
+      let refundAmount = 0;
+      let refundReason = '';
+
       if (resolutionType === 'favor_customer') {
         await supabase
           .from('job_requests')
@@ -217,6 +220,9 @@ export default function AdminDisputes() {
             platform_fee: 0,
           })
           .eq('id', selectedDispute.job_id);
+        
+        refundAmount = selectedDispute.final_price || 0;
+        refundReason = `Full refund - Dispute resolved in favor of customer. Original dispute reason: ${selectedDispute.reason}`;
       } else if (resolutionType === 'favor_provider') {
         const payoutPercentage = 0.70;
         const providerPayout = (selectedDispute.final_price || 0) * payoutPercentage;
@@ -244,6 +250,22 @@ export default function AdminDisputes() {
             platform_fee: platformFee,
           })
           .eq('id', selectedDispute.job_id);
+        
+        refundAmount = (selectedDispute.final_price || 0) * ((100 - refundPercentage) / 100);
+        refundReason = `Partial refund (${100 - refundPercentage}%) - Dispute resolved with partial refund. Original dispute reason: ${selectedDispute.reason}`;
+      }
+
+      // Create refund request for customer-favoring resolutions
+      if (resolutionType === 'favor_customer' || resolutionType === 'partial_refund') {
+        await supabase.from('refund_requests').insert({
+          customer_id: selectedDispute.customer_id,
+          job_id: selectedDispute.job_id,
+          reason: refundReason,
+          status: 'approved',
+          admin_notes: `Refund amount: J$${refundAmount.toLocaleString()}. ${adminNotes ? `Admin notes: ${adminNotes}` : ''}`,
+          reviewed_by: user.id,
+          reviewed_at: new Date().toISOString(),
+        });
       }
 
       await supabase.from('admin_audit_logs').insert({
@@ -260,10 +282,13 @@ export default function AdminDisputes() {
           resolution_type: resolutionType,
           admin_notes: adminNotes,
           refund_percentage: resolutionType === 'partial_refund' ? refundPercentage : null,
+          refund_amount: refundAmount > 0 ? refundAmount : null,
         },
       });
 
-      toast.success('Dispute resolved successfully');
+      toast.success(refundAmount > 0 
+        ? 'Dispute resolved and refund added to pending refunds' 
+        : 'Dispute resolved successfully');
       setResolveDialogOpen(false);
       setSelectedDispute(null);
       setAdminNotes('');
