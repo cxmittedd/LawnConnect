@@ -339,7 +339,7 @@ export default function ProviderEarnings() {
               <Banknote className="h-5 w-5 text-success" />
               Payout History
             </CardTitle>
-            <CardDescription>Your biweekly autopay payouts</CardDescription>
+            <CardDescription>Your biweekly payouts</CardDescription>
           </CardHeader>
           <CardContent>
             {payouts.length === 0 ? (

@@ -16,10 +16,9 @@ import { safeToast } from '@/lib/errorHandler';
 import { useNavigate } from 'react-router-dom';
 import { z } from 'zod';
 import { JobPaymentForm } from '@/components/JobPaymentForm';
-import { AutopaySetupDialog } from '@/components/AutopaySetupDialog';
 import { sendInvoice } from '@/lib/invoiceService';
 import { useCustomerPreferences } from '@/hooks/useCustomerPreferences';
-import { addDays, setDate, isBefore, startOfDay, format } from 'date-fns';
+import { format, isBefore, startOfDay } from 'date-fns';
 import {
   Dialog,
   DialogContent,
@@ -100,14 +99,12 @@ const createJobSchema = (minOffer: number) => z.object({
 export default function PostJob() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const { preferences, savePreferences, saveAutopaySettings, loading: prefsLoading } = useCustomerPreferences();
+  const { preferences, savePreferences, loading: prefsLoading } = useCustomerPreferences();
   const [loading, setLoading] = useState(false);
   const [photos, setPhotos] = useState<File[]>([]);
   const [lawnSizeSelection, setLawnSizeSelection] = useState('');
   const [customLawnSize, setCustomLawnSize] = useState('');
   const [step, setStep] = useState<'details' | 'payment' | 'failed'>('details');
-  const [showAutopayDialog, setShowAutopayDialog] = useState(false);
-  const [pendingCardInfo, setPendingCardInfo] = useState<{ lastFour: string; name: string } | null>(null);
   const [showAutofillPreview, setShowAutofillPreview] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [pendingJobId, setPendingJobId] = useState<string | null>(null);
@@ -413,66 +410,11 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
       }
 
       toast.success('Job posted successfully! Payment received.');
-      
-      // Always offer to set up autopay for this location
-      setPendingCardInfo(cardInfo);
-      setShowAutopayDialog(true);
+      navigate('/my-jobs');
     } catch (error) {
       safeToast.error(error);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleAutopaySetup = async (settings: {
-    frequency: 'monthly' | 'bimonthly';
-    recurring_day: number;
-    recurring_day_2?: number;
-    location: string;
-    location_name: string;
-    parish: string;
-    lawn_size: string;
-    job_type: string;
-    additional_requirements: string;
-  }) => {
-    if (!pendingCardInfo) return;
-
-    const today = startOfDay(new Date());
-    let targetDate = setDate(today, settings.recurring_day);
-    if (isBefore(targetDate, today) || targetDate.getTime() === today.getTime()) {
-      targetDate = setDate(addDays(targetDate, 32), settings.recurring_day);
-    }
-
-    let targetDate2: Date | null = null;
-    if (settings.frequency === 'bimonthly' && settings.recurring_day_2) {
-      targetDate2 = setDate(today, settings.recurring_day_2);
-      if (isBefore(targetDate2, today) || targetDate2.getTime() === today.getTime()) {
-        targetDate2 = setDate(addDays(targetDate2, 32), settings.recurring_day_2);
-      }
-    }
-
-    await saveAutopaySettings({
-      enabled: true,
-      frequency: settings.frequency,
-      recurring_day: settings.recurring_day,
-      recurring_day_2: settings.recurring_day_2 || null,
-      card_last_four: pendingCardInfo.lastFour,
-      card_name: pendingCardInfo.name,
-      next_scheduled_date: targetDate.toISOString().split('T')[0],
-      next_scheduled_date_2: targetDate2 ? targetDate2.toISOString().split('T')[0] : null,
-      location: settings.location,
-      location_name: settings.location_name,
-      parish: settings.parish,
-      lawn_size: settings.lawn_size,
-      job_type: settings.job_type,
-      additional_requirements: settings.additional_requirements,
-    });
-  };
-
-  const handleAutopayDialogClose = (open: boolean) => {
-    setShowAutopayDialog(open);
-    if (!open) {
-      navigate('/my-jobs');
     }
   };
 
@@ -862,23 +804,6 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
         </div>
       </main>
 
-      {/* Autopay Setup Dialog */}
-      {pendingCardInfo && (
-        <AutopaySetupDialog
-          open={showAutopayDialog}
-          onOpenChange={handleAutopayDialogClose}
-          cardLastFour={pendingCardInfo.lastFour}
-          cardName={pendingCardInfo.name}
-          jobDetails={{
-            location: formData.location,
-            parish: formData.parish,
-            lawn_size: lawnSizeSelection,
-            job_type: formData.title,
-            additional_requirements: formData.additional_requirements,
-          }}
-          onConfirm={handleAutopaySetup}
-        />
-      )}
     </>
   );
 }
