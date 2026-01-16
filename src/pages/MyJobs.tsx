@@ -72,10 +72,12 @@ export default function MyJobs() {
         setUserRole(profile.user_role);
 
         if (profile.user_role === 'customer' || profile.user_role === 'both') {
+          // Only show jobs with confirmed payment (paid status)
           const { data: posted } = await supabase
             .from('job_requests')
             .select('*')
             .eq('customer_id', user.id)
+            .eq('payment_status', 'paid')
             .not('status', 'in', '("completed","cancelled")')
             .order('created_at', { ascending: false });
 
