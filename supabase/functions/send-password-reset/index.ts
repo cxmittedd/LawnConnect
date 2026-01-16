@@ -108,8 +108,16 @@ const handler = async (req: Request): Promise<Response> => {
       });
     }
 
-    const resetLink = linkData.properties.action_link;
+    // Extract tokens from the Supabase action link and construct our own URL
+    const supabaseActionLink = new URL(linkData.properties.action_link);
+    const hashFragment = supabaseActionLink.hash;
+    
+    // Build the reset link using production domain
+    const productionDomain = "https://connectlawn.com";
+    const resetLink = `${productionDomain}/reset-password${hashFragment}`;
+    
     console.log("Sending password reset email to:", email);
+    console.log("Reset link constructed:", resetLink);
 
     const emailResponse = await resend.emails.send({
       from: "LawnConnect <noreply@connectlawn.com>",
