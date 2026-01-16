@@ -9,22 +9,17 @@ import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/integrations/supabase/client';
-import { User, Phone, MapPin, Building, Save, Camera, Scissors, DollarSign, Users, Shield, Info, RefreshCw, Mail, ExternalLink, Send } from 'lucide-react';
+import { User, Phone, MapPin, Building, Save, Camera, Scissors, DollarSign, Users, Shield, Info } from 'lucide-react';
 import { toast } from 'sonner';
 import { safeToast } from '@/lib/errorHandler';
-import { z } from 'zod';
+
 import { ProviderVerification } from '@/components/ProviderVerification';
 import { ProviderBankingForm } from '@/components/ProviderBankingForm';
 import { Link } from 'react-router-dom';
 
-interface JobOption {
-  id: string;
-  title: string;
-  created_at: string;
-}
 
 interface ProfileData {
   first_name: string | null;
@@ -55,49 +50,12 @@ export default function Settings() {
   const [saving, setSaving] = useState(false);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
-  const [refundForm, setRefundForm] = useState({
-    name: '',
-    email: '',
-    jobId: '',
-    reason: '',
-  });
-  const [sendingRefund, setSendingRefund] = useState(false);
-  const [userJobs, setUserJobs] = useState<JobOption[]>([]);
-  const [loadingJobs, setLoadingJobs] = useState(false);
 
   const defaultTab = searchParams.get('tab') || 'profile';
 
-  const refundSchema = z.object({
-    name: z.string().trim().min(1, 'Name is required').max(100, 'Name too long'),
-    email: z.string().trim().email('Invalid email address').max(255, 'Email too long'),
-    jobId: z.string().trim().min(1, 'Job ID is required').max(100, 'Job ID too long'),
-    reason: z.string().trim().min(1, 'Reason is required').max(1000, 'Reason too long'),
-  });
-
   useEffect(() => {
     loadProfile();
-    loadUserJobs();
   }, [user]);
-
-  const loadUserJobs = async () => {
-    if (!user) return;
-    
-    setLoadingJobs(true);
-    try {
-      const { data, error } = await supabase
-        .from('job_requests')
-        .select('id, title, created_at')
-        .eq('customer_id', user.id)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      setUserJobs(data || []);
-    } catch (error) {
-      console.error('Error loading jobs:', error);
-    } finally {
-      setLoadingJobs(false);
-    }
-  };
 
   const loadProfile = async () => {
     if (!user) return;
@@ -126,13 +84,6 @@ export default function Settings() {
         });
         setAvatarPreview(data.avatar_url || null);
         
-        // Pre-fill refund form with user data
-        const fullName = [firstName, lastName].filter(Boolean).join(' ');
-        setRefundForm(prev => ({
-          ...prev,
-          name: fullName,
-          email: user?.email || '',
-        }));
       }
     } catch (error) {
       console.error('Error loading profile:', error);
@@ -233,54 +184,6 @@ export default function Settings() {
 
   const isProvider = profile.user_role === 'provider' || profile.user_role === 'both';
 
-  const handleRefundSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!user) {
-      toast.error('You must be logged in to submit a refund request');
-      return;
-    }
-
-    const result = refundSchema.safeParse(refundForm);
-    if (!result.success) {
-      toast.error(result.error.errors[0].message);
-      return;
-    }
-
-    setSendingRefund(true);
-
-    try {
-      // Insert into database for admin review
-      const { error: dbError } = await supabase
-        .from('refund_requests')
-        .insert({
-          customer_id: user.id,
-          job_id: refundForm.jobId,
-          reason: refundForm.reason,
-        });
-
-      if (dbError) throw dbError;
-
-      // Also send email notification
-      await supabase.functions.invoke('send-contact-email', {
-        body: {
-          name: refundForm.name,
-          email: refundForm.email,
-          subject: `Refund Request - Job ID: ${refundForm.jobId}`,
-          message: `Job ID: ${refundForm.jobId}\n\nReason for refund:\n${refundForm.reason}`,
-        },
-      });
-
-      toast.success('Refund request submitted successfully! We\'ll review and respond soon.');
-      setRefundForm({ ...refundForm, jobId: '', reason: '' });
-    } catch (error) {
-      console.error('Error sending refund request:', error);
-      toast.error('Failed to submit refund request. Please try again.');
-    } finally {
-      setSendingRefund(false);
-    }
-  };
-
   const features = [
     {
       icon: Scissors,
@@ -330,10 +233,9 @@ export default function Settings() {
         </div>
 
         <Tabs defaultValue={defaultTab} onValueChange={(value) => setSearchParams({ tab: value })}>
-          <TabsList className={`grid w-full ${isProvider ? 'grid-cols-2' : 'grid-cols-3'} mb-6`}>
+          <TabsList className="grid w-full grid-cols-2 mb-6">
             <TabsTrigger value="profile">Profile</TabsTrigger>
             <TabsTrigger value="about">About</TabsTrigger>
-            {!isProvider && <TabsTrigger value="refunds">Refunds</TabsTrigger>}
           </TabsList>
 
           {/* Profile Tab */}
@@ -641,168 +543,6 @@ export default function Settings() {
             </div>
           </TabsContent>
 
-          {/* Refunds Tab - Only for customers */}
-          {!isProvider && (
-          <TabsContent value="refunds" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <RefreshCw className="h-5 w-5" />
-                  Refund & Cancellation Policy
-                </CardTitle>
-                <CardDescription>
-                  Understanding our refund and cancellation process
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="space-y-4">
-                  <div className="border-l-4 border-primary pl-4">
-                    <h3 className="font-semibold mb-2">Customer Cancellations</h3>
-                    <p className="text-sm text-muted-foreground">
-                      You can cancel a job request within 24 hours of posting for a full refund, 
-                      provided no provider has accepted the job yet.
-                    </p>
-                  </div>
-
-                  <div className="border-l-4 border-primary pl-4">
-                    <h3 className="font-semibold mb-2">Provider Cancellations</h3>
-                    <p className="text-sm text-muted-foreground">
-                      If a provider cancels after accepting your job, you will receive a full refund 
-                      automatically and the job will be reopened for other providers.
-                    </p>
-                  </div>
-
-                  <div className="border-l-4 border-primary pl-4">
-                    <h3 className="font-semibold mb-2">Quality Issues</h3>
-                    <p className="text-sm text-muted-foreground">
-                      If you're unsatisfied with the completed work, you have 48 hours to report 
-                      the issue and request a review. Our team will investigate and determine 
-                      appropriate resolution.
-                    </p>
-                  </div>
-
-                  <div className="border-l-4 border-warning pl-4">
-                    <h3 className="font-semibold mb-2">Processing Time</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Approved refunds are processed within 14 business days and returned to 
-                      your original payment method.
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <div className="grid md:grid-cols-2 gap-8">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Request a Refund</CardTitle>
-                  <CardDescription>
-                    Fill out the form and we'll review your request
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <form onSubmit={handleRefundSubmit} className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="refund-name">Name</Label>
-                      <Input
-                        id="refund-name"
-                        placeholder="Your name"
-                        value={refundForm.name}
-                        onChange={(e) => setRefundForm({ ...refundForm, name: e.target.value })}
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="refund-email">Email</Label>
-                      <Input
-                        id="refund-email"
-                        type="email"
-                        placeholder="your@email.com"
-                        value={refundForm.email}
-                        onChange={(e) => setRefundForm({ ...refundForm, email: e.target.value })}
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="refund-jobId">Select Job</Label>
-                      <Select
-                        value={refundForm.jobId}
-                        onValueChange={(value) => setRefundForm({ ...refundForm, jobId: value })}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder={loadingJobs ? "Loading jobs..." : "Select a job"} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {userJobs.length === 0 ? (
-                            <SelectItem value="no-jobs" disabled>
-                              No jobs found
-                            </SelectItem>
-                          ) : (
-                            userJobs.map((job) => (
-                              <SelectItem key={job.id} value={job.id}>
-                                {job.title} - {new Date(job.created_at).toLocaleDateString()}
-                              </SelectItem>
-                            ))
-                          )}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="refund-reason">Reason for Refund</Label>
-                      <Textarea
-                        id="refund-reason"
-                        placeholder="Please explain why you're requesting a refund..."
-                        value={refundForm.reason}
-                        onChange={(e) => setRefundForm({ ...refundForm, reason: e.target.value })}
-                        rows={5}
-                        required
-                      />
-                    </div>
-                    <Button type="submit" className="w-full" disabled={sendingRefund}>
-                      {sendingRefund ? (
-                        <>
-                          <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent mr-2"></div>
-                          Submitting...
-                        </>
-                      ) : (
-                        <>
-                          <Send className="h-4 w-4 mr-2" />
-                          Submit Request
-                        </>
-                      )}
-                    </Button>
-                  </form>
-                </CardContent>
-              </Card>
-
-              <div className="space-y-6">
-                <Card>
-                  <CardContent className="p-6">
-                    <div className="flex items-start gap-4">
-                      <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                        <Mail className="h-6 w-6 text-primary" />
-                      </div>
-                      <div>
-                        <h3 className="font-semibold mb-2">Email Us Directly</h3>
-                        <p className="text-sm text-muted-foreground">officiallawnconnect@gmail.com</p>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          We typically respond within 24 hours
-                        </p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Link to="/refund-policy">
-                  <Button variant="outline" className="w-full">
-                    <ExternalLink className="h-4 w-4 mr-2" />
-                    View Full Refund Policy
-                  </Button>
-                </Link>
-              </div>
-            </div>
-          </TabsContent>
-          )}
         </Tabs>
       </main>
     </>
