@@ -580,6 +580,60 @@ export type Database = {
         }
         Relationships: []
       }
+      provider_banking_details: {
+        Row: {
+          account_number: string
+          account_type: Database["public"]["Enums"]["account_type"]
+          admin_notes: string | null
+          bank_name: Database["public"]["Enums"]["supported_bank"]
+          branch_name: string
+          branch_number: string | null
+          created_at: string
+          full_legal_name: string
+          id: string
+          provider_id: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: Database["public"]["Enums"]["banking_status"]
+          trn: string
+          updated_at: string
+        }
+        Insert: {
+          account_number: string
+          account_type: Database["public"]["Enums"]["account_type"]
+          admin_notes?: string | null
+          bank_name: Database["public"]["Enums"]["supported_bank"]
+          branch_name: string
+          branch_number?: string | null
+          created_at?: string
+          full_legal_name: string
+          id?: string
+          provider_id: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["banking_status"]
+          trn: string
+          updated_at?: string
+        }
+        Update: {
+          account_number?: string
+          account_type?: Database["public"]["Enums"]["account_type"]
+          admin_notes?: string | null
+          bank_name?: Database["public"]["Enums"]["supported_bank"]
+          branch_name?: string
+          branch_number?: string | null
+          created_at?: string
+          full_legal_name?: string
+          id?: string
+          provider_id?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["banking_status"]
+          trn?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       provider_payouts: {
         Row: {
           amount: number
@@ -961,11 +1015,15 @@ export type Database = {
         }
         Returns: boolean
       }
+      has_verified_banking: { Args: { provider_id: string }; Returns: boolean }
       is_provider: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
+      account_type: "savings" | "chequing"
       app_role: "admin" | "user"
+      banking_status: "pending" | "verified" | "rejected"
       id_document_type: "drivers_license" | "passport" | "national_id"
+      supported_bank: "scotiabank_jamaica" | "ncb_jamaica"
       verification_status: "pending" | "approved" | "rejected"
     }
     CompositeTypes: {
@@ -1094,8 +1152,11 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      account_type: ["savings", "chequing"],
       app_role: ["admin", "user"],
+      banking_status: ["pending", "verified", "rejected"],
       id_document_type: ["drivers_license", "passport", "national_id"],
+      supported_bank: ["scotiabank_jamaica", "ncb_jamaica"],
       verification_status: ["pending", "approved", "rejected"],
     },
   },
