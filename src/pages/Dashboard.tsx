@@ -7,6 +7,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { Scissors, Briefcase, DollarSign, CheckCircle, ArrowRight, Plus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import InstallBanner from '@/components/InstallBanner';
+import { usePendingReviews } from '@/hooks/usePendingReviews';
+import { RequiredReviewDialog } from '@/components/RequiredReviewDialog';
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -19,6 +21,7 @@ export default function Dashboard() {
     myActiveJobs: 0,
   });
   const [loading, setLoading] = useState(true);
+  const { pendingReviews, hasPendingReviews, refresh: refreshPendingReviews } = usePendingReviews();
 
   useEffect(() => {
     loadUserData();
@@ -268,6 +271,13 @@ export default function Dashboard() {
         )}
       </main>
       <InstallBanner />
+      
+      {/* Required Review Dialog */}
+      <RequiredReviewDialog
+        open={hasPendingReviews}
+        pendingReviews={pendingReviews}
+        onReviewsComplete={refreshPendingReviews}
+      />
     </div>
   );
 }

@@ -21,6 +21,8 @@ import {
 } from '@/components/ui/alert-dialog';
 import { safeToast } from '@/lib/errorHandler';
 import { format, differenceInDays } from 'date-fns';
+import { usePendingReviews } from '@/hooks/usePendingReviews';
+import { RequiredReviewDialog } from '@/components/RequiredReviewDialog';
 
 interface Job {
   id: string;
@@ -49,6 +51,7 @@ export default function MyJobs() {
   const [acceptedJobs, setAcceptedJobs] = useState<Job[]>([]);
   const [completedAcceptedJobs, setCompletedAcceptedJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
+  const { pendingReviews, hasPendingReviews, refresh: refreshPendingReviews } = usePendingReviews();
 
   useEffect(() => {
     loadJobs();
@@ -548,6 +551,13 @@ export default function MyJobs() {
           </div>
         )}
       </main>
+      
+      {/* Required Review Dialog */}
+      <RequiredReviewDialog
+        open={hasPendingReviews}
+        pendingReviews={pendingReviews}
+        onReviewsComplete={refreshPendingReviews}
+      />
     </>
   );
 }
