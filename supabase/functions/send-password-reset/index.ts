@@ -110,12 +110,28 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Extract tokens from the Supabase action link and construct our own URL
     const supabaseActionLink = new URL(linkData.properties.action_link);
-    const hashFragment = supabaseActionLink.hash;
-    
-    // Build the reset link using production domain
+
+    // `generateLink` returns a Supabase verify URL like:
+    // .../auth/v1/verify?token=...&type=recovery&redirect_to=...
+    // We don't want users to ever see a Supabase/Lovable URL, so we construct our own
+    // reset URL on the LawnConnect domain and verify the token client-side.
+    const tokenHash =
+      supabaseActionLink.searchParams.get("token") ??
+      supabaseActionLink.searchParams.get("token_hash") ??
+      "";
+    const linkType = supabaseActionLink.searchParams.get("type") ?? "recovery";
+
+    if (!tokenHash) {
+      console.error("No token found in action link");
+      return new Response(JSON.stringify({ success: true }), {
+        status: 200,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
+
     const productionDomain = "https://connectlawn.com";
-    const resetLink = `${productionDomain}/reset-password${hashFragment}`;
-    
+    const resetLink = `${productionDomain}/reset-password?token_hash=${encodeURIComponent(tokenHash)}&type=${encodeURIComponent(linkType)}`;
+
     console.log("Sending password reset email to:", email);
     console.log("Reset link constructed:", resetLink);
 
