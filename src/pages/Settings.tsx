@@ -17,6 +17,7 @@ import { toast } from 'sonner';
 import { safeToast } from '@/lib/errorHandler';
 import { z } from 'zod';
 import { ProviderVerification } from '@/components/ProviderVerification';
+import { ProviderBankingForm } from '@/components/ProviderBankingForm';
 import { Link } from 'react-router-dom';
 
 interface JobOption {
@@ -563,6 +564,9 @@ export default function Settings() {
 
             {/* Provider Verification */}
             {isProvider && <ProviderVerification />}
+
+            {/* Provider Banking Details */}
+            {isProvider && <ProviderBankingForm />}
 
             {/* Save Button */}
             <Button onClick={handleSave} disabled={saving} className="w-full" size="lg">

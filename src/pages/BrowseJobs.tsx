@@ -9,12 +9,13 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/integrations/supabase/client';
-import { MapPin, Calendar, DollarSign, Scissors, Shield, Clock, AlertTriangle, Wrench, Filter } from 'lucide-react';
+import { MapPin, Calendar, DollarSign, Scissors, Shield, Clock, AlertTriangle, Wrench, Filter, Landmark } from 'lucide-react';
 import { toast } from 'sonner';
 import { safeToast } from '@/lib/errorHandler';
 import { format } from 'date-fns';
 import { useProviderVerification } from '@/hooks/useProviderVerification';
 import { useProviderProfileCompletion } from '@/hooks/useProviderProfileCompletion';
+import { useProviderBanking } from '@/hooks/useProviderBanking';
 import { ProfileCompletionDialog } from '@/components/ProfileCompletionDialog';
 import { sendNotification } from '@/lib/notifications';
 
@@ -38,6 +39,7 @@ export default function BrowseJobs() {
   const { user } = useAuth();
   const { isVerified, isPending, needsVerification, loading: verificationLoading } = useProviderVerification();
   const { isComplete, hasAvatar, hasBio, avatarUrl, bio, loading: profileLoading, refetch: refetchProfile } = useProviderProfileCompletion();
+  const { isVerified: hasBankingVerified, isPending: bankingPending, hasBankingSubmitted, loading: bankingLoading } = useProviderBanking();
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
@@ -152,7 +154,7 @@ export default function BrowseJobs() {
     }
   };
 
-  if (loading || verificationLoading || profileLoading) {
+  if (loading || verificationLoading || profileLoading || bankingLoading) {
     return (
       <>
         <Navigation />
@@ -211,6 +213,60 @@ export default function BrowseJobs() {
               <Button asChild className="w-full">
                 <Link to="/profile">
                   {isPending ? 'View Verification Status' : 'Verify Your ID Now'}
+                </Link>
+              </Button>
+            </CardContent>
+          </Card>
+        </main>
+      </>
+    );
+  }
+
+  // Show banking required message for providers without verified banking
+  if (!hasBankingVerified) {
+    return (
+      <>
+        <Navigation />
+        <main className="container mx-auto px-4 py-8">
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-foreground mb-2">Browse Jobs</h1>
+            <p className="text-muted-foreground">Find lawn cutting opportunities near you</p>
+          </div>
+
+          <Card className="max-w-lg mx-auto">
+            <CardHeader className="text-center">
+              <div className="mx-auto w-16 h-16 rounded-full bg-warning/20 flex items-center justify-center mb-4">
+                <Landmark className="h-8 w-8 text-warning" />
+              </div>
+              <CardTitle>Banking Details Required</CardTitle>
+              <CardDescription>
+                {bankingPending
+                  ? 'Your banking details are pending verification'
+                  : 'You must submit your banking details to accept jobs'}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {bankingPending ? (
+                <Alert>
+                  <Clock className="h-4 w-4" />
+                  <AlertDescription>
+                    Your banking information is currently under review. This typically takes 1-2 business days.
+                    You'll be able to accept jobs once your banking details are verified.
+                  </AlertDescription>
+                </Alert>
+              ) : (
+                <Alert>
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertDescription>
+                    To receive payouts for completed jobs, you must submit and verify your banking details 
+                    before accepting any jobs on the platform.
+                  </AlertDescription>
+                </Alert>
+              )}
+              
+              <Button asChild className="w-full">
+                <Link to="/profile">
+                  {bankingPending ? 'View Banking Status' : 'Submit Banking Details'}
                 </Link>
               </Button>
             </CardContent>
