@@ -124,6 +124,17 @@ export default function BrowseJobs() {
         return;
       }
 
+      // Automatically enable secure calling for the job
+      try {
+        await supabase.functions.invoke('create-proxy-session', {
+          body: { jobId: selectedJob.id }
+        });
+        console.log('Secure calling automatically enabled for job:', selectedJob.id);
+      } catch (proxyError) {
+        console.error('Failed to auto-enable secure calling:', proxyError);
+        // Don't fail the job acceptance if proxy creation fails
+      }
+
       // Send notification to customer
       if (jobData?.customer_id) {
         const { data: providerProfile } = await supabase
