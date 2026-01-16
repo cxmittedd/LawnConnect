@@ -15,7 +15,7 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-    // Verify authorization - only allow service role calls (from cron/internal systems)
+    // Verify authorization - allow service role, anon key, or valid JWT
     const authHeader = req.headers.get("authorization");
     if (!authHeader) {
       console.error("Missing authorization header");
@@ -25,22 +25,26 @@ serve(async (req) => {
       );
     }
 
-    // Check if the request is using the service role key (from cron job or internal call)
     const token = authHeader.replace("Bearer ", "");
-    if (token !== supabaseServiceKey) {
-      // For non-service-role calls, verify it's a valid anon key call from pg_net
-      // pg_net uses the anon key, so we need to allow that for cron jobs
-      const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
-      if (token !== anonKey) {
-        console.error("Invalid authorization - not service role or anon key");
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
+    
+    // Allow service role key, anon key, or any valid JWT (for testing)
+    if (token === supabaseServiceKey) {
+      console.log("Authorized via service role key");
+    } else if (token === anonKey) {
+      console.log("Authorized via anon key (cron job)");
+    } else {
+      // Try to validate as a user JWT for manual testing
+      const testClient = createClient(supabaseUrl, supabaseServiceKey);
+      const { data: { user }, error: authError } = await testClient.auth.getUser(token);
+      if (authError || !user) {
+        console.error("Invalid authorization token");
         return new Response(
           JSON.stringify({ error: "Unauthorized" }),
           { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
         );
       }
-      console.log("Authorized via anon key (cron job)");
-    } else {
-      console.log("Authorized via service role key");
+      console.log("Authorized via user JWT for testing");
     }
     
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
