@@ -130,7 +130,8 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     const productionDomain = "https://connectlawn.com";
-    const resetLink = `${productionDomain}/reset-password?token_hash=${encodeURIComponent(tokenHash)}&type=${encodeURIComponent(linkType)}`;
+    // Don't URL-encode the token - use it directly to avoid double-encoding issues in email clients
+    const resetLink = `${productionDomain}/reset-password?token_hash=${tokenHash}&type=${linkType}`;
 
     console.log("Sending password reset email to:", email);
     console.log("Reset link constructed:", resetLink);
@@ -181,9 +182,17 @@ const handler = async (req: Request): Promise<Response> => {
                   <!-- CTA Button -->
                   <tr>
                     <td align="center" style="padding: 0 40px 30px 40px;">
-                      <a href="${resetLink}" target="_blank" style="display: inline-block; padding: 14px 32px; background-color: #16a34a; color: #ffffff; text-decoration: none; font-size: 16px; font-weight: 600; border-radius: 8px;">
+                      <!--[if mso]>
+                      <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="${productionDomain}/reset-password?token_hash=${tokenHash}&type=${linkType}" style="height:48px;v-text-anchor:middle;width:200px;" arcsize="17%" stroke="f" fillcolor="#16a34a">
+                        <w:anchorlock/>
+                        <center style="color:#ffffff;font-family:sans-serif;font-size:16px;font-weight:600;">Reset Password</center>
+                      </v:roundrect>
+                      <![endif]-->
+                      <!--[if !mso]><!-->
+                      <a href="${productionDomain}/reset-password?token_hash=${tokenHash}&type=${linkType}" target="_blank" style="display: inline-block; padding: 14px 32px; background-color: #16a34a; color: #ffffff; text-decoration: none; font-size: 16px; font-weight: 600; border-radius: 8px; mso-hide: all;">
                         Reset Password
                       </a>
+                      <!--<![endif]-->
                     </td>
                   </tr>
                   
