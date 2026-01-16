@@ -22,45 +22,68 @@ export default function ResetPassword() {
     const handleTokenExchange = async () => {
       setCheckingSession(true);
       
-      // Check URL hash for tokens (Supabase puts them there after redirect)
+      // Check URL hash for tokens (some flows put them there after redirect)
       const hashParams = new URLSearchParams(window.location.hash.substring(1));
       const accessToken = hashParams.get('access_token');
       const refreshToken = hashParams.get('refresh_token');
-      const type = hashParams.get('type');
-      
-      // Also check query params (some flows use these)
+      const hashType = hashParams.get('type');
+
+      // Check query params (our branded email link uses token_hash)
       const queryParams = new URLSearchParams(window.location.search);
+      const tokenHash = queryParams.get('token_hash') || queryParams.get('token');
+      const queryType = queryParams.get('type');
       const errorDescription = queryParams.get('error_description');
       const error = queryParams.get('error');
-      
+
       if (error || errorDescription) {
         console.error('Auth error:', error, errorDescription);
         toast.error(errorDescription || 'Invalid or expired reset link');
         navigate('/auth');
         return;
       }
-      
-      // If we have tokens in the URL, set the session
-      if (accessToken && refreshToken && type === 'recovery') {
+
+      // If we have token_hash in query, verify it to establish a session
+      if (tokenHash && (queryType === 'recovery' || !queryType)) {
+        const { error: verifyError } = await supabase.auth.verifyOtp({
+          type: 'recovery',
+          token_hash: tokenHash,
+        });
+
+        if (verifyError) {
+          console.error('Verify OTP error:', verifyError);
+          toast.error('Invalid or expired reset link');
+          navigate('/auth');
+          return;
+        }
+
+        // Clear query params for security
+        window.history.replaceState(null, '', window.location.pathname);
+        setSessionValid(true);
+        setCheckingSession(false);
+        return;
+      }
+
+      // If we have tokens in the URL hash, set the session directly
+      if (accessToken && refreshToken && hashType === 'recovery') {
         const { error: sessionError } = await supabase.auth.setSession({
           access_token: accessToken,
           refresh_token: refreshToken,
         });
-        
+
         if (sessionError) {
           console.error('Session error:', sessionError);
           toast.error('Invalid or expired reset link');
           navigate('/auth');
           return;
         }
-        
+
         // Clear the hash from URL for security
         window.history.replaceState(null, '', window.location.pathname);
         setSessionValid(true);
         setCheckingSession(false);
         return;
       }
-      
+
       // Check for existing session
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
@@ -68,7 +91,7 @@ export default function ResetPassword() {
         setCheckingSession(false);
         return;
       }
-      
+
       // No valid session or tokens found
       toast.error('Invalid or expired reset link');
       navigate('/auth');
