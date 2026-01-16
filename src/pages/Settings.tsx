@@ -330,10 +330,10 @@ export default function Settings() {
         </div>
 
         <Tabs defaultValue={defaultTab} onValueChange={(value) => setSearchParams({ tab: value })}>
-          <TabsList className="grid w-full grid-cols-3 mb-6">
+          <TabsList className={`grid w-full ${isProvider ? 'grid-cols-2' : 'grid-cols-3'} mb-6`}>
             <TabsTrigger value="profile">Profile</TabsTrigger>
             <TabsTrigger value="about">About</TabsTrigger>
-            <TabsTrigger value="refunds">Refunds</TabsTrigger>
+            {!isProvider && <TabsTrigger value="refunds">Refunds</TabsTrigger>}
           </TabsList>
 
           {/* Profile Tab */}
@@ -641,7 +641,8 @@ export default function Settings() {
             </div>
           </TabsContent>
 
-          {/* Refunds Tab */}
+          {/* Refunds Tab - Only for customers */}
+          {!isProvider && (
           <TabsContent value="refunds" className="space-y-6">
             <Card>
               <CardHeader>
@@ -801,6 +802,7 @@ export default function Settings() {
               </div>
             </div>
           </TabsContent>
+          )}
         </Tabs>
       </main>
     </>
