@@ -469,29 +469,27 @@ function ForgotPasswordDialog({
 
     setLoading(true);
     
-    // First, generate the reset link using Supabase
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/reset-password`,
-    });
-
-    if (error) {
-      setLoading(false);
-      toast.error(error.message);
-      return;
-    }
-
-    // Send custom branded email via our edge function
+    // Use our custom edge function which generates the link AND sends branded email
+    // This bypasses Supabase's default email completely
     try {
-      const resetLink = `${window.location.origin}/reset-password`;
       const { error: emailError } = await supabase.functions.invoke('send-password-reset', {
-        body: { email, resetLink }
+        body: { 
+          email, 
+          redirectTo: `${window.location.origin}/reset-password` 
+        }
       });
 
       if (emailError) {
-        console.error('Custom email failed, using default:', emailError);
+        console.error('Password reset email failed:', emailError);
+        toast.error('Failed to send reset email. Please try again.');
+        setLoading(false);
+        return;
       }
     } catch (emailErr) {
-      console.error('Custom email error:', emailErr);
+      console.error('Password reset error:', emailErr);
+      toast.error('Failed to send reset email. Please try again.');
+      setLoading(false);
+      return;
     }
 
     setLoading(false);

@@ -12,7 +12,7 @@ const corsHeaders = {
 
 interface PasswordResetRequest {
   email: string;
-  resetLink: string;
+  redirectTo: string;
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -22,11 +22,11 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { email, resetLink }: PasswordResetRequest = await req.json();
+    const { email, redirectTo }: PasswordResetRequest = await req.json();
 
-    if (!email || !resetLink) {
+    if (!email) {
       return new Response(
-        JSON.stringify({ error: "Email and resetLink are required" }),
+        JSON.stringify({ error: "Email is required" }),
         {
           status: 400,
           headers: { "Content-Type": "application/json", ...corsHeaders },
@@ -47,18 +47,18 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Validate resetLink is from our domain
-    const allowedDomains = ['connectlawn.com', 'lawnconnect.jm', 'localhost', 'lovableproject.com'];
-    let linkUrl: URL;
+    // Validate redirectTo is from our domain
+    const allowedDomains = ['connectlawn.com', 'lawnconnect.jm', 'localhost', 'lovableproject.com', 'lovable.app'];
+    let redirectUrl: URL;
     try {
-      linkUrl = new URL(resetLink);
+      redirectUrl = new URL(redirectTo);
       const isAllowedDomain = allowedDomains.some(domain => 
-        linkUrl.hostname === domain || linkUrl.hostname.endsWith(`.${domain}`)
+        redirectUrl.hostname === domain || redirectUrl.hostname.endsWith(`.${domain}`)
       );
       if (!isAllowedDomain) {
-        console.error("Reset link from unauthorized domain:", linkUrl.hostname);
+        console.error("Redirect URL from unauthorized domain:", redirectUrl.hostname);
         return new Response(
-          JSON.stringify({ error: "Invalid reset link domain" }),
+          JSON.stringify({ error: "Invalid redirect domain" }),
           {
             status: 400,
             headers: { "Content-Type": "application/json", ...corsHeaders },
@@ -66,9 +66,9 @@ const handler = async (req: Request): Promise<Response> => {
         );
       }
     } catch {
-      console.error("Invalid reset link URL:", resetLink);
+      console.error("Invalid redirect URL:", redirectTo);
       return new Response(
-        JSON.stringify({ error: "Invalid reset link format" }),
+        JSON.stringify({ error: "Invalid redirect URL format" }),
         {
           status: 400,
           headers: { "Content-Type": "application/json", ...corsHeaders },
@@ -76,30 +76,39 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Verify the email exists in our system using service role
+    // Use service role to generate the reset link without sending default email
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Check if user exists (using admin API)
-    const { data: users, error: lookupError } = await supabase.auth.admin.listUsers({
-      perPage: 1,
-      page: 1,
+    // Generate the password reset link using admin API (doesn't send email)
+    const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
+      type: 'recovery',
+      email: email,
+      options: {
+        redirectTo: redirectTo,
+      }
     });
 
-    // Search for the user by email
-    const { data: userData } = await supabase.auth.admin.listUsers();
-    const userExists = userData?.users?.some(u => u.email?.toLowerCase() === email.toLowerCase());
-
-    if (!userExists) {
-      // Don't reveal whether email exists - return success anyway for security
-      console.log("Password reset requested for non-existent email (not revealing to client)");
+    if (linkError) {
+      // Don't reveal if email exists or not for security
+      console.log("Link generation failed (could be non-existent email):", linkError.message);
+      // Return success anyway to not reveal email existence
       return new Response(JSON.stringify({ success: true }), {
         status: 200,
         headers: { "Content-Type": "application/json", ...corsHeaders },
       });
     }
 
+    if (!linkData?.properties?.action_link) {
+      console.error("No action link generated");
+      return new Response(JSON.stringify({ success: true }), {
+        status: 200,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
+
+    const resetLink = linkData.properties.action_link;
     console.log("Sending password reset email to:", email);
 
     const emailResponse = await resend.emails.send({
@@ -186,6 +195,9 @@ const handler = async (req: Request): Promise<Response> => {
                       </p>
                       <p style="margin: 16px 0 0 0; font-size: 11px; color: #a1a1aa;">
                         © ${new Date().getFullYear()} LawnConnect. All rights reserved.
+                      </p>
+                      <p style="margin: 8px 0 0 0; font-size: 11px; color: #a1a1aa;">
+                        Questions? Contact us at <a href="mailto:officiallawnconnect@gmail.com" style="color: #16a34a;">officiallawnconnect@gmail.com</a>
                       </p>
                     </td>
                   </tr>
