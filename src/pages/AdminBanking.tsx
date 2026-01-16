@@ -8,7 +8,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { AlertTriangle, Landmark, CheckCircle, Clock, XCircle, Eye, Shield, FileText } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { AlertTriangle, Landmark, CheckCircle, Clock, XCircle, Eye, FileText, DollarSign } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/auth';
 import { toast } from 'sonner';
@@ -36,11 +37,21 @@ interface BankingDetails {
   provider_name?: string;
 }
 
+interface ProviderPayout {
+  provider_id: string;
+  provider_name: string;
+  pending_amount: number;
+  jobs_count: number;
+  banking: BankingDetails | null;
+}
+
 export default function AdminBanking() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [bankingRecords, setBankingRecords] = useState<BankingDetails[]>([]);
+  const [providerPayouts, setProviderPayouts] = useState<ProviderPayout[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingPayouts, setLoadingPayouts] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState<BankingDetails | null>(null);
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
@@ -74,6 +85,7 @@ export default function AdminBanking() {
 
     setIsAdmin(true);
     loadBankingRecords();
+    loadProviderPayouts();
   };
 
   const loadBankingRecords = async () => {
@@ -110,6 +122,92 @@ export default function AdminBanking() {
     }
   };
 
+  const loadProviderPayouts = async () => {
+    setLoadingPayouts(true);
+    try {
+      // Get all completed jobs that haven't been paid out yet (no payout record)
+      const { data: jobs, error: jobsError } = await supabase
+        .from('job_requests')
+        .select('id, accepted_provider_id, provider_payout, final_price, base_price, title')
+        .eq('status', 'completed')
+        .not('accepted_provider_id', 'is', null);
+
+      if (jobsError) throw jobsError;
+
+      // Get existing payout records to exclude already paid jobs
+      const { data: existingPayouts, error: payoutsError } = await supabase
+        .from('provider_payouts')
+        .select('job_ids');
+
+      if (payoutsError) throw payoutsError;
+
+      // Flatten all paid job IDs
+      const paidJobIds = new Set(
+        existingPayouts?.flatMap(p => p.job_ids || []) || []
+      );
+
+      // Filter to only unpaid jobs
+      const unpaidJobs = jobs?.filter(j => !paidJobIds.has(j.id)) || [];
+
+      // Group by provider
+      const providerMap = new Map<string, { amount: number; count: number }>();
+      unpaidJobs.forEach(job => {
+        if (!job.accepted_provider_id) return;
+        const payout = job.provider_payout || (job.final_price || job.base_price) * 0.7;
+        const current = providerMap.get(job.accepted_provider_id) || { amount: 0, count: 0 };
+        providerMap.set(job.accepted_provider_id, {
+          amount: current.amount + payout,
+          count: current.count + 1,
+        });
+      });
+
+      // Get provider details and banking info
+      const providerIds = Array.from(providerMap.keys());
+      
+      if (providerIds.length === 0) {
+        setProviderPayouts([]);
+        setLoadingPayouts(false);
+        return;
+      }
+
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, full_name, first_name, last_name')
+        .in('id', providerIds);
+
+      const { data: bankingData } = await supabase
+        .from('provider_banking_details')
+        .select('*')
+        .in('provider_id', providerIds);
+
+      const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
+      const bankingMap = new Map(bankingData?.map(b => [b.provider_id, b]) || []);
+
+      const payouts: ProviderPayout[] = providerIds.map(providerId => {
+        const profile = profileMap.get(providerId);
+        const banking = bankingMap.get(providerId);
+        const { amount, count } = providerMap.get(providerId)!;
+
+        return {
+          provider_id: providerId,
+          provider_name: profile?.full_name || `${profile?.first_name || ''} ${profile?.last_name || ''}`.trim() || 'Unknown',
+          pending_amount: amount,
+          jobs_count: count,
+          banking: banking as BankingDetails | null,
+        };
+      });
+
+      // Sort by pending amount descending
+      payouts.sort((a, b) => b.pending_amount - a.pending_amount);
+      setProviderPayouts(payouts);
+    } catch (error) {
+      console.error('Failed to load provider payouts:', error);
+      toast.error('Failed to load payout data');
+    } finally {
+      setLoadingPayouts(false);
+    }
+  };
+
   const handleViewDetails = (record: BankingDetails) => {
     setSelectedRecord(record);
     setAdminNotes(record.admin_notes || '');
@@ -133,7 +231,6 @@ export default function AdminBanking() {
 
       if (error) throw error;
 
-      // Log admin action
       await supabase.from('admin_audit_logs').insert({
         admin_id: user.id,
         action: 'approve_banking',
@@ -150,6 +247,7 @@ export default function AdminBanking() {
       setViewDialogOpen(false);
       setSelectedRecord(null);
       loadBankingRecords();
+      loadProviderPayouts();
     } catch (error) {
       toast.error('Failed to approve banking details');
     } finally {
@@ -177,7 +275,6 @@ export default function AdminBanking() {
 
       if (error) throw error;
 
-      // Log admin action
       await supabase.from('admin_audit_logs').insert({
         admin_id: user.id,
         action: 'reject_banking',
@@ -235,6 +332,9 @@ export default function AdminBanking() {
 
   const pendingRecords = bankingRecords.filter(r => r.status === 'pending');
   const reviewedRecords = bankingRecords.filter(r => r.status !== 'pending');
+  const verifiedRecords = bankingRecords.filter(r => r.status === 'verified');
+
+  const totalPendingPayout = providerPayouts.reduce((sum, p) => sum + p.pending_amount, 0);
 
   return (
     <div className="min-h-screen bg-background">
@@ -245,159 +345,275 @@ export default function AdminBanking() {
             <Landmark className="h-8 w-8 text-primary" />
             <div>
               <h1 className="text-3xl font-bold">Provider Banking</h1>
-              <p className="text-muted-foreground">Review and verify provider banking details</p>
+              <p className="text-muted-foreground">Manage provider banking verification and payouts</p>
             </div>
           </div>
         </div>
 
-        {/* Admin Navigation */}
-        <div className="flex gap-2 mb-6 flex-wrap">
-          <Button variant="outline" size="sm" onClick={() => navigate('/admin/disputes')}>
-            <AlertTriangle className="h-4 w-4 mr-1" /> Disputes
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => navigate('/admin/verifications')}>
-            <Shield className="h-4 w-4 mr-1" /> ID Verifications
-          </Button>
-          <Button variant="default" size="sm">
-            <Landmark className="h-4 w-4 mr-1" /> Banking
-          </Button>
-        </div>
+        <Tabs defaultValue="verification" className="space-y-6">
+          <TabsList className="grid w-full max-w-md grid-cols-2">
+            <TabsTrigger value="verification" className="gap-2">
+              <CheckCircle className="h-4 w-4" />
+              Verification
+            </TabsTrigger>
+            <TabsTrigger value="payments" className="gap-2">
+              <DollarSign className="h-4 w-4" />
+              Payments
+            </TabsTrigger>
+          </TabsList>
 
-        {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Clock className="h-5 w-5 text-warning" />
-                Pending Review
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-bold">{pendingRecords.length}</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <CheckCircle className="h-5 w-5 text-success" />
-                Verified
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-bold">{bankingRecords.filter(r => r.status === 'verified').length}</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <XCircle className="h-5 w-5 text-destructive" />
-                Rejected
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-bold">{bankingRecords.filter(r => r.status === 'rejected').length}</p>
-            </CardContent>
-          </Card>
-        </div>
+          {/* Verification Tab */}
+          <TabsContent value="verification" className="space-y-6">
+            {/* Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Clock className="h-5 w-5 text-warning" />
+                    Pending Review
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-3xl font-bold">{pendingRecords.length}</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <CheckCircle className="h-5 w-5 text-success" />
+                    Verified
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-3xl font-bold">{verifiedRecords.length}</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <XCircle className="h-5 w-5 text-destructive" />
+                    Rejected
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-3xl font-bold">{bankingRecords.filter(r => r.status === 'rejected').length}</p>
+                </CardContent>
+              </Card>
+            </div>
 
-        {/* Pending Records */}
-        <Card className="mb-8">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Clock className="h-5 w-5 text-warning" />
-              Pending Banking Verifications
-            </CardTitle>
-            <CardDescription>Banking details awaiting review</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {pendingRecords.length === 0 ? (
-              <Alert>
-                <CheckCircle className="h-4 w-4" />
-                <AlertDescription>No pending banking verifications. All caught up!</AlertDescription>
-              </Alert>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Submitted</TableHead>
-                    <TableHead>Provider</TableHead>
-                    <TableHead>Bank</TableHead>
-                    <TableHead>TRN</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {pendingRecords.map((record) => (
-                    <TableRow key={record.id}>
-                      <TableCell className="text-sm">
-                        {format(new Date(record.created_at), 'MMM dd, yyyy')}
-                      </TableCell>
-                      <TableCell className="font-medium">{record.provider_name}</TableCell>
-                      <TableCell>{getBankName(record.bank_name)}</TableCell>
-                      <TableCell>{record.trn}</TableCell>
-                      <TableCell>{getStatusBadge(record.status)}</TableCell>
-                      <TableCell>
-                        <Button size="sm" onClick={() => handleViewDetails(record)}>
-                          <Eye className="h-4 w-4 mr-1" /> Review
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </CardContent>
-        </Card>
+            {/* Pending Records */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Clock className="h-5 w-5 text-warning" />
+                  Pending Banking Verifications
+                </CardTitle>
+                <CardDescription>Banking details awaiting review</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {pendingRecords.length === 0 ? (
+                  <Alert>
+                    <CheckCircle className="h-4 w-4" />
+                    <AlertDescription>No pending banking verifications. All caught up!</AlertDescription>
+                  </Alert>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Submitted</TableHead>
+                        <TableHead>Provider</TableHead>
+                        <TableHead>Bank</TableHead>
+                        <TableHead>TRN</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {pendingRecords.map((record) => (
+                        <TableRow key={record.id}>
+                          <TableCell className="text-sm">
+                            {format(new Date(record.created_at), 'MMM dd, yyyy')}
+                          </TableCell>
+                          <TableCell className="font-medium">{record.provider_name}</TableCell>
+                          <TableCell>{getBankName(record.bank_name)}</TableCell>
+                          <TableCell>{record.trn}</TableCell>
+                          <TableCell>{getStatusBadge(record.status)}</TableCell>
+                          <TableCell>
+                            <Button size="sm" onClick={() => handleViewDetails(record)}>
+                              <Eye className="h-4 w-4 mr-1" /> Review
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
+              </CardContent>
+            </Card>
 
-        {/* Reviewed Records */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <FileText className="h-5 w-5" />
-              Reviewed Banking Details
-            </CardTitle>
-            <CardDescription>Previously reviewed submissions</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {reviewedRecords.length === 0 ? (
-              <p className="text-muted-foreground text-center py-4">No reviewed banking details yet</p>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Submitted</TableHead>
-                    <TableHead>Reviewed</TableHead>
-                    <TableHead>Provider</TableHead>
-                    <TableHead>Bank</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {reviewedRecords.map((record) => (
-                    <TableRow key={record.id}>
-                      <TableCell className="text-sm">
-                        {format(new Date(record.created_at), 'MMM dd, yyyy')}
-                      </TableCell>
-                      <TableCell className="text-sm">
-                        {record.reviewed_at && format(new Date(record.reviewed_at), 'MMM dd, yyyy')}
-                      </TableCell>
-                      <TableCell className="font-medium">{record.provider_name}</TableCell>
-                      <TableCell>{getBankName(record.bank_name)}</TableCell>
-                      <TableCell>{getStatusBadge(record.status)}</TableCell>
-                      <TableCell>
-                        <Button size="sm" variant="outline" onClick={() => handleViewDetails(record)}>
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </CardContent>
-        </Card>
+            {/* Reviewed Records */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="h-5 w-5" />
+                  Reviewed Banking Details
+                </CardTitle>
+                <CardDescription>Previously reviewed submissions</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {reviewedRecords.length === 0 ? (
+                  <p className="text-muted-foreground text-center py-4">No reviewed banking details yet</p>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Submitted</TableHead>
+                        <TableHead>Reviewed</TableHead>
+                        <TableHead>Provider</TableHead>
+                        <TableHead>Bank</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {reviewedRecords.map((record) => (
+                        <TableRow key={record.id}>
+                          <TableCell className="text-sm">
+                            {format(new Date(record.created_at), 'MMM dd, yyyy')}
+                          </TableCell>
+                          <TableCell className="text-sm">
+                            {record.reviewed_at && format(new Date(record.reviewed_at), 'MMM dd, yyyy')}
+                          </TableCell>
+                          <TableCell className="font-medium">{record.provider_name}</TableCell>
+                          <TableCell>{getBankName(record.bank_name)}</TableCell>
+                          <TableCell>{getStatusBadge(record.status)}</TableCell>
+                          <TableCell>
+                            <Button size="sm" variant="outline" onClick={() => handleViewDetails(record)}>
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Payments Tab */}
+          <TabsContent value="payments" className="space-y-6">
+            {/* Summary Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <DollarSign className="h-5 w-5 text-primary" />
+                    Total Pending Payouts
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-3xl font-bold text-primary">J${totalPendingPayout.toLocaleString()}</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <CheckCircle className="h-5 w-5 text-success" />
+                    Providers with Banking
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-3xl font-bold">{providerPayouts.filter(p => p.banking?.status === 'verified').length}</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <AlertTriangle className="h-5 w-5 text-warning" />
+                    Missing Banking Info
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-3xl font-bold">{providerPayouts.filter(p => !p.banking || p.banking.status !== 'verified').length}</p>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Provider Payouts List */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <DollarSign className="h-5 w-5" />
+                  Provider Pending Payouts
+                </CardTitle>
+                <CardDescription>Providers with pending payments from completed jobs</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {loadingPayouts ? (
+                  <div className="flex justify-center py-8">
+                    <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+                  </div>
+                ) : providerPayouts.length === 0 ? (
+                  <Alert>
+                    <CheckCircle className="h-4 w-4" />
+                    <AlertDescription>No pending payouts at this time.</AlertDescription>
+                  </Alert>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Provider</TableHead>
+                        <TableHead>Jobs</TableHead>
+                        <TableHead>Amount Due</TableHead>
+                        <TableHead>Bank</TableHead>
+                        <TableHead>Account</TableHead>
+                        <TableHead>Status</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {providerPayouts.map((payout) => (
+                        <TableRow key={payout.provider_id}>
+                          <TableCell className="font-medium">{payout.provider_name}</TableCell>
+                          <TableCell>{payout.jobs_count}</TableCell>
+                          <TableCell className="font-bold text-primary">
+                            J${payout.pending_amount.toLocaleString()}
+                          </TableCell>
+                          <TableCell>
+                            {payout.banking ? getBankName(payout.banking.bank_name) : (
+                              <span className="text-muted-foreground">—</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="font-mono text-sm">
+                            {payout.banking ? (
+                              <>
+                                ****{payout.banking.account_number.slice(-4)}
+                                <span className="text-muted-foreground ml-2 capitalize">
+                                  ({payout.banking.account_type})
+                                </span>
+                              </>
+                            ) : (
+                              <span className="text-muted-foreground">—</span>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            {payout.banking ? (
+                              getStatusBadge(payout.banking.status)
+                            ) : (
+                              <Badge variant="outline" className="gap-1">
+                                <XCircle className="h-3 w-3" /> No Banking
+                              </Badge>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
 
       {/* View Details Dialog */}

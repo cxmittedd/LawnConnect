@@ -381,17 +381,6 @@ export default function AdminDisputes() {
           </div>
         </div>
 
-        <div className="flex gap-2 mb-6 flex-wrap">
-          <Button variant="default" size="sm">
-            <AlertTriangle className="h-4 w-4 mr-1" /> Disputes
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => navigate('/admin/verifications')}>
-            <Shield className="h-4 w-4 mr-1" /> ID Verifications
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => navigate('/admin/banking')}>
-            <Landmark className="h-4 w-4 mr-1" /> Banking
-          </Button>
-        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
           <Card>
