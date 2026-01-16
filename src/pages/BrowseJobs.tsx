@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/integrations/supabase/client';
-import { MapPin, Calendar, DollarSign, Scissors, Shield, Clock, AlertTriangle, Wrench, Filter, Landmark } from 'lucide-react';
+import { MapPin, Calendar, DollarSign, Scissors, Shield, Clock, AlertTriangle, Wrench, Filter, Landmark, Camera } from 'lucide-react';
 import { toast } from 'sonner';
 import { safeToast } from '@/lib/errorHandler';
 import { format } from 'date-fns';
@@ -447,6 +447,14 @@ export default function BrowseJobs() {
                     </AlertDescription>
                   </Alert>
                 )}
+                
+                <Alert className="mt-4 border-primary/30 bg-primary/5">
+                  <Camera className="h-4 w-4 text-primary" />
+                  <AlertDescription>
+                    <strong>Photo Requirement:</strong> You must take <strong>before</strong> and <strong>after</strong> photos of the property. 
+                    These photos are required to mark the job as complete and receive payment.
+                  </AlertDescription>
+                </Alert>
               </div>
             )}
             <DialogFooter>
