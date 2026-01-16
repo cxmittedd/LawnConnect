@@ -24,12 +24,13 @@ export function usePendingReviews() {
     }
 
     try {
-      // Get completed jobs where user is involved
+      // Only customers need to leave reviews - providers are excluded
+      // Get completed jobs where user is the CUSTOMER only
       const { data: jobs, error: jobsError } = await supabase
         .from('job_requests')
         .select('id, title, customer_id, accepted_provider_id, completed_at')
         .eq('status', 'completed')
-        .or(`customer_id.eq.${user.id},accepted_provider_id.eq.${user.id}`);
+        .eq('customer_id', user.id);
 
       if (jobsError) throw jobsError;
 
@@ -58,30 +59,26 @@ export function usePendingReviews() {
         return;
       }
 
-      // Get other party profiles
-      const otherPartyIds = jobsNeedingReview.map(job => 
-        job.customer_id === user.id ? job.accepted_provider_id : job.customer_id
-      ).filter(Boolean) as string[];
+      // Get provider profiles (user is always customer in this query)
+      const providerIds = jobsNeedingReview
+        .map(job => job.accepted_provider_id)
+        .filter(Boolean) as string[];
 
       const { data: profiles } = await supabase
         .from('profiles')
-        .select('id, full_name')
-        .in('id', otherPartyIds);
+        .select('id, full_name, first_name')
+        .in('id', providerIds);
 
-      const profileMap = new Map(profiles?.map(p => [p.id, p.full_name]) || []);
+      const profileMap = new Map(profiles?.map(p => [p.id, p.full_name || p.first_name || 'Provider']) || []);
 
-      const pending: PendingReview[] = jobsNeedingReview.map(job => {
-        const isCustomer = job.customer_id === user.id;
-        const otherPartyId = isCustomer ? job.accepted_provider_id! : job.customer_id;
-        return {
-          jobId: job.id,
-          jobTitle: job.title,
-          otherPartyId,
-          otherPartyName: profileMap.get(otherPartyId) || (isCustomer ? 'Provider' : 'Customer'),
-          completedAt: job.completed_at!,
-          isCustomer,
-        };
-      });
+      const pending: PendingReview[] = jobsNeedingReview.map(job => ({
+        jobId: job.id,
+        jobTitle: job.title,
+        otherPartyId: job.accepted_provider_id!,
+        otherPartyName: profileMap.get(job.accepted_provider_id!) || 'Provider',
+        completedAt: job.completed_at!,
+        isCustomer: true, // User is always customer now
+      }));
 
       setPendingReviews(pending);
     } catch (error) {
