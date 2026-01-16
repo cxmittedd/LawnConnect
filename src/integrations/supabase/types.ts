@@ -44,69 +44,6 @@ export type Database = {
         }
         Relationships: []
       }
-      autopay_settings: {
-        Row: {
-          additional_requirements: string | null
-          card_last_four: string | null
-          card_name: string | null
-          created_at: string
-          customer_id: string
-          enabled: boolean
-          frequency: string
-          id: string
-          job_type: string | null
-          lawn_size: string | null
-          location: string | null
-          location_name: string | null
-          next_scheduled_date: string | null
-          next_scheduled_date_2: string | null
-          parish: string | null
-          recurring_day: number
-          recurring_day_2: number | null
-          updated_at: string
-        }
-        Insert: {
-          additional_requirements?: string | null
-          card_last_four?: string | null
-          card_name?: string | null
-          created_at?: string
-          customer_id: string
-          enabled?: boolean
-          frequency?: string
-          id?: string
-          job_type?: string | null
-          lawn_size?: string | null
-          location?: string | null
-          location_name?: string | null
-          next_scheduled_date?: string | null
-          next_scheduled_date_2?: string | null
-          parish?: string | null
-          recurring_day: number
-          recurring_day_2?: number | null
-          updated_at?: string
-        }
-        Update: {
-          additional_requirements?: string | null
-          card_last_four?: string | null
-          card_name?: string | null
-          created_at?: string
-          customer_id?: string
-          enabled?: boolean
-          frequency?: string
-          id?: string
-          job_type?: string | null
-          lawn_size?: string | null
-          location?: string | null
-          location_name?: string | null
-          next_scheduled_date?: string | null
-          next_scheduled_date_2?: string | null
-          parish?: string | null
-          recurring_day?: number
-          recurring_day_2?: number | null
-          updated_at?: string
-        }
-        Relationships: []
-      }
       customer_preferences: {
         Row: {
           additional_requirements: string | null
