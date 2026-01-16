@@ -14,17 +14,67 @@ export default function ResetPassword() {
   const [loading, setLoading] = useState(false);
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [sessionValid, setSessionValid] = useState(false);
+  const [checkingSession, setCheckingSession] = useState(true);
 
-  // Check for valid session on mount
+  // Handle token exchange and session validation on mount
   useEffect(() => {
-    const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        toast.error('Invalid or expired reset link');
+    const handleTokenExchange = async () => {
+      setCheckingSession(true);
+      
+      // Check URL hash for tokens (Supabase puts them there after redirect)
+      const hashParams = new URLSearchParams(window.location.hash.substring(1));
+      const accessToken = hashParams.get('access_token');
+      const refreshToken = hashParams.get('refresh_token');
+      const type = hashParams.get('type');
+      
+      // Also check query params (some flows use these)
+      const queryParams = new URLSearchParams(window.location.search);
+      const errorDescription = queryParams.get('error_description');
+      const error = queryParams.get('error');
+      
+      if (error || errorDescription) {
+        console.error('Auth error:', error, errorDescription);
+        toast.error(errorDescription || 'Invalid or expired reset link');
         navigate('/auth');
+        return;
       }
+      
+      // If we have tokens in the URL, set the session
+      if (accessToken && refreshToken && type === 'recovery') {
+        const { error: sessionError } = await supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken,
+        });
+        
+        if (sessionError) {
+          console.error('Session error:', sessionError);
+          toast.error('Invalid or expired reset link');
+          navigate('/auth');
+          return;
+        }
+        
+        // Clear the hash from URL for security
+        window.history.replaceState(null, '', window.location.pathname);
+        setSessionValid(true);
+        setCheckingSession(false);
+        return;
+      }
+      
+      // Check for existing session
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        setSessionValid(true);
+        setCheckingSession(false);
+        return;
+      }
+      
+      // No valid session or tokens found
+      toast.error('Invalid or expired reset link');
+      navigate('/auth');
     };
-    checkSession();
+    
+    handleTokenExchange();
   }, [navigate]);
 
   const checks = useMemo(() => ({
@@ -81,6 +131,27 @@ export default function ResetPassword() {
       <span className={passed ? 'text-green-600' : 'text-muted-foreground'}>{label}</span>
     </div>
   );
+
+  // Show loading while checking session
+  if (checkingSession) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-primary/5 p-4">
+        <Card className="w-full max-w-md shadow-xl">
+          <CardHeader className="text-center space-y-4">
+            <img src={lawnConnectLogo} alt="LawnConnect" className="mx-auto h-40 w-40 object-contain" />
+            <div>
+              <CardTitle className="text-2xl">Verifying...</CardTitle>
+              <CardDescription>Please wait while we verify your reset link</CardDescription>
+            </div>
+          </CardHeader>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!sessionValid) {
+    return null; // Will redirect to /auth
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-primary/5 p-4">
