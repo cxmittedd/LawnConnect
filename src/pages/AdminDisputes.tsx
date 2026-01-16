@@ -9,7 +9,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Shield, AlertTriangle, CheckCircle, Clock, Eye, Image, MessageSquare, User, DollarSign } from 'lucide-react';
+import { Shield, AlertTriangle, CheckCircle, Clock, Eye, Image, MessageSquare, User, DollarSign, Landmark } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/auth';
 import { toast } from 'sonner';
@@ -381,12 +381,15 @@ export default function AdminDisputes() {
           </div>
         </div>
 
-        <div className="flex gap-2 mb-6">
+        <div className="flex gap-2 mb-6 flex-wrap">
           <Button variant="default" size="sm">
             <AlertTriangle className="h-4 w-4 mr-1" /> Disputes
           </Button>
           <Button variant="outline" size="sm" onClick={() => navigate('/admin/verifications')}>
             <Shield className="h-4 w-4 mr-1" /> ID Verifications
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => navigate('/admin/banking')}>
+            <Landmark className="h-4 w-4 mr-1" /> Banking
           </Button>
         </div>
 
