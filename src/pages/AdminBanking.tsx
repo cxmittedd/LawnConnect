@@ -9,11 +9,11 @@ import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { AlertTriangle, Landmark, CheckCircle, Clock, XCircle, Eye, FileText, DollarSign } from 'lucide-react';
+import { AlertTriangle, Landmark, CheckCircle, Clock, XCircle, Eye, FileText, DollarSign, Calendar, Copy, ChevronRight } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/auth';
 import { toast } from 'sonner';
-import { format } from 'date-fns';
+import { format, nextSaturday, addWeeks, isAfter, isBefore, startOfDay } from 'date-fns';
 import { Navigation } from '@/components/Navigation';
 
 type BankingStatus = 'pending' | 'verified' | 'rejected';
@@ -54,7 +54,9 @@ export default function AdminBanking() {
   const [loadingPayouts, setLoadingPayouts] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState<BankingDetails | null>(null);
+  const [selectedPayout, setSelectedPayout] = useState<ProviderPayout | null>(null);
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
+  const [payoutDialogOpen, setPayoutDialogOpen] = useState(false);
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
   const [adminNotes, setAdminNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -315,6 +317,39 @@ export default function AdminBanking() {
     return bank === 'scotiabank_jamaica' ? 'Scotiabank Jamaica' : 'NCB Jamaica';
   };
 
+  const copyToClipboard = (text: string, label: string) => {
+    navigator.clipboard.writeText(text);
+    toast.success(`${label} copied to clipboard`);
+  };
+
+  // Calculate next payout dates (biweekly on Saturdays)
+  const getPayoutDates = () => {
+    const today = startOfDay(new Date());
+    let nextPayout = nextSaturday(today);
+    
+    // Biweekly logic - check if this Saturday is a payout week
+    // Using a reference date to determine payout weeks
+    const referenceDate = new Date('2024-01-06'); // A known payout Saturday
+    const weeksSinceReference = Math.floor((nextPayout.getTime() - referenceDate.getTime()) / (7 * 24 * 60 * 60 * 1000));
+    
+    if (weeksSinceReference % 2 !== 0) {
+      nextPayout = addWeeks(nextPayout, 1);
+    }
+    
+    return {
+      nextPayout,
+      followingPayout: addWeeks(nextPayout, 2),
+      thirdPayout: addWeeks(nextPayout, 4),
+    };
+  };
+
+  const payoutDates = getPayoutDates();
+
+  const handleViewPayout = (payout: ProviderPayout) => {
+    setSelectedPayout(payout);
+    setPayoutDialogOpen(true);
+  };
+
   if (authLoading || loading) {
     return (
       <div className="min-h-screen bg-background">
@@ -503,6 +538,33 @@ export default function AdminBanking() {
 
           {/* Payments Tab */}
           <TabsContent value="payments" className="space-y-6">
+            {/* Payout Timeline */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Calendar className="h-5 w-5 text-primary" />
+                  Payout Schedule
+                </CardTitle>
+                <CardDescription>Biweekly payouts processed every other Saturday</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-wrap gap-4">
+                  <div className="flex-1 min-w-[200px] p-4 bg-primary/10 border border-primary/20 rounded-lg">
+                    <p className="text-sm text-muted-foreground">Next Payout</p>
+                    <p className="text-xl font-bold text-primary">{format(payoutDates.nextPayout, 'EEEE, MMMM d, yyyy')}</p>
+                  </div>
+                  <div className="flex-1 min-w-[200px] p-4 bg-muted rounded-lg">
+                    <p className="text-sm text-muted-foreground">Following Payout</p>
+                    <p className="text-lg font-semibold">{format(payoutDates.followingPayout, 'MMMM d, yyyy')}</p>
+                  </div>
+                  <div className="flex-1 min-w-[200px] p-4 bg-muted rounded-lg">
+                    <p className="text-sm text-muted-foreground">Third Payout</p>
+                    <p className="text-lg font-semibold">{format(payoutDates.thirdPayout, 'MMMM d, yyyy')}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
             {/* Summary Stats */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <Card>
@@ -547,7 +609,7 @@ export default function AdminBanking() {
                   <DollarSign className="h-5 w-5" />
                   Provider Pending Payouts
                 </CardTitle>
-                <CardDescription>Providers with pending payments from completed jobs</CardDescription>
+                <CardDescription>Click a provider to see full banking details for payment</CardDescription>
               </CardHeader>
               <CardContent>
                 {loadingPayouts ? (
@@ -560,55 +622,33 @@ export default function AdminBanking() {
                     <AlertDescription>No pending payouts at this time.</AlertDescription>
                   </Alert>
                 ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Provider</TableHead>
-                        <TableHead>Jobs</TableHead>
-                        <TableHead>Amount Due</TableHead>
-                        <TableHead>Bank</TableHead>
-                        <TableHead>Account</TableHead>
-                        <TableHead>Status</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {providerPayouts.map((payout) => (
-                        <TableRow key={payout.provider_id}>
-                          <TableCell className="font-medium">{payout.provider_name}</TableCell>
-                          <TableCell>{payout.jobs_count}</TableCell>
-                          <TableCell className="font-bold text-primary">
-                            J${payout.pending_amount.toLocaleString()}
-                          </TableCell>
-                          <TableCell>
-                            {payout.banking ? getBankName(payout.banking.bank_name) : (
-                              <span className="text-muted-foreground">—</span>
-                            )}
-                          </TableCell>
-                          <TableCell className="font-mono text-sm">
-                            {payout.banking ? (
-                              <>
-                                ****{payout.banking.account_number.slice(-4)}
-                                <span className="text-muted-foreground ml-2 capitalize">
-                                  ({payout.banking.account_type})
-                                </span>
-                              </>
+                  <div className="space-y-2">
+                    {providerPayouts.map((payout) => (
+                      <div
+                        key={payout.provider_id}
+                        onClick={() => handleViewPayout(payout)}
+                        className="flex items-center justify-between p-4 rounded-lg border hover:bg-muted/50 cursor-pointer transition-colors"
+                      >
+                        <div className="flex-1">
+                          <p className="font-semibold">{payout.provider_name}</p>
+                          <p className="text-sm text-muted-foreground">{payout.jobs_count} job{payout.jobs_count !== 1 ? 's' : ''} completed</p>
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <div className="text-right">
+                            <p className="font-bold text-lg text-primary">J${payout.pending_amount.toLocaleString()}</p>
+                            {payout.banking?.status === 'verified' ? (
+                              <p className="text-sm text-muted-foreground">{getBankName(payout.banking.bank_name)}</p>
                             ) : (
-                              <span className="text-muted-foreground">—</span>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            {payout.banking ? (
-                              getStatusBadge(payout.banking.status)
-                            ) : (
-                              <Badge variant="outline" className="gap-1">
-                                <XCircle className="h-3 w-3" /> No Banking
+                              <Badge variant="outline" className="text-warning gap-1">
+                                <AlertTriangle className="h-3 w-3" /> No verified banking
                               </Badge>
                             )}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                          </div>
+                          <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 )}
               </CardContent>
             </Card>
@@ -740,6 +780,145 @@ export default function AdminBanking() {
               disabled={!adminNotes.trim() || submitting}
             >
               Confirm Rejection
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Payout Details Dialog */}
+      <Dialog open={payoutDialogOpen} onOpenChange={setPayoutDialogOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Payment Details</DialogTitle>
+            <DialogDescription>
+              Full banking information for {selectedPayout?.provider_name}
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedPayout && (
+            <div className="space-y-6">
+              {/* Amount Due */}
+              <div className="p-4 bg-primary/10 border border-primary/20 rounded-lg text-center">
+                <p className="text-sm text-muted-foreground">Amount to Pay</p>
+                <p className="text-3xl font-bold text-primary">J${selectedPayout.pending_amount.toLocaleString()}</p>
+                <p className="text-sm text-muted-foreground mt-1">{selectedPayout.jobs_count} completed job{selectedPayout.jobs_count !== 1 ? 's' : ''}</p>
+              </div>
+
+              {selectedPayout.banking?.status === 'verified' ? (
+                <div className="space-y-3">
+                  {/* Beneficiary Name */}
+                  <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                    <div>
+                      <p className="text-xs text-muted-foreground">Beneficiary Name</p>
+                      <p className="font-semibold">{selectedPayout.banking.full_legal_name}</p>
+                    </div>
+                    <Button 
+                      size="sm" 
+                      variant="ghost" 
+                      onClick={() => copyToClipboard(selectedPayout.banking!.full_legal_name, 'Beneficiary name')}
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                  </div>
+
+                  {/* Bank Name */}
+                  <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                    <div>
+                      <p className="text-xs text-muted-foreground">Bank</p>
+                      <p className="font-semibold">{getBankName(selectedPayout.banking.bank_name)}</p>
+                    </div>
+                    <Button 
+                      size="sm" 
+                      variant="ghost" 
+                      onClick={() => copyToClipboard(getBankName(selectedPayout.banking!.bank_name), 'Bank name')}
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                  </div>
+
+                  {/* Branch */}
+                  <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                    <div>
+                      <p className="text-xs text-muted-foreground">Branch</p>
+                      <p className="font-semibold">{selectedPayout.banking.branch_name}</p>
+                      {selectedPayout.banking.branch_number && (
+                        <p className="text-sm text-muted-foreground">#{selectedPayout.banking.branch_number}</p>
+                      )}
+                    </div>
+                    <Button 
+                      size="sm" 
+                      variant="ghost" 
+                      onClick={() => copyToClipboard(selectedPayout.banking!.branch_name, 'Branch name')}
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                  </div>
+
+                  {/* Account Number */}
+                  <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                    <div>
+                      <p className="text-xs text-muted-foreground">Account Number</p>
+                      <p className="font-mono text-lg font-bold tracking-wider">{selectedPayout.banking.account_number}</p>
+                    </div>
+                    <Button 
+                      size="sm" 
+                      variant="ghost" 
+                      onClick={() => copyToClipboard(selectedPayout.banking!.account_number, 'Account number')}
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                  </div>
+
+                  {/* Account Type */}
+                  <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                    <div>
+                      <p className="text-xs text-muted-foreground">Account Type</p>
+                      <p className="font-semibold capitalize">{selectedPayout.banking.account_type}</p>
+                    </div>
+                    <Button 
+                      size="sm" 
+                      variant="ghost" 
+                      onClick={() => copyToClipboard(selectedPayout.banking!.account_type, 'Account type')}
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                  </div>
+
+                  {/* TRN */}
+                  <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                    <div>
+                      <p className="text-xs text-muted-foreground">TRN</p>
+                      <p className="font-mono font-semibold">{selectedPayout.banking.trn}</p>
+                    </div>
+                    <Button 
+                      size="sm" 
+                      variant="ghost" 
+                      onClick={() => copyToClipboard(selectedPayout.banking!.trn, 'TRN')}
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                  </div>
+
+                  {/* Next Payout Date */}
+                  <div className="p-3 border border-dashed rounded-lg text-center">
+                    <p className="text-xs text-muted-foreground">Next Scheduled Payout</p>
+                    <p className="font-semibold text-primary">{format(payoutDates.nextPayout, 'EEEE, MMMM d, yyyy')}</p>
+                  </div>
+                </div>
+              ) : (
+                <Alert variant="destructive">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertDescription>
+                    This provider does not have verified banking details. They must submit and get their banking information verified before they can receive payouts.
+                  </AlertDescription>
+                </Alert>
+              )}
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPayoutDialogOpen(false)}>
+              Close
             </Button>
           </DialogFooter>
         </DialogContent>
