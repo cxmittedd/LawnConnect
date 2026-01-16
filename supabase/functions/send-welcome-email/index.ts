@@ -17,8 +17,8 @@ interface WelcomeEmailRequest {
 }
 
 const createWelcomeEmail = (data: WelcomeEmailRequest): string => {
-  const logoUrl = `${Deno.env.get("SUPABASE_URL")}/storage/v1/object/public/assets/lawnconnect-logo.png`;
-  const appUrl = "https://lawnconnect.jm";
+  const logoUrl = "https://connectlawn.com/pwa-512x512.png";
+  const appUrl = "https://connectlawn.com";
 
   const roleSpecificContent = data.userRole === 'provider' 
     ? {
@@ -113,8 +113,8 @@ const createWelcomeEmail = (data: WelcomeEmailRequest): string => {
                   <p style="color: #71717a; margin: 0 0 8px 0; font-size: 14px;">
                     Need help? We're here for you.
                   </p>
-                  <a href="mailto:support@lawnconnect.jm" style="color: #16a34a; text-decoration: none; font-size: 14px; font-weight: 500;">
-                    support@lawnconnect.jm
+                  <a href="mailto:officiallawnconnect@gmail.com" style="color: #16a34a; text-decoration: none; font-size: 14px; font-weight: 500;">
+                    officiallawnconnect@gmail.com
                   </a>
                   <p style="color: #a1a1aa; margin: 24px 0 0 0; font-size: 12px;">
                     LawnConnect • Jamaica's Lawn Care Marketplace

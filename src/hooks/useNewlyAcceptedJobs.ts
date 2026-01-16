@@ -28,6 +28,33 @@ const saveDismissedJobIds = (ids: Set<string>) => {
   localStorage.setItem(DISMISSED_JOBS_KEY, JSON.stringify([...ids]));
 };
 
+// Helper to clean up old dismissed job IDs (jobs that no longer exist)
+const cleanupDismissedJobIds = async (supabase: any, dismissedIds: Set<string>): Promise<Set<string>> => {
+  if (dismissedIds.size === 0) return dismissedIds;
+  
+  try {
+    // Check which dismissed jobs still exist
+    const { data: existingJobs } = await supabase
+      .from('job_requests')
+      .select('id')
+      .in('id', [...dismissedIds]);
+    
+    const existingJobIds = new Set(existingJobs?.map((j: { id: string }) => j.id) || []);
+    
+    // Keep only dismissed IDs that still exist in the database
+    const cleanedIds = new Set([...dismissedIds].filter(id => existingJobIds.has(id)));
+    
+    // If we cleaned up some IDs, save the updated set
+    if (cleanedIds.size !== dismissedIds.size) {
+      saveDismissedJobIds(cleanedIds);
+    }
+    
+    return cleanedIds;
+  } catch {
+    return dismissedIds;
+  }
+};
+
 export function useNewlyAcceptedJobs() {
   const { user } = useAuth();
   const [newlyAcceptedJobs, setNewlyAcceptedJobs] = useState<AcceptedJob[]>([]);
@@ -45,8 +72,9 @@ export function useNewlyAcceptedJobs() {
       const lastSeenStr = localStorage.getItem(LAST_SEEN_KEY);
       const lastSeen = lastSeenStr ? new Date(lastSeenStr) : new Date(0);
       
-      // Get dismissed job IDs
-      const dismissedIds = getDismissedJobIds();
+      // Get dismissed job IDs and clean up old ones
+      const rawDismissedIds = getDismissedJobIds();
+      const dismissedIds = await cleanupDismissedJobIds(supabase, rawDismissedIds);
 
       // Fetch jobs that customer posted which were accepted since last seen
       const { data: jobs, error } = await supabase
