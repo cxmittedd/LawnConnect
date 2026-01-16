@@ -9,7 +9,8 @@ import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { AlertTriangle, Landmark, CheckCircle, Clock, XCircle, Eye, FileText, DollarSign, Calendar, Copy, ChevronRight, Download } from 'lucide-react';
+import { AlertTriangle, Landmark, CheckCircle, Clock, XCircle, Eye, FileText, DollarSign, Calendar, Copy, ChevronRight, Download, Receipt, Search } from 'lucide-react';
+import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/auth';
 import { toast } from 'sonner';
@@ -45,20 +46,42 @@ interface ProviderPayout {
   banking: BankingDetails | null;
 }
 
+interface Transaction {
+  id: string;
+  job_id: string;
+  job_title: string;
+  customer_id: string;
+  customer_name: string;
+  provider_id: string | null;
+  provider_name: string | null;
+  payment_reference: string | null;
+  payment_confirmed_at: string | null;
+  final_price: number | null;
+  base_price: number;
+  status: string;
+  parish: string;
+  created_at: string;
+}
+
 export default function AdminBanking() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [bankingRecords, setBankingRecords] = useState<BankingDetails[]>([]);
   const [providerPayouts, setProviderPayouts] = useState<ProviderPayout[]>([]);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingPayouts, setLoadingPayouts] = useState(true);
+  const [loadingTransactions, setLoadingTransactions] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState<BankingDetails | null>(null);
   const [selectedPayout, setSelectedPayout] = useState<ProviderPayout | null>(null);
+  const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [payoutDialogOpen, setPayoutDialogOpen] = useState(false);
+  const [transactionDialogOpen, setTransactionDialogOpen] = useState(false);
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
   const [adminNotes, setAdminNotes] = useState('');
+  const [transactionSearch, setTransactionSearch] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -88,6 +111,7 @@ export default function AdminBanking() {
     setIsAdmin(true);
     loadBankingRecords();
     loadProviderPayouts();
+    loadTransactions();
   };
 
   const loadBankingRecords = async () => {
@@ -207,6 +231,76 @@ export default function AdminBanking() {
       toast.error('Failed to load payout data');
     } finally {
       setLoadingPayouts(false);
+    }
+  };
+
+  const loadTransactions = async () => {
+    setLoadingTransactions(true);
+    try {
+      // Get all jobs with payment info
+      const { data: jobs, error: jobsError } = await supabase
+        .from('job_requests')
+        .select('id, title, customer_id, accepted_provider_id, payment_reference, payment_confirmed_at, final_price, base_price, status, parish, created_at')
+        .eq('payment_status', 'paid')
+        .order('payment_confirmed_at', { ascending: false });
+
+      if (jobsError) throw jobsError;
+
+      if (!jobs || jobs.length === 0) {
+        setTransactions([]);
+        setLoadingTransactions(false);
+        return;
+      }
+
+      // Get unique customer and provider IDs
+      const customerIds = [...new Set(jobs.map(j => j.customer_id))];
+      const providerIds = [...new Set(jobs.map(j => j.accepted_provider_id).filter(Boolean))];
+
+      // Fetch profiles
+      const { data: customerProfiles } = await supabase
+        .from('profiles')
+        .select('id, full_name, first_name, last_name')
+        .in('id', customerIds);
+
+      const { data: providerProfiles } = providerIds.length > 0 
+        ? await supabase
+            .from('profiles')
+            .select('id, full_name, first_name, last_name')
+            .in('id', providerIds)
+        : { data: [] as { id: string; full_name: string | null; first_name: string | null; last_name: string | null }[] };
+
+      type ProfileData = { id: string; full_name: string | null; first_name: string | null; last_name: string | null };
+      const customerMap = new Map<string, ProfileData>(customerProfiles?.map(p => [p.id, p]) || []);
+      const providerMap = new Map<string, ProfileData>(providerProfiles?.map(p => [p.id, p]) || []);
+
+      const enrichedTransactions: Transaction[] = jobs.map(job => {
+        const customer = customerMap.get(job.customer_id);
+        const provider = job.accepted_provider_id ? providerMap.get(job.accepted_provider_id) : null;
+
+        return {
+          id: job.id,
+          job_id: job.id,
+          job_title: job.title,
+          customer_id: job.customer_id,
+          customer_name: customer?.full_name || `${customer?.first_name || ''} ${customer?.last_name || ''}`.trim() || 'Unknown',
+          provider_id: job.accepted_provider_id,
+          provider_name: provider ? (provider.full_name || `${provider.first_name || ''} ${provider.last_name || ''}`.trim() || 'Unknown') : null,
+          payment_reference: job.payment_reference,
+          payment_confirmed_at: job.payment_confirmed_at,
+          final_price: job.final_price,
+          base_price: job.base_price,
+          status: job.status || 'unknown',
+          parish: job.parish,
+          created_at: job.created_at || '',
+        };
+      });
+
+      setTransactions(enrichedTransactions);
+    } catch (error) {
+      console.error('Failed to load transactions:', error);
+      toast.error('Failed to load transaction data');
+    } finally {
+      setLoadingTransactions(false);
     }
   };
 
@@ -421,6 +515,20 @@ export default function AdminBanking() {
 
   const totalPendingPayout = providerPayouts.reduce((sum, p) => sum + p.pending_amount, 0);
 
+  // Filter transactions by search term
+  const filteredTransactions = transactions.filter(txn => {
+    if (!transactionSearch.trim()) return true;
+    const search = transactionSearch.toLowerCase();
+    return (
+      txn.payment_reference?.toLowerCase().includes(search) ||
+      txn.job_title.toLowerCase().includes(search) ||
+      txn.customer_name.toLowerCase().includes(search) ||
+      txn.provider_name?.toLowerCase().includes(search) ||
+      txn.parish.toLowerCase().includes(search) ||
+      txn.id.toLowerCase().includes(search)
+    );
+  });
+
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
@@ -436,7 +544,7 @@ export default function AdminBanking() {
         </div>
 
         <Tabs defaultValue="verification" className="space-y-6">
-          <TabsList className="grid w-full max-w-md grid-cols-2">
+          <TabsList className="grid w-full max-w-lg grid-cols-3">
             <TabsTrigger value="verification" className="gap-2">
               <CheckCircle className="h-4 w-4" />
               Verification
@@ -444,6 +552,10 @@ export default function AdminBanking() {
             <TabsTrigger value="payments" className="gap-2">
               <DollarSign className="h-4 w-4" />
               Payments
+            </TabsTrigger>
+            <TabsTrigger value="transactions" className="gap-2">
+              <Receipt className="h-4 w-4" />
+              Transactions
             </TabsTrigger>
           </TabsList>
 
@@ -715,6 +827,102 @@ export default function AdminBanking() {
               </CardContent>
             </Card>
           </TabsContent>
+
+          {/* Transactions Tab */}
+          <TabsContent value="transactions" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Receipt className="h-5 w-5" />
+                  Payment Transactions
+                </CardTitle>
+                <CardDescription>Match payment references to jobs and providers</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Search */}
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search by TXN reference, job title, customer, provider, or parish..."
+                    value={transactionSearch}
+                    onChange={(e) => setTransactionSearch(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+
+                {loadingTransactions ? (
+                  <div className="flex justify-center py-8">
+                    <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+                  </div>
+                ) : filteredTransactions.length === 0 ? (
+                  <Alert>
+                    <Receipt className="h-4 w-4" />
+                    <AlertDescription>
+                      {transactionSearch ? 'No transactions matching your search.' : 'No payment transactions found.'}
+                    </AlertDescription>
+                  </Alert>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Date</TableHead>
+                        <TableHead>TXN Reference</TableHead>
+                        <TableHead>Job</TableHead>
+                        <TableHead>Customer</TableHead>
+                        <TableHead>Provider</TableHead>
+                        <TableHead>Amount</TableHead>
+                        <TableHead>Status</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredTransactions.map((txn) => (
+                        <TableRow 
+                          key={txn.id} 
+                          className="cursor-pointer hover:bg-muted/50"
+                          onClick={() => {
+                            setSelectedTransaction(txn);
+                            setTransactionDialogOpen(true);
+                          }}
+                        >
+                          <TableCell className="text-sm">
+                            {txn.payment_confirmed_at 
+                              ? format(new Date(txn.payment_confirmed_at), 'MMM dd, yyyy')
+                              : format(new Date(txn.created_at), 'MMM dd, yyyy')}
+                          </TableCell>
+                          <TableCell className="font-mono text-xs">
+                            {txn.payment_reference || 'N/A'}
+                          </TableCell>
+                          <TableCell className="font-medium max-w-[150px] truncate" title={txn.job_title}>
+                            {txn.job_title}
+                          </TableCell>
+                          <TableCell>{txn.customer_name}</TableCell>
+                          <TableCell>
+                            {txn.provider_name || (
+                              <span className="text-muted-foreground italic">Not assigned</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="font-semibold">
+                            J${(txn.final_price || txn.base_price).toLocaleString()}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={txn.status === 'completed' ? 'default' : 'secondary'} className="capitalize">
+                              {txn.status}
+                            </Badge>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
+                
+                {filteredTransactions.length > 0 && (
+                  <p className="text-sm text-muted-foreground text-center">
+                    Showing {filteredTransactions.length} of {transactions.length} transactions
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
         </Tabs>
       </div>
 
@@ -980,6 +1188,105 @@ export default function AdminBanking() {
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setPayoutDialogOpen(false)}>
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Transaction Details Dialog */}
+      <Dialog open={transactionDialogOpen} onOpenChange={setTransactionDialogOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Transaction Details</DialogTitle>
+            <DialogDescription>
+              Payment matched to job and provider
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedTransaction && (
+            <div className="space-y-4">
+              {/* Payment Reference */}
+              <div className="p-4 bg-primary/10 border border-primary/20 rounded-lg">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Transaction Reference</p>
+                    <p className="font-mono text-lg font-bold">{selectedTransaction.payment_reference || 'N/A'}</p>
+                  </div>
+                  {selectedTransaction.payment_reference && (
+                    <Button 
+                      size="sm" 
+                      variant="ghost" 
+                      onClick={() => copyToClipboard(selectedTransaction.payment_reference!, 'Transaction reference')}
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+              </div>
+
+              {/* Amount */}
+              <div className="p-4 bg-muted rounded-lg text-center">
+                <p className="text-xs text-muted-foreground">Amount Paid</p>
+                <p className="text-2xl font-bold text-primary">J${(selectedTransaction.final_price || selectedTransaction.base_price).toLocaleString()}</p>
+              </div>
+
+              {/* Job Details */}
+              <div className="space-y-3 p-4 border rounded-lg">
+                <h4 className="font-semibold flex items-center gap-2">
+                  <FileText className="h-4 w-4" />
+                  Job Details
+                </h4>
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Job ID</p>
+                    <p className="font-mono text-xs break-all">{selectedTransaction.job_id}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Status</p>
+                    <Badge variant={selectedTransaction.status === 'completed' ? 'default' : 'secondary'} className="capitalize">
+                      {selectedTransaction.status}
+                    </Badge>
+                  </div>
+                  <div className="col-span-2">
+                    <p className="text-xs text-muted-foreground">Job Title</p>
+                    <p className="font-medium">{selectedTransaction.job_title}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Parish</p>
+                    <p>{selectedTransaction.parish}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Payment Date</p>
+                    <p>
+                      {selectedTransaction.payment_confirmed_at 
+                        ? format(new Date(selectedTransaction.payment_confirmed_at), 'MMM dd, yyyy HH:mm')
+                        : 'N/A'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* People Involved */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="p-3 bg-muted rounded-lg">
+                  <p className="text-xs text-muted-foreground mb-1">Customer</p>
+                  <p className="font-semibold">{selectedTransaction.customer_name}</p>
+                </div>
+                <div className="p-3 bg-muted rounded-lg">
+                  <p className="text-xs text-muted-foreground mb-1">Provider</p>
+                  <p className="font-semibold">
+                    {selectedTransaction.provider_name || (
+                      <span className="text-muted-foreground italic">Not assigned</span>
+                    )}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setTransactionDialogOpen(false)}>
               Close
             </Button>
           </DialogFooter>
