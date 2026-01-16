@@ -684,7 +684,7 @@ serve(async (req: Request): Promise<Response> => {
     const { subject, html } = getEmailContent(type, jobTitle, jobId, additionalData);
 
     const emailResponse = await resend.emails.send({
-      from: "LawnConnect <onboarding@resend.dev>",
+      from: "LawnConnect <noreply@connectlawn.com>",
       to: [recipientEmail],
       subject,
       html,

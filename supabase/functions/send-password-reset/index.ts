@@ -122,7 +122,7 @@ const handler = async (req: Request): Promise<Response> => {
                   <!-- Header with Logo -->
                   <tr>
                     <td align="center" style="padding: 40px 40px 20px 40px;">
-                      <img src="https://oykpslopjzjhfwepxowp.supabase.co/storage/v1/object/public/assets/lawnconnect-logo.png" alt="LawnConnect" width="120" height="120" style="display: block; border: 0;" />
+                      <img src="https://connectlawn.com/pwa-512x512.png" alt="LawnConnect" width="100" height="100" style="display: block; border: 0; border-radius: 12px;" />
                     </td>
                   </tr>
                   
