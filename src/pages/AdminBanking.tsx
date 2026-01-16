@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { AlertTriangle, Landmark, CheckCircle, Clock, XCircle, Eye, FileText, DollarSign, Calendar, Copy, ChevronRight } from 'lucide-react';
+import { AlertTriangle, Landmark, CheckCircle, Clock, XCircle, Eye, FileText, DollarSign, Calendar, Copy, ChevronRight, Download } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/auth';
 import { toast } from 'sonner';
@@ -350,6 +350,56 @@ export default function AdminBanking() {
     setPayoutDialogOpen(true);
   };
 
+  const exportPayoutsToCSV = () => {
+    if (providerPayouts.length === 0) {
+      toast.error('No payout data to export');
+      return;
+    }
+
+    const headers = [
+      'Provider Name',
+      'Pending Amount (JMD)',
+      'Jobs Count',
+      'Banking Status',
+      'Beneficiary Name',
+      'Bank Name',
+      'Branch Name',
+      'Account Number',
+      'Account Type',
+      'TRN'
+    ];
+
+    const rows = providerPayouts.map(payout => [
+      payout.provider_name,
+      payout.pending_amount.toFixed(2),
+      payout.jobs_count.toString(),
+      payout.banking?.status || 'Not submitted',
+      payout.banking?.full_legal_name || '',
+      payout.banking ? getBankName(payout.banking.bank_name) : '',
+      payout.banking?.branch_name || '',
+      payout.banking?.account_number || '',
+      payout.banking?.account_type || '',
+      payout.banking?.trn || ''
+    ]);
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.map(cell => `"${cell.replace(/"/g, '""')}"`).join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `provider-payouts-${format(new Date(), 'yyyy-MM-dd')}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    toast.success('Payout data exported successfully');
+  };
+
   if (authLoading || loading) {
     return (
       <div className="min-h-screen bg-background">
@@ -604,12 +654,24 @@ export default function AdminBanking() {
 
             {/* Provider Payouts List */}
             <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <DollarSign className="h-5 w-5" />
-                  Provider Pending Payouts
-                </CardTitle>
-                <CardDescription>Click a provider to see full banking details for payment</CardDescription>
+              <CardHeader className="flex flex-row items-start justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <DollarSign className="h-5 w-5" />
+                    Provider Pending Payouts
+                  </CardTitle>
+                  <CardDescription>Click a provider to see full banking details for payment</CardDescription>
+                </div>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={exportPayoutsToCSV}
+                  disabled={providerPayouts.length === 0}
+                  className="gap-2"
+                >
+                  <Download className="h-4 w-4" />
+                  Export CSV
+                </Button>
               </CardHeader>
               <CardContent>
                 {loadingPayouts ? (
