@@ -76,11 +76,37 @@ serve(async (req) => {
     }
     console.log(`[${requestId}] EzeePay config: site=${site}, key=${licenceKey.substring(0, 4)}...`);
 
-    // Use the origin URL from the request, or fall back to production
-    const baseUrl = origin_url || 'https://connectlawn.com';
+    // EzeePay validates that return/cancel URLs match the registered `site`.
+    // If the payment is initiated from a preview domain, we must still use the
+    // production site domain for redirects, otherwise EzeePay returns
+    // "invalid site address".
+    const normalizedSiteHost = (() => {
+      try {
+        return site.startsWith('http') ? new URL(site).hostname : site;
+      } catch {
+        return site;
+      }
+    })();
+
+    const siteBaseUrl = `https://${normalizedSiteHost}`;
+
+    let baseUrl = siteBaseUrl;
+    try {
+      if (origin_url) {
+        const originHost = new URL(origin_url).hostname;
+        // Only allow origin_url when it matches the registered site.
+        if (originHost === normalizedSiteHost || originHost.endsWith(`.${normalizedSiteHost}`)) {
+          baseUrl = origin_url;
+        }
+      }
+    } catch {
+      // ignore invalid origin_url
+    }
     const functionBaseUrl = `${supabaseUrl}/functions/v1`;
     
     console.log(`[${requestId}] Redirect URLs:`);
+    console.log(`[${requestId}]   - Origin: ${origin_url || 'N/A'}`);
+    console.log(`[${requestId}]   - Site Host: ${normalizedSiteHost}`);
     console.log(`[${requestId}]   - Base URL: ${baseUrl}`);
     console.log(`[${requestId}]   - Webhook: ${functionBaseUrl}/ezeepay-webhook`);
     
