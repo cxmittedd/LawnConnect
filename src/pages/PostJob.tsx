@@ -70,7 +70,6 @@ const LAWN_SIZES = [
   { value: 'medium', label: 'Medium (1/8 - 1/4 acre)', description: 'Larger residential yard', minOffer: 8000 },
   { value: 'large', label: 'Large (1/4 - 1/2 acre)', description: 'Spacious property', minOffer: 12000 },
   { value: 'xlarge', label: 'Extra Large (1/2 - 1 acre)', description: 'Estate-sized lawn', minOffer: 18000 },
-  { value: 'custom', label: 'Custom (specify below)', description: 'Enter your own estimate', minOffer: 7000 },
 ] as const;
 
 const LAWN_SIZE_IMAGES = [
@@ -216,12 +215,7 @@ export default function PostJob() {
 const handleLawnSizeChange = (value: string) => {
     setLawnSizeSelection(value);
     const selected = LAWN_SIZES.find(s => s.value === value);
-    if (value !== 'custom') {
-      setFormData({ ...formData, lawn_size: selected?.label || '' });
-      setCustomLawnSize('');
-    } else {
-      setFormData({ ...formData, lawn_size: customLawnSize });
-    }
+    setFormData({ ...formData, lawn_size: selected?.label || '' });
   };
 
   const handleCustomLawnSizeChange = (value: string) => {
@@ -640,16 +634,6 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
                         ))}
                       </SelectContent>
                     </Select>
-                    {lawnSizeSelection === 'custom' && (
-                      <Input
-                        id="custom_lawn_size"
-                        placeholder="Enter your lawn size estimate"
-                        value={customLawnSize}
-                        onChange={(e) => handleCustomLawnSizeChange(e.target.value)}
-                        className="mt-2"
-                        required
-                      />
-                    )}
                   </div>
                 </div>
 
