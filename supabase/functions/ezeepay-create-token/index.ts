@@ -69,7 +69,7 @@ serve(async (req) => {
 
     console.log('Requesting EzeePay token with form data:', Object.fromEntries(formData));
 
-    const tokenResponse = await fetch('https://api-test.ezeepayments.com/v1/custom_token/', {
+    const tokenResponse = await fetch('https://api.ezeepayments.com/v1/custom_token/', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
@@ -91,7 +91,7 @@ serve(async (req) => {
       JSON.stringify({
         success: true,
         token: tokenData.result.token,
-        payment_url: 'https://secure-test.ezeepayments.com',
+        payment_url: 'https://secure.ezeepayments.com',
         payment_data: {
           platform: 'custom',
           token: tokenData.result.token,
