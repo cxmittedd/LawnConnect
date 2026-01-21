@@ -16,6 +16,13 @@ interface TokenRequest {
 }
 
 serve(async (req) => {
+  const requestId = crypto.randomUUID().substring(0, 8);
+  const startTime = Date.now();
+  
+  console.log(`[${requestId}] ========== EZEEPAY TOKEN REQUEST START ==========`);
+  console.log(`[${requestId}] Timestamp: ${new Date().toISOString()}`);
+  console.log(`[${requestId}] Method: ${req.method}`);
+  
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -24,8 +31,10 @@ serve(async (req) => {
     // Verify user is authenticated
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
+      console.error(`[${requestId}] ERROR: Missing authorization header`);
       throw new Error('Missing authorization header');
     }
+    console.log(`[${requestId}] Auth header present: ${authHeader.substring(0, 20)}...`);
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
@@ -35,28 +44,45 @@ serve(async (req) => {
 
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
+      console.error(`[${requestId}] ERROR: Auth failed -`, authError?.message || 'No user');
       throw new Error('Unauthorized');
     }
+    console.log(`[${requestId}] Authenticated user: ${user.id} (${user.email})`);
 
     const { amount, order_id, customer_email, customer_name, description, origin_url }: TokenRequest = await req.json();
 
+    console.log(`[${requestId}] Payment request details:`);
+    console.log(`[${requestId}]   - Order ID: ${order_id}`);
+    console.log(`[${requestId}]   - Amount: J$${amount}`);
+    console.log(`[${requestId}]   - Customer: ${customer_email}`);
+    console.log(`[${requestId}]   - Origin: ${origin_url}`);
+
     if (!amount || !order_id || !customer_email) {
+      console.error(`[${requestId}] ERROR: Missing required fields`);
       throw new Error('Missing required fields: amount, order_id, customer_email');
+    }
+
+    if (amount <= 0) {
+      console.error(`[${requestId}] ERROR: Invalid amount: ${amount}`);
+      throw new Error('Amount must be greater than zero');
     }
 
     const licenceKey = Deno.env.get('EZEEPAY_LICENCE_KEY');
     const site = Deno.env.get('EZEEPAY_SITE');
 
     if (!licenceKey || !site) {
+      console.error(`[${requestId}] ERROR: EzeePay credentials not configured`);
       throw new Error('EzeePay credentials not configured');
     }
+    console.log(`[${requestId}] EzeePay config: site=${site}, key=${licenceKey.substring(0, 4)}...`);
 
-    // Use the origin URL from the request, or fall back to known URLs
-    // This ensures users are redirected back to the same domain they started from
-    const baseUrl = origin_url || 'https://client-vault-pro.lovable.app';
+    // Use the origin URL from the request, or fall back to production
+    const baseUrl = origin_url || 'https://connectlawn.com';
     const functionBaseUrl = `${supabaseUrl}/functions/v1`;
     
-    console.log('Using base URL for redirects:', baseUrl);
+    console.log(`[${requestId}] Redirect URLs:`);
+    console.log(`[${requestId}]   - Base URL: ${baseUrl}`);
+    console.log(`[${requestId}]   - Webhook: ${functionBaseUrl}/ezeepay-webhook`);
     
     // Create form data for EzeePay (API expects form-urlencoded, not JSON)
     const formData = new URLSearchParams();
@@ -67,7 +93,8 @@ serve(async (req) => {
     formData.append('return_url', `${baseUrl}/post-job?payment_complete=true&order_id=${order_id}`);
     formData.append('cancel_url', `${baseUrl}/post-job?payment_cancelled=true&order_id=${order_id}`);
 
-    console.log('Requesting EzeePay token with form data:', Object.fromEntries(formData));
+    console.log(`[${requestId}] Calling EzeePay API: https://api.ezeepayments.com/v1/custom_token/`);
+    const apiStartTime = Date.now();
 
     const tokenResponse = await fetch('https://api.ezeepayments.com/v1/custom_token/', {
       method: 'POST',
@@ -79,12 +106,24 @@ serve(async (req) => {
       body: formData.toString(),
     });
 
+    const apiDuration = Date.now() - apiStartTime;
+    console.log(`[${requestId}] EzeePay API response: status=${tokenResponse.status}, duration=${apiDuration}ms`);
+
     const tokenData = await tokenResponse.json();
-    console.log('EzeePay token response:', tokenData);
+    console.log(`[${requestId}] EzeePay response:`, JSON.stringify(tokenData));
 
     if (!tokenData.result || tokenData.result.status !== 1) {
-      throw new Error(tokenData.result?.message || 'Failed to generate payment token');
+      const errorMsg = tokenData.result?.message || 'Failed to generate payment token';
+      console.error(`[${requestId}] ERROR: EzeePay token generation failed - ${errorMsg}`);
+      throw new Error(errorMsg);
     }
+
+    const totalDuration = Date.now() - startTime;
+    console.log(`[${requestId}] SUCCESS: Token generated successfully`);
+    console.log(`[${requestId}]   - Token: ${tokenData.result.token.substring(0, 10)}...`);
+    console.log(`[${requestId}]   - Payment URL: https://secure.ezeepayments.com`);
+    console.log(`[${requestId}] Total processing time: ${totalDuration}ms`);
+    console.log(`[${requestId}] ========== EZEEPAY TOKEN REQUEST END ==========`);
 
     // Return token and payment URL
     return new Response(
@@ -107,7 +146,12 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('EzeePay token creation error:', error);
+    const totalDuration = Date.now() - startTime;
+    console.error(`[${requestId}] FAILED: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    console.error(`[${requestId}] Stack:`, error instanceof Error ? error.stack : 'N/A');
+    console.log(`[${requestId}] Total processing time: ${totalDuration}ms`);
+    console.log(`[${requestId}] ========== EZEEPAY TOKEN REQUEST END (ERROR) ==========`);
+    
     return new Response(
       JSON.stringify({ 
         success: false, 
