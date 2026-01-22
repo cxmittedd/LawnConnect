@@ -304,10 +304,25 @@ export default function AdminBanking() {
     }
   };
 
-  const handleViewDetails = (record: BankingDetails) => {
+  const handleViewDetails = async (record: BankingDetails) => {
     setSelectedRecord(record);
     setAdminNotes(record.admin_notes || '');
     setViewDialogOpen(true);
+    
+    // Log sensitive data access for security auditing
+    if (user) {
+      try {
+        await supabase.from('sensitive_data_access_logs').insert({
+          admin_id: user.id,
+          table_name: 'provider_banking_details',
+          record_id: record.id,
+          action: 'view',
+          user_agent: navigator.userAgent,
+        });
+      } catch (error) {
+        console.error('Failed to log access:', error);
+      }
+    }
   };
 
   const handleApprove = async () => {
