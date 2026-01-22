@@ -4,11 +4,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/integrations/supabase/client';
-import { Scissors, Briefcase, DollarSign, CheckCircle, ArrowRight, Plus } from 'lucide-react';
+import { Scissors, Briefcase, DollarSign, CheckCircle, ArrowRight, Plus, HelpCircle, BookOpen } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import InstallBanner from '@/components/InstallBanner';
 import { usePendingReviews } from '@/hooks/usePendingReviews';
 import { RequiredReviewDialog } from '@/components/RequiredReviewDialog';
+import { ProviderWalkthrough } from '@/components/ProviderWalkthrough';
+import { useProviderVerification } from '@/hooks/useProviderVerification';
+import { useProviderBanking } from '@/hooks/useProviderBanking';
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -21,7 +24,10 @@ export default function Dashboard() {
     myActiveJobs: 0,
   });
   const [loading, setLoading] = useState(true);
+  const [showWalkthrough, setShowWalkthrough] = useState(false);
   const { pendingReviews, hasPendingReviews, refresh: refreshPendingReviews } = usePendingReviews();
+  const { verificationStatus } = useProviderVerification();
+  const { bankingStatus } = useProviderBanking();
 
   useEffect(() => {
     loadUserData();
@@ -244,6 +250,13 @@ export default function Dashboard() {
                 <CardDescription>Find and manage your lawn cutting jobs</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
+                <Button onClick={() => setShowWalkthrough(true)} variant="outline" className="w-full justify-between bg-primary/5 border-primary/20 hover:bg-primary/10">
+                  <span className="flex items-center gap-2">
+                    <BookOpen className="h-4 w-4 text-primary" />
+                    <span className="text-primary font-medium">How to Get Verified</span>
+                  </span>
+                  <HelpCircle className="h-4 w-4 text-primary" />
+                </Button>
                 <Button onClick={() => navigate('/browse-jobs')} variant="outline" className="w-full justify-between">
                   <span className="flex items-center gap-2">
                     <Scissors className="h-4 w-4" />
@@ -278,6 +291,16 @@ export default function Dashboard() {
         pendingReviews={pendingReviews}
         onReviewsComplete={refreshPendingReviews}
       />
+      
+      {/* Provider Walkthrough */}
+      {isProvider && (
+        <ProviderWalkthrough
+          open={showWalkthrough}
+          onOpenChange={setShowWalkthrough}
+          idVerificationStatus={verificationStatus}
+          bankingStatus={bankingStatus}
+        />
+      )}
     </div>
   );
 }
