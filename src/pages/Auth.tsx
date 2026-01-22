@@ -39,7 +39,9 @@ const signUpSchema = z.object({
     .regex(/[0-9]/, { message: 'Password must contain at least one number' })
     .regex(/[^A-Za-z0-9]/, { message: 'Password must contain at least one special character' }),
   confirmPassword: z.string(),
-  userRole: z.enum(['customer', 'provider']),
+  userRole: z.enum(['customer', 'provider'], { 
+    errorMap: () => ({ message: 'Please select whether you are a customer or service provider' })
+  }),
   acceptedTerms: z.literal(true, { 
     errorMap: () => ({ message: 'You must accept the Terms of Service and Privacy Policy' })
   }),
@@ -137,7 +139,7 @@ export default function Auth() {
     phoneNumber: '',
     password: '',
     confirmPassword: '',
-    userRole: 'customer' as 'customer' | 'provider',
+    userRole: '' as '' | 'customer' | 'provider',
     acceptedTerms: false,
   });
 
@@ -372,7 +374,7 @@ export default function Auth() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>I am a...</Label>
+                  <Label>I am a... <span className="text-destructive">*</span></Label>
                   <RadioGroup
                     value={signUpData.userRole}
                     onValueChange={(value: 'customer' | 'provider') =>
