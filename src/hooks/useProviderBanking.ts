@@ -4,15 +4,16 @@ import { useAuth } from '@/lib/auth';
 
 type BankingStatus = 'pending' | 'verified' | 'rejected' | null;
 
+// Only expose safe/masked data to client - never full account numbers or TRN
 interface BankingDetails {
   id: string;
   full_legal_name: string;
   bank_name: 'scotiabank_jamaica' | 'ncb_jamaica';
   branch_name: string;
   branch_number: string | null;
-  account_number: string;
+  account_number_masked: string; // Only last 4 digits
   account_type: 'savings' | 'chequing';
-  trn: string;
+  trn_masked: string; // Only last 3 digits
   status: BankingStatus;
   admin_notes: string | null;
   created_at: string;
@@ -53,15 +54,30 @@ export function useProviderBanking() {
         return;
       }
 
-      // Check banking details
+      // Check banking details - only fetch safe fields, mask sensitive data
       const { data: banking } = await supabase
         .from('provider_banking_details')
-        .select('*')
+        .select('id, full_legal_name, bank_name, branch_name, branch_number, account_number, account_type, trn, status, admin_notes, created_at, updated_at')
         .eq('provider_id', user.id)
         .maybeSingle();
 
       if (banking) {
-        setBankingDetails(banking as BankingDetails);
+        // Mask sensitive data before storing in state
+        const maskedDetails: BankingDetails = {
+          id: banking.id,
+          full_legal_name: banking.full_legal_name,
+          bank_name: banking.bank_name,
+          branch_name: banking.branch_name,
+          branch_number: banking.branch_number,
+          account_number_masked: banking.account_number ? `****${banking.account_number.slice(-4)}` : '****',
+          account_type: banking.account_type,
+          trn_masked: banking.trn ? `******${banking.trn.slice(-3)}` : '***',
+          status: banking.status as BankingStatus,
+          admin_notes: banking.admin_notes,
+          created_at: banking.created_at,
+          updated_at: banking.updated_at,
+        };
+        setBankingDetails(maskedDetails);
         setBankingStatus(banking.status as BankingStatus);
       } else {
         setBankingDetails(null);

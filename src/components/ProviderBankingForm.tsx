@@ -54,7 +54,8 @@ export function ProviderBankingForm({ onComplete }: ProviderBankingFormProps) {
     },
   });
 
-  // Populate form with existing data if rejected (for re-submission)
+  // When rejected, don't pre-populate sensitive fields - user must re-enter
+  // This is a security measure to prevent sensitive data from being transmitted to client
   useEffect(() => {
     if (bankingDetails && isRejected) {
       form.reset({
@@ -62,9 +63,10 @@ export function ProviderBankingForm({ onComplete }: ProviderBankingFormProps) {
         bank_name: bankingDetails.bank_name,
         branch_name: bankingDetails.branch_name,
         branch_number: bankingDetails.branch_number || '',
-        account_number: bankingDetails.account_number,
+        // Never pre-populate account_number and trn - user must re-enter for security
+        account_number: '',
         account_type: bankingDetails.account_type,
-        trn: bankingDetails.trn,
+        trn: '',
       });
     }
   }, [bankingDetails, isRejected, form]);
@@ -172,7 +174,7 @@ export function ProviderBankingForm({ onComplete }: ProviderBankingFormProps) {
               </div>
               <div>
                 <Label className="text-xs text-muted-foreground">Account Number</Label>
-                <p className="font-medium">****{bankingDetails?.account_number.slice(-4)}</p>
+                <p className="font-medium">{bankingDetails?.account_number_masked}</p>
               </div>
             </div>
           </div>
@@ -228,7 +230,7 @@ export function ProviderBankingForm({ onComplete }: ProviderBankingFormProps) {
               </div>
               <div>
                 <Label className="text-xs text-muted-foreground">TRN</Label>
-                <p className="font-medium">{bankingDetails?.trn}</p>
+                <p className="font-medium">{bankingDetails?.trn_masked}</p>
               </div>
             </div>
           </div>
