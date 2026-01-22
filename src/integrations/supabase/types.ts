@@ -865,6 +865,27 @@ export type Database = {
           },
         ]
       }
+      signup_analytics: {
+        Row: {
+          created_at: string
+          id: string
+          user_id: string
+          user_role: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          user_id: string
+          user_role: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          user_id?: string
+          user_role?: string
+        }
+        Relationships: []
+      }
       user_consents: {
         Row: {
           consent_type: string

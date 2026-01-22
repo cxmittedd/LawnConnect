@@ -203,26 +203,34 @@ export default function Auth() {
       return;
     }
 
-    // Record consent for GDPR/JDPA compliance
+    // Record consent for GDPR/JDPA compliance and signup analytics
     if (data?.user) {
       try {
-        await supabase.from('user_consents').insert([
-          {
+        await Promise.all([
+          // Record consent
+          supabase.from('user_consents').insert([
+            {
+              user_id: data.user.id,
+              consent_type: 'terms_of_service',
+              consent_version: TERMS_VERSION,
+              user_agent: navigator.userAgent,
+            },
+            {
+              user_id: data.user.id,
+              consent_type: 'privacy_policy',
+              consent_version: PRIVACY_VERSION,
+              user_agent: navigator.userAgent,
+            }
+          ]),
+          // Record signup analytics
+          supabase.from('signup_analytics').insert({
             user_id: data.user.id,
-            consent_type: 'terms_of_service',
-            consent_version: TERMS_VERSION,
-            user_agent: navigator.userAgent,
-          },
-          {
-            user_id: data.user.id,
-            consent_type: 'privacy_policy',
-            consent_version: PRIVACY_VERSION,
-            user_agent: navigator.userAgent,
-          }
+            user_role: signUpData.userRole,
+          })
         ]);
-      } catch (consentError) {
-        console.error('Failed to record consent:', consentError);
-        // Don't block signup if consent recording fails
+      } catch (analyticsError) {
+        console.error('Failed to record consent/analytics:', analyticsError);
+        // Don't block signup if recording fails
       }
 
       // Send welcome email (fire-and-forget)
