@@ -81,20 +81,24 @@ const AdminDashboard = () => {
     const yearEnd = endOfYear(now);
 
     // Fetch job counts in parallel
+    // Only count jobs that have been successfully paid
     const [todayResult, monthResult, yearResult] = await Promise.all([
       supabase
         .from("job_requests")
         .select("id", { count: "exact", head: true })
+        .eq("payment_status", "paid")
         .gte("created_at", todayStart.toISOString())
         .lte("created_at", todayEnd.toISOString()),
       supabase
         .from("job_requests")
         .select("id", { count: "exact", head: true })
+        .eq("payment_status", "paid")
         .gte("created_at", monthStart.toISOString())
         .lte("created_at", monthEnd.toISOString()),
       supabase
         .from("job_requests")
         .select("id", { count: "exact", head: true })
+        .eq("payment_status", "paid")
         .gte("created_at", yearStart.toISOString())
         .lte("created_at", yearEnd.toISOString()),
     ]);
