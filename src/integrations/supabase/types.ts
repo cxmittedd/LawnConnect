@@ -865,6 +865,39 @@ export type Database = {
           },
         ]
       }
+      sensitive_data_access_logs: {
+        Row: {
+          accessed_at: string
+          action: string
+          admin_id: string
+          id: string
+          ip_address: string | null
+          record_id: string
+          table_name: string
+          user_agent: string | null
+        }
+        Insert: {
+          accessed_at?: string
+          action?: string
+          admin_id: string
+          id?: string
+          ip_address?: string | null
+          record_id: string
+          table_name: string
+          user_agent?: string | null
+        }
+        Update: {
+          accessed_at?: string
+          action?: string
+          admin_id?: string
+          id?: string
+          ip_address?: string | null
+          record_id?: string
+          table_name?: string
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
       signup_analytics: {
         Row: {
           created_at: string
