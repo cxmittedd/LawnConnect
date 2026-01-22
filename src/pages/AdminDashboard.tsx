@@ -6,7 +6,7 @@ import { Navigation } from "@/components/Navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { DollarSign, TrendingUp, CreditCard, Users, Calendar, CalendarDays, CalendarRange } from "lucide-react";
+import { DollarSign, TrendingUp, CreditCard, Users, Calendar, CalendarDays, CalendarRange, UserPlus } from "lucide-react";
 import { format, startOfMonth, endOfMonth, subMonths, startOfDay, endOfDay, startOfYear, endOfYear } from "date-fns";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, Legend } from "recharts";
 
@@ -22,6 +22,13 @@ interface JobCounts {
   today: number;
   thisMonth: number;
   thisYear: number;
+}
+
+interface SignupStats {
+  totalCustomers: number;
+  totalProviders: number;
+  customersThisMonth: number;
+  providersThisMonth: number;
 }
 
 const AdminDashboard = () => {
@@ -41,6 +48,12 @@ const AdminDashboard = () => {
     thisMonth: 0,
     thisYear: 0,
   });
+  const [signupStats, setSignupStats] = useState<SignupStats>({
+    totalCustomers: 0,
+    totalProviders: 0,
+    customersThisMonth: 0,
+    providersThisMonth: 0,
+  });
 
   useEffect(() => {
     if (!user) {
@@ -54,6 +67,7 @@ const AdminDashboard = () => {
     if (isAdmin) {
       loadStats();
       loadJobCounts();
+      loadSignupStats();
     }
   }, [isAdmin, selectedMonths]);
 
@@ -89,6 +103,43 @@ const AdminDashboard = () => {
       today: todayResult.count || 0,
       thisMonth: monthResult.count || 0,
       thisYear: yearResult.count || 0,
+    });
+  };
+
+  const loadSignupStats = async () => {
+    const now = new Date();
+    const monthStart = startOfMonth(now);
+    const monthEnd = endOfMonth(now);
+
+    // Fetch signup stats in parallel
+    const [totalCustomers, totalProviders, customersThisMonth, providersThisMonth] = await Promise.all([
+      supabase
+        .from("signup_analytics")
+        .select("id", { count: "exact", head: true })
+        .eq("user_role", "customer"),
+      supabase
+        .from("signup_analytics")
+        .select("id", { count: "exact", head: true })
+        .eq("user_role", "provider"),
+      supabase
+        .from("signup_analytics")
+        .select("id", { count: "exact", head: true })
+        .eq("user_role", "customer")
+        .gte("created_at", monthStart.toISOString())
+        .lte("created_at", monthEnd.toISOString()),
+      supabase
+        .from("signup_analytics")
+        .select("id", { count: "exact", head: true })
+        .eq("user_role", "provider")
+        .gte("created_at", monthStart.toISOString())
+        .lte("created_at", monthEnd.toISOString()),
+    ]);
+
+    setSignupStats({
+      totalCustomers: totalCustomers.count || 0,
+      totalProviders: totalProviders.count || 0,
+      customersThisMonth: customersThisMonth.count || 0,
+      providersThisMonth: providersThisMonth.count || 0,
     });
   };
 
@@ -327,6 +378,77 @@ const AdminDashboard = () => {
                 <>
                   <div className="text-2xl font-bold">{jobCounts.thisYear}</div>
                   <p className="text-xs text-muted-foreground">Jobs posted this year</p>
+                </>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* User Signup Analytics */}
+        <div className="grid gap-4 md:grid-cols-4 mb-8">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Customers</CardTitle>
+              <Users className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <Skeleton className="h-8 w-16" />
+              ) : (
+                <>
+                  <div className="text-2xl font-bold">{signupStats.totalCustomers}</div>
+                  <p className="text-xs text-muted-foreground">All-time customer signups</p>
+                </>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Providers</CardTitle>
+              <UserPlus className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <Skeleton className="h-8 w-16" />
+              ) : (
+                <>
+                  <div className="text-2xl font-bold">{signupStats.totalProviders}</div>
+                  <p className="text-xs text-muted-foreground">All-time provider signups</p>
+                </>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Customers This Month</CardTitle>
+              <Users className="h-4 w-4 text-primary" />
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <Skeleton className="h-8 w-16" />
+              ) : (
+                <>
+                  <div className="text-2xl font-bold text-primary">{signupStats.customersThisMonth}</div>
+                  <p className="text-xs text-muted-foreground">New customers this month</p>
+                </>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Providers This Month</CardTitle>
+              <UserPlus className="h-4 w-4 text-primary" />
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <Skeleton className="h-8 w-16" />
+              ) : (
+                <>
+                  <div className="text-2xl font-bold text-primary">{signupStats.providersThisMonth}</div>
+                  <p className="text-xs text-muted-foreground">New providers this month</p>
                 </>
               )}
             </CardContent>
