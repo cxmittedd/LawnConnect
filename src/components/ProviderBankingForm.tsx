@@ -10,11 +10,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Landmark, Clock, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
+import { Landmark, Clock, CheckCircle, XCircle, AlertTriangle, Shield } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/auth';
 import { toast } from 'sonner';
 import { useProviderBanking } from '@/hooks/useProviderBanking';
+import { useProviderVerification } from '@/hooks/useProviderVerification';
 
 const bankingFormSchema = z.object({
   full_legal_name: z.string().min(2, 'Full legal name is required').max(100, 'Name is too long'),
@@ -39,6 +40,7 @@ interface ProviderBankingFormProps {
 export function ProviderBankingForm({ onComplete }: ProviderBankingFormProps) {
   const { user } = useAuth();
   const { bankingDetails, bankingStatus, isPending, isVerified, isRejected, loading, refresh } = useProviderBanking();
+  const { isVerified: isIdVerified, isPending: isIdPending, loading: idLoading } = useProviderVerification();
   const [submitting, setSubmitting] = useState(false);
 
   const form = useForm<BankingFormValues>({
@@ -125,11 +127,44 @@ export function ProviderBankingForm({ onComplete }: ProviderBankingFormProps) {
     }
   };
 
-  if (loading) {
+  if (loading || idLoading) {
     return (
       <Card>
         <CardContent className="flex items-center justify-center py-8">
           <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Block access if ID verification is not approved
+  if (!isIdVerified) {
+    return (
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Landmark className="h-5 w-5 text-muted-foreground" />
+            <CardTitle className="text-muted-foreground">Payout Information</CardTitle>
+          </div>
+          <CardDescription>Enter your banking details to receive payouts</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Alert className="bg-warning/10 border-warning">
+            <Shield className="h-4 w-4 text-warning" />
+            <AlertDescription>
+              {isIdPending ? (
+                <span>
+                  <strong>ID verification pending:</strong> Your ID is currently under review. 
+                  Once approved, you'll be able to submit your banking details.
+                </span>
+              ) : (
+                <span>
+                  <strong>ID verification required:</strong> You must complete and have your ID verification 
+                  approved before submitting banking details. Please complete the ID Verification step above first.
+                </span>
+              )}
+            </AlertDescription>
+          </Alert>
         </CardContent>
       </Card>
     );
