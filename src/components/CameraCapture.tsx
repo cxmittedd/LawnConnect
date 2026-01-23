@@ -23,31 +23,57 @@ export function CameraCapture({ onCapture, onCancel }: CameraCaptureProps) {
     setIsStarting(true);
     setError(null);
     setFaceError(null);
+    
+    // Check if getUserMedia is supported
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      setError('Camera not supported on this device or browser. Please try uploading a photo instead.');
+      setIsStarting(false);
+      return;
+    }
+    
     try {
-      const mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'user', width: { ideal: 720 }, height: { ideal: 720 } },
-        audio: false,
-      });
+      // Try with ideal constraints first
+      let mediaStream: MediaStream;
+      try {
+        mediaStream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: 'user', width: { ideal: 720 }, height: { ideal: 720 } },
+          audio: false,
+        });
+      } catch (constraintErr) {
+        // Fall back to basic video constraints
+        console.log('Falling back to basic video constraints');
+        mediaStream = await navigator.mediaDevices.getUserMedia({
+          video: true,
+          audio: false,
+        });
+      }
+      
       setStream(mediaStream);
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
-        // Ensure the video starts playing
-        try {
-          await videoRef.current.play();
-        } catch (playError) {
-          console.log('Video autoplay handled by autoPlay attribute');
-        }
+        // Wait for video to be ready
+        videoRef.current.onloadedmetadata = async () => {
+          try {
+            await videoRef.current?.play();
+          } catch (playError) {
+            console.log('Video play handled by autoPlay attribute');
+          }
+        };
       }
     } catch (err: any) {
       console.error('Camera error:', err);
-      if (err.name === 'NotAllowedError') {
-        setError('Camera access denied. Please allow camera access to take a selfie.');
-      } else if (err.name === 'NotFoundError') {
-        setError('No camera found on this device.');
-      } else if (err.name === 'NotReadableError') {
-        setError('Camera is already in use by another application.');
+      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+        setError('Camera access denied. Please allow camera access in your browser settings to take a selfie.');
+      } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+        setError('No camera found on this device. Please upload a photo instead.');
+      } else if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
+        setError('Camera is already in use by another application. Close other apps and try again.');
+      } else if (err.name === 'OverconstrainedError') {
+        setError('Camera settings not supported. Try a different browser or device.');
+      } else if (err.name === 'SecurityError') {
+        setError('Camera access blocked by security settings. Make sure you are using HTTPS.');
       } else {
-        setError('Could not access camera. Please try uploading a file instead.');
+        setError(`Camera error: ${err.message || 'Unknown error'}. Please try uploading a file instead.`);
       }
     } finally {
       setIsStarting(false);

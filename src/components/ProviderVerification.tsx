@@ -417,18 +417,20 @@ export function ProviderVerification() {
                   <CheckCircle className="h-5 w-5 text-primary" />
                   <span className="text-sm font-medium">{selfieFile.name}</span>
                 </div>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={() => {
-                    setSelfieFile(null);
-                    setShowCamera(true);
-                  }}
-                  className="gap-2"
-                >
-                  <Camera className="h-4 w-4" />
-                  Retake
-                </Button>
+                <div className="flex gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => {
+                      setSelfieFile(null);
+                      setShowCamera(true);
+                    }}
+                    className="gap-2"
+                  >
+                    <Camera className="h-4 w-4" />
+                    Retake
+                  </Button>
+                </div>
               </div>
             </div>
           ) : (
@@ -437,10 +439,33 @@ export function ProviderVerification() {
               <p className="text-sm text-muted-foreground mb-4">
                 Use your camera to take a live selfie
               </p>
-              <Button onClick={() => setShowCamera(true)} className="gap-2">
-                <Camera className="h-4 w-4" />
-                Open Camera
-              </Button>
+              <div className="flex flex-col sm:flex-row gap-2 justify-center items-center">
+                <Button onClick={() => setShowCamera(true)} className="gap-2">
+                  <Camera className="h-4 w-4" />
+                  Open Camera
+                </Button>
+                <span className="text-xs text-muted-foreground">or</span>
+                <div>
+                  <input
+                    id="selfie_upload"
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    onChange={handleSelfieFileChange}
+                    className="hidden"
+                  />
+                  <label htmlFor="selfie_upload">
+                    <Button variant="outline" className="gap-2 cursor-pointer" asChild>
+                      <span>
+                        <Upload className="h-4 w-4" />
+                        Upload Photo
+                      </span>
+                    </Button>
+                  </label>
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground mt-3">
+                If camera doesn't work, you can upload a clear photo of yourself
+              </p>
             </div>
           )}
         </div>
