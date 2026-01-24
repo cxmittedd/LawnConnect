@@ -208,33 +208,26 @@ export default function Auth() {
       return;
     }
 
-    // Record consent for GDPR/JDPA compliance and signup analytics
+    // Record consent for GDPR/JDPA compliance (signup_analytics is handled by database trigger)
     if (data?.user) {
       try {
-        await Promise.all([
-          // Record consent
-          supabase.from('user_consents').insert([
-            {
-              user_id: data.user.id,
-              consent_type: 'terms_of_service',
-              consent_version: TERMS_VERSION,
-              user_agent: navigator.userAgent,
-            },
-            {
-              user_id: data.user.id,
-              consent_type: 'privacy_policy',
-              consent_version: PRIVACY_VERSION,
-              user_agent: navigator.userAgent,
-            }
-          ]),
-          // Record signup analytics
-          supabase.from('signup_analytics').insert({
+        // Record consent - this works because the profile was just created by the trigger
+        await supabase.from('user_consents').insert([
+          {
             user_id: data.user.id,
-            user_role: signUpData.userRole,
-          })
+            consent_type: 'terms_of_service',
+            consent_version: TERMS_VERSION,
+            user_agent: navigator.userAgent,
+          },
+          {
+            user_id: data.user.id,
+            consent_type: 'privacy_policy',
+            consent_version: PRIVACY_VERSION,
+            user_agent: navigator.userAgent,
+          }
         ]);
       } catch (analyticsError) {
-        console.error('Failed to record consent/analytics:', analyticsError);
+        console.error('Failed to record consent:', analyticsError);
         // Don't block signup if recording fails
       }
 
