@@ -11,7 +11,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Check, X } from 'lucide-react';
+import { Check, X, Mail } from 'lucide-react';
 import { z } from 'zod';
 import { useMemo } from 'react';
 import { TERMS_VERSION } from './TermsOfService';
@@ -174,6 +174,9 @@ export default function Auth() {
     }
   };
 
+  const [showVerificationMessage, setShowVerificationMessage] = useState(false);
+  const [verificationEmail, setVerificationEmail] = useState('');
+
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -246,9 +249,64 @@ export default function Auth() {
     }
 
     setLoading(false);
-    toast.success('Account created successfully!');
-    navigate('/dashboard');
+    // Show verification message instead of navigating
+    setVerificationEmail(signUpData.email);
+    setShowVerificationMessage(true);
   };
+
+  // Show email verification message after successful signup
+  if (showVerificationMessage) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-page-pattern p-4">
+        <Card className="w-full max-w-md shadow-xl">
+          <CardHeader className="text-center space-y-4">
+            <img src={lawnConnectLogo} alt="LawnConnect" className="mx-auto h-40 w-40 object-contain" />
+            <div className="flex justify-center">
+              <div className="rounded-full bg-primary/10 p-4">
+                <Mail className="h-12 w-12 text-primary" />
+              </div>
+            </div>
+            <div>
+              <CardTitle className="text-2xl">Check Your Email</CardTitle>
+              <CardDescription className="mt-2">
+                We've sent a verification link to
+              </CardDescription>
+              <p className="font-medium text-foreground mt-1">{verificationEmail}</p>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground text-center">
+              Please click the link in the email to verify your account. 
+              Once verified, you can sign in to access LawnConnect.
+            </p>
+            <div className="text-center text-sm text-muted-foreground">
+              <p>Didn't receive the email?</p>
+              <p className="mt-1">Check your spam folder or contact support.</p>
+            </div>
+            <Button 
+              variant="outline" 
+              className="w-full"
+              onClick={() => {
+                setShowVerificationMessage(false);
+                setSignUpData({
+                  firstName: '',
+                  lastName: '',
+                  email: '',
+                  phoneNumber: '',
+                  password: '',
+                  confirmPassword: '',
+                  userRole: '' as '' | 'customer' | 'provider',
+                  acceptedTerms: false,
+                });
+              }}
+            >
+              Back to Sign In
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <>
