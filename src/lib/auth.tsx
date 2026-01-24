@@ -53,7 +53,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signUp = async (email: string, password: string, fullName: string, userRole: string = 'customer', phoneNumber?: string, firstName?: string, lastName?: string) => {
     try {
-      const redirectUrl = `${window.location.origin}/`;
+      // Use production URL for email verification redirect
+      const redirectUrl = import.meta.env.PROD 
+        ? 'https://connectlawn.com/' 
+        : `${window.location.origin}/`;
       const { error, data } = await supabase.auth.signUp({
         email,
         password,
