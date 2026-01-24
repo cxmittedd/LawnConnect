@@ -183,7 +183,7 @@ const handler = async (req: Request): Promise<Response> => {
     const emailResponse = await resend.emails.send({
       from: "LawnConnect <welcome@connectlawn.com>",
       to: [data.email],
-      subject: `Welcome to LawnConnect, ${sanitizedFirstName}! 🌿`,
+      subject: `Welcome to LawnConnect, ${sanitizedFirstName}! 🌱`,
       html: htmlContent,
     });
 

@@ -163,11 +163,8 @@ export default function Auth() {
     setLoading(false);
 
     if (error) {
-      if (error.message.includes('Invalid login credentials')) {
-        toast.error('Invalid email or password');
-      } else {
-        toast.error(error.message);
-      }
+      // Give generic error to avoid revealing account status
+      toast.error('Invalid email or password');
     } else {
       toast.success('Signed in successfully!');
       navigate('/dashboard');
@@ -200,15 +197,17 @@ export default function Auth() {
     
     if (error) {
       setLoading(false);
-      if (error.message.includes('already registered')) {
-        toast.error('This email is already registered');
+      // Give generic error messages to avoid revealing account status
+      if (error.message.includes('already registered') || error.message.includes('email not confirmed')) {
+        toast.error('Unable to create account. Please try again or use a different email.');
       } else {
-        toast.error(error.message);
+        toast.error('Unable to create account. Please try again.');
       }
       return;
     }
 
     // Record consent for GDPR/JDPA compliance (signup_analytics is handled by database trigger)
+    // Note: Welcome email is sent via database trigger AFTER email confirmation, not here
     if (data?.user) {
       try {
         // Record consent - this works because the profile was just created by the trigger
@@ -230,15 +229,6 @@ export default function Auth() {
         console.error('Failed to record consent:', analyticsError);
         // Don't block signup if recording fails
       }
-
-      // Send welcome email (fire-and-forget)
-      supabase.functions.invoke('send-welcome-email', {
-        body: {
-          email: signUpData.email,
-          firstName: signUpData.firstName,
-          userRole: signUpData.userRole,
-        }
-      }).catch(err => console.error('Failed to send welcome email:', err));
     }
 
     setLoading(false);
