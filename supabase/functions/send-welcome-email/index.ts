@@ -1,6 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "https://esm.sh/resend@2.0.0";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.86.0";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
@@ -15,6 +14,12 @@ interface WelcomeEmailRequest {
   firstName: string;
   userRole: string;
 }
+
+// Validate email format
+const isValidEmail = (email: string): boolean => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+};
 
 const createWelcomeEmail = (data: WelcomeEmailRequest): string => {
   const logoUrl = "https://connectlawn.com/pwa-512x512.png";
@@ -136,53 +141,49 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    // Verify authentication - this function should only be called by authenticated users or service role
-    const authHeader = req.headers.get('authorization');
-    if (!authHeader) {
-      console.error("No authorization header provided");
-      return new Response(
-        JSON.stringify({ error: 'Unauthorized' }),
-        { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
-      );
-    }
-
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
-    
-    // Create client with user's auth token
-    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { headers: { Authorization: authHeader } }
-    });
-
-    // Verify the user
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
-      console.error("Invalid authentication token:", authError);
-      return new Response(
-        JSON.stringify({ error: 'Invalid token' }),
-        { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
-      );
-    }
-
     const data: WelcomeEmailRequest = await req.json();
     
-    // Verify user can only send welcome email to their own email
-    if (data.email !== user.email) {
-      console.error("User attempting to send welcome email to different address:", user.email, data.email);
+    // Validate required fields
+    if (!data.email || !data.firstName || !data.userRole) {
+      console.error("Missing required fields:", { email: !!data.email, firstName: !!data.firstName, userRole: !!data.userRole });
       return new Response(
-        JSON.stringify({ error: 'Forbidden' }),
-        { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        JSON.stringify({ error: 'Missing required fields' }),
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
-    
-    console.log("Sending welcome email to:", data.email, "for user:", user.id);
 
-    const htmlContent = createWelcomeEmail(data);
+    // Validate email format
+    if (!isValidEmail(data.email)) {
+      console.error("Invalid email format:", data.email);
+      return new Response(
+        JSON.stringify({ error: 'Invalid email format' }),
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    // Validate userRole
+    if (!['customer', 'provider', 'both'].includes(data.userRole)) {
+      console.error("Invalid user role:", data.userRole);
+      return new Response(
+        JSON.stringify({ error: 'Invalid user role' }),
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    // Sanitize firstName (basic XSS prevention)
+    const sanitizedFirstName = data.firstName.replace(/[<>]/g, '').substring(0, 50);
+    
+    console.log("Sending welcome email to:", data.email);
+
+    const htmlContent = createWelcomeEmail({
+      ...data,
+      firstName: sanitizedFirstName
+    });
 
     const emailResponse = await resend.emails.send({
       from: "LawnConnect <welcome@connectlawn.com>",
       to: [data.email],
-      subject: `Welcome to LawnConnect, ${data.firstName}! 🌿`,
+      subject: `Welcome to LawnConnect, ${sanitizedFirstName}! 🌿`,
       html: htmlContent,
     });
 
