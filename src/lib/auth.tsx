@@ -41,13 +41,59 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signIn = async (email: string, password: string) => {
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { error, data } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
+      
+      // If sign-in successful, check if welcome email needs to be sent
+      if (!error && data.user) {
+        sendWelcomeEmailIfNeeded(data.user.id, email);
+      }
+      
       return { error };
     } catch (error: any) {
       return { error };
+    }
+  };
+  
+  // Send welcome email on first sign-in (after email confirmation)
+  const sendWelcomeEmailIfNeeded = async (userId: string, userEmail: string) => {
+    try {
+      // Check if welcome email was already sent
+      const { data: existingRecord } = await supabase
+        .from('welcome_email_sent')
+        .select('user_id')
+        .eq('user_id', userId)
+        .single();
+      
+      if (existingRecord) {
+        return; // Already sent
+      }
+      
+      // Get user profile data
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('first_name, user_role')
+        .eq('id', userId)
+        .single();
+      
+      if (profile) {
+        // Mark as sent first to prevent duplicate sends
+        await supabase.from('welcome_email_sent').insert({ user_id: userId });
+        
+        // Send welcome email
+        supabase.functions.invoke('send-welcome-email', {
+          body: {
+            email: userEmail,
+            firstName: profile.first_name || 'User',
+            userRole: profile.user_role || 'customer',
+          }
+        }).catch(err => console.error('Failed to send welcome email:', err));
+      }
+    } catch (err) {
+      // Silently fail - don't block sign-in
+      console.error('Welcome email check failed:', err);
     }
   };
 

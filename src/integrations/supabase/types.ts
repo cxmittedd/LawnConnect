@@ -970,6 +970,21 @@ export type Database = {
         }
         Relationships: []
       }
+      welcome_email_sent: {
+        Row: {
+          sent_at: string
+          user_id: string
+        }
+        Insert: {
+          sent_at?: string
+          user_id: string
+        }
+        Update: {
+          sent_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       provider_public_profiles: {
