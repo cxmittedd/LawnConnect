@@ -11,7 +11,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Check, X, Mail } from 'lucide-react';
+import { Check, X, Mail, ArrowLeft } from 'lucide-react';
 import { z } from 'zod';
 import { useMemo } from 'react';
 import { TERMS_VERSION } from './TermsOfService';
@@ -294,14 +294,24 @@ export default function Auth() {
   return (
     <>
     <div className="min-h-screen flex items-center justify-center bg-page-pattern p-4">
-      <Card className="w-full max-w-md shadow-xl">
-        <CardHeader className="text-center space-y-4">
-          <img src={lawnConnectLogo} alt="LawnConnect" className="mx-auto h-40 w-40 object-contain" />
-          <div>
-            <CardTitle className="text-2xl">Welcome to LawnConnect</CardTitle>
-            <CardDescription>Connect customers with lawn care professionals</CardDescription>
-          </div>
-        </CardHeader>
+      <div className="w-full max-w-md">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => navigate('/')}
+          className="mb-4"
+        >
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back to Home
+        </Button>
+        <Card className="w-full shadow-xl">
+          <CardHeader className="text-center space-y-4">
+            <img src={lawnConnectLogo} alt="LawnConnect" className="mx-auto h-40 w-40 object-contain" />
+            <div>
+              <CardTitle className="text-2xl">Welcome to LawnConnect</CardTitle>
+              <CardDescription>Connect customers with lawn care professionals</CardDescription>
+            </div>
+          </CardHeader>
         <CardContent>
           <Tabs defaultValue="signin" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
@@ -476,6 +486,7 @@ export default function Auth() {
           </Tabs>
         </CardContent>
       </Card>
+      </div>
     </div>
 
     {/* Forgot Password Dialog */}
