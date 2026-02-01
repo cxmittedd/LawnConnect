@@ -32,17 +32,17 @@ const Index = () => {
     {
       step: 1,
       title: 'Post Your Lawn Care Job',
-      description: 'Describe your lawn care needs - whether it\'s regular mowing, landscaping, or garden maintenance across Jamaica.',
+      description: 'Describe your lawn care needs with photos and location. See upfront pricing based on your lawn size and service type.',
     },
     {
       step: 2,
-      title: 'Get Multiple Quotes',
-      description: 'Receive competitive quotes from verified lawn care providers in your area within hours.',
+      title: 'Get Matched with Providers',
+      description: 'Verified lawn care professionals in your area will accept your job based on their availability and location.',
     },
     {
       step: 3,
-      title: 'Compare and Hire',
-      description: 'Review provider ratings, prices, and profiles. Choose the best match and book instantly with secure payments.',
+      title: 'Secure Payment & Service',
+      description: 'Pay securely upfront. Funds are held safely until the job is completed to your satisfaction.',
     },
   ];
 
@@ -79,7 +79,7 @@ const Index = () => {
 
   const whyChoose = [
     { icon: Shield, title: 'Verified Providers', description: 'All lawn care professionals are vetted and reviewed' },
-    { icon: DollarSign, title: 'Competitive Pricing', description: 'Get multiple quotes and choose the best value' },
+    { icon: DollarSign, title: 'Upfront Pricing', description: 'Know exactly what you\'ll pay before booking' },
     { icon: MapPin, title: 'Island-Wide Coverage', description: 'From Kingston to Negril, we cover all Jamaica' },
     { icon: Clock, title: 'Easy Booking', description: 'Book online 24/7 with secure payments' },
     { icon: Award, title: 'Quality Guarantee', description: 'Satisfaction guaranteed or your money back' },
@@ -110,11 +110,11 @@ const Index = () => {
   const faqs = [
     {
       question: "How much does lawn care cost in Jamaica?",
-      answer: "Lawn care prices in Jamaica vary by service and property size. Basic lawn mowing typically ranges from JMD 2,000-8,000 per visit, while full landscaping projects can range from JMD 50,000-500,000+. Use LawnConnect to get free quotes from multiple providers and compare prices."
+      answer: "Lawn care prices in Jamaica are based on your lawn size and service type. Basic lawn mowing starts from JMD 2,000 for small lawns, with add-ons available for cleanup (+$500) or overgrown grass (+$1,000). You'll see the exact price upfront before posting your job."
     },
     {
       question: "How do I find reliable lawn care providers in Jamaica?",
-      answer: "LawnConnect makes it easy to find verified lawn care professionals across Jamaica. Simply post your job, receive quotes from multiple providers, and review their ratings and customer feedback before hiring."
+      answer: "LawnConnect makes it easy to find verified lawn care professionals across Jamaica. Simply post your job with upfront pricing, and verified providers in your area will accept jobs based on their availability."
     },
     {
       question: "What areas of Jamaica do you cover?",
@@ -181,13 +181,13 @@ const Index = () => {
               <span className="block text-primary mt-2">Lawn Care Marketplace</span>
             </h1>
             <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto mb-8">
-              Find and hire trusted lawn care professionals across Jamaica. Get multiple quotes, compare prices, 
-              and book the best provider for your lawn mowing, landscaping, and garden maintenance needs in 
-              Kingston, Montego Bay, and all 14 parishes.
+              Find and hire trusted lawn care professionals across Jamaica. See upfront pricing, 
+              book instantly, and pay securely for lawn mowing, landscaping, and garden maintenance 
+              in Kingston, Montego Bay, and all 14 parishes.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button size="lg" className="text-lg px-8" onClick={() => navigate('/auth')}>
-                Get Free Quotes Now
+                Post a Job Now
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
               <Button size="lg" variant="outline" className="text-lg px-8" onClick={() => navigate('/auth')}>
