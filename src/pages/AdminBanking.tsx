@@ -16,6 +16,8 @@ import { useAuth } from '@/lib/auth';
 import { toast } from 'sonner';
 import { format, nextSaturday, addWeeks, isAfter, isBefore, startOfDay } from 'date-fns';
 import { Navigation } from '@/components/Navigation';
+import { maskAccountNumber, maskTRN } from '@/lib/sensitiveDataUtils';
+import { SensitiveDataField } from '@/components/SensitiveDataField';
 
 type BankingStatus = 'pending' | 'verified' | 'rejected';
 
@@ -431,6 +433,22 @@ export default function AdminBanking() {
     toast.success(`${label} copied to clipboard`);
   };
 
+  // Log when sensitive data is revealed in the admin UI
+  const logSensitiveDataReveal = async (recordId: string, fieldName: string) => {
+    if (!user) return;
+    try {
+      await supabase.from('sensitive_data_access_logs').insert({
+        admin_id: user.id,
+        table_name: 'provider_banking_details',
+        record_id: recordId,
+        action: `reveal_${fieldName}`,
+        user_agent: navigator.userAgent,
+      });
+    } catch (error) {
+      console.error('Failed to log reveal action:', error);
+    }
+  };
+
   // Calculate next payout dates (biweekly on Saturdays)
   const getPayoutDates = () => {
     const today = startOfDay(new Date());
@@ -648,7 +666,7 @@ export default function AdminBanking() {
                           </TableCell>
                           <TableCell className="font-medium">{record.provider_name}</TableCell>
                           <TableCell>{getBankName(record.bank_name)}</TableCell>
-                          <TableCell>{record.trn}</TableCell>
+                          <TableCell className="font-mono">{maskTRN(record.trn)}</TableCell>
                           <TableCell>{getStatusBadge(record.status)}</TableCell>
                           <TableCell>
                             <Button size="sm" onClick={() => handleViewDetails(record)}>
@@ -970,17 +988,25 @@ export default function AdminBanking() {
                   <Label className="text-xs text-muted-foreground">Branch Number</Label>
                   <p className="font-medium">{selectedRecord.branch_number || 'N/A'}</p>
                 </div>
-                <div>
-                  <Label className="text-xs text-muted-foreground">Account Number</Label>
-                  <p className="font-medium font-mono">{selectedRecord.account_number}</p>
+                <div className="col-span-2">
+                  <SensitiveDataField
+                    label="Account Number"
+                    value={selectedRecord.account_number}
+                    maskedValue={maskAccountNumber(selectedRecord.account_number)}
+                    onReveal={() => logSensitiveDataReveal(selectedRecord.id, 'account_number')}
+                  />
                 </div>
                 <div>
                   <Label className="text-xs text-muted-foreground">Account Type</Label>
                   <p className="font-medium capitalize">{selectedRecord.account_type}</p>
                 </div>
-                <div>
-                  <Label className="text-xs text-muted-foreground">TRN</Label>
-                  <p className="font-medium font-mono">{selectedRecord.trn}</p>
+                <div className="col-span-2">
+                  <SensitiveDataField
+                    label="TRN"
+                    value={selectedRecord.trn}
+                    maskedValue={maskTRN(selectedRecord.trn)}
+                    onReveal={() => logSensitiveDataReveal(selectedRecord.id, 'trn')}
+                  />
                 </div>
                 <div>
                   <Label className="text-xs text-muted-foreground">Status</Label>
@@ -1139,20 +1165,17 @@ export default function AdminBanking() {
                     </Button>
                   </div>
 
-                  {/* Account Number */}
-                  <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                    <div>
-                      <p className="text-xs text-muted-foreground">Account Number</p>
-                      <p className="font-mono text-lg font-bold tracking-wider">{selectedPayout.banking.account_number}</p>
-                    </div>
-                    <Button 
-                      size="sm" 
-                      variant="ghost" 
-                      onClick={() => copyToClipboard(selectedPayout.banking!.account_number, 'Account number')}
-                    >
-                      <Copy className="h-4 w-4" />
-                    </Button>
-                  </div>
+                  {/* Account Number - Masked with reveal */}
+                  <SensitiveDataField
+                    label="Account Number"
+                    value={selectedPayout.banking.account_number}
+                    maskedValue={maskAccountNumber(selectedPayout.banking.account_number)}
+                    onReveal={() => {
+                      if (selectedPayout.banking) {
+                        logSensitiveDataReveal(selectedPayout.banking.id, 'account_number');
+                      }
+                    }}
+                  />
 
                   {/* Account Type */}
                   <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
@@ -1169,20 +1192,17 @@ export default function AdminBanking() {
                     </Button>
                   </div>
 
-                  {/* TRN */}
-                  <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                    <div>
-                      <p className="text-xs text-muted-foreground">TRN</p>
-                      <p className="font-mono font-semibold">{selectedPayout.banking.trn}</p>
-                    </div>
-                    <Button 
-                      size="sm" 
-                      variant="ghost" 
-                      onClick={() => copyToClipboard(selectedPayout.banking!.trn, 'TRN')}
-                    >
-                      <Copy className="h-4 w-4" />
-                    </Button>
-                  </div>
+                  {/* TRN - Masked with reveal */}
+                  <SensitiveDataField
+                    label="TRN"
+                    value={selectedPayout.banking.trn}
+                    maskedValue={maskTRN(selectedPayout.banking.trn)}
+                    onReveal={() => {
+                      if (selectedPayout.banking) {
+                        logSensitiveDataReveal(selectedPayout.banking.id, 'trn');
+                      }
+                    }}
+                  />
 
                   {/* Next Payout Date */}
                   <div className="p-3 border border-dashed rounded-lg text-center">
