@@ -1,0 +1,11 @@
+# LawnConnect Robots.txt
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://connectlawn.com/sitemap.xml
+
+# Disallow admin and auth pages from indexing
+Disallow: /admin/
+Disallow: /auth
+Disallow: /reset-password
