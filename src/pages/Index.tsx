@@ -1,21 +1,29 @@
-import { useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { useAuth } from '@/lib/auth';
-import { useTheme } from '@/hooks/useTheme';
-import { 
-  Scissors, Users, DollarSign, CheckCircle, ArrowRight, Sun, Moon,
-  Leaf, TreeDeciduous, Droplets, Shield, Star, MapPin, Clock, Award
-} from 'lucide-react';
-import InstallBanner from '@/components/InstallBanner';
-import lawnConnectLogo from '@/assets/lawnconnect-logo.png';
+import { useEffect } from "react";
+import { useNavigate, Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { useAuth } from "@/lib/auth";
+import { useTheme } from "@/hooks/useTheme";
 import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
+  Scissors,
+  Users,
+  DollarSign,
+  CheckCircle,
+  ArrowRight,
+  Sun,
+  Moon,
+  Leaf,
+  TreeDeciduous,
+  Droplets,
+  Shield,
+  Star,
+  MapPin,
+  Clock,
+  Award,
+} from "lucide-react";
+import InstallBanner from "@/components/InstallBanner";
+import lawnConnectLogo from "@/assets/lawnconnect-logo.png";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 const Index = () => {
   const { user } = useAuth();
@@ -24,66 +32,79 @@ const Index = () => {
 
   useEffect(() => {
     if (user) {
-      navigate('/dashboard');
+      navigate("/dashboard");
     }
   }, [user, navigate]);
 
   const howItWorks = [
     {
       step: 1,
-      title: 'Post Your Lawn Care Job',
-      description: 'Describe your lawn care needs with photos and location. See upfront pricing based on your lawn size and service type.',
+      title: "Post Your Lawn Care Job",
+      description:
+        "Describe your lawn care needs with photos and location. See upfront pricing based on your lawn size and service type.",
     },
     {
       step: 2,
-      title: 'Get Matched with Providers',
-      description: 'Verified lawn care professionals in your area will accept your job based on their availability and location.',
+      title: "Get Matched with Providers",
+      description:
+        "Verified lawn care professionals in your area will accept your job based on their availability and location.",
     },
     {
       step: 3,
-      title: 'Secure Payment & Service',
-      description: 'Pay securely upfront. Funds are held safely until the job is completed to your satisfaction.',
+      title: "Secure Payment & Service",
+      description: "Pay securely upfront. Funds are held safely until the job is completed to your satisfaction.",
     },
   ];
 
   const services = [
     {
       icon: Scissors,
-      title: 'Lawn Mowing Services',
-      description: 'Regular grass cutting and wacker man services for residential and commercial properties.',
+      title: "Lawn Mowing Services",
+      description: "Regular grass cutting and wacker man services for residential and commercial properties.",
     },
     {
       icon: Leaf,
-      title: 'Landscaping & Design',
-      description: 'Transform your outdoor space with professional landscapers and garden designers.',
+      title: "Landscaping & Design",
+      description: "Transform your outdoor space with professional landscapers and garden designers.",
     },
     {
       icon: TreeDeciduous,
-      title: 'Tree Cutting & Trimming',
-      description: 'Safe tree removal, pruning, and maintenance by experienced professionals.',
+      title: "Tree Cutting & Trimming",
+      description: "Safe tree removal, pruning, and maintenance by experienced professionals.",
     },
     {
       icon: Droplets,
-      title: 'Garden Maintenance',
-      description: 'Ongoing care including weeding, pruning, fertilizing, and irrigation system repairs.',
+      title: "Garden Maintenance",
+      description: "Ongoing care including weeding, pruning, fertilizing, and irrigation system repairs.",
     },
   ];
 
   const parishes = [
-    'Kingston', 'St. Andrew', 'St. Catherine', 'Clarendon', 'Manchester',
-    'St. Elizabeth', 'Westmoreland', 'Hanover', 'St. James', 'Trelawny',
-    'St. Ann', 'St. Mary', 'Portland', 'St. Thomas'
+    "Kingston",
+    "St. Andrew",
+    "St. Catherine",
+    "Clarendon",
+    "Manchester",
+    "St. Elizabeth",
+    "Westmoreland",
+    "Hanover",
+    "St. James",
+    "Trelawny",
+    "St. Ann",
+    "St. Mary",
+    "Portland",
+    "St. Thomas",
   ];
 
-  const popularLocations = ['Portmore', 'Spanish Town', 'Mandeville', 'Montego Bay', 'Ocho Rios', 'Negril'];
+  const popularLocations = ["Portmore", "Spanish Town", "Mandeville", "Montego Bay", "Ocho Rios", "Negril"];
 
   const whyChoose = [
-    { icon: Shield, title: 'Verified Providers', description: 'All lawn care professionals are vetted and reviewed' },
-    { icon: DollarSign, title: 'Upfront Pricing', description: 'Know exactly what you\'ll pay before booking' },
-    { icon: MapPin, title: 'Island-Wide Coverage', description: 'From Kingston to Negril, we cover all Jamaica' },
-    { icon: Clock, title: 'Easy Booking', description: 'Book online 24/7 with secure payments' },
-    { icon: Award, title: 'Quality Guarantee', description: 'Satisfaction guaranteed or your money back' },
-    { icon: Star, title: 'Real Reviews', description: 'Read honest feedback from Jamaican homeowners' },
+    { icon: Shield, title: "Verified Providers", description: "All lawn care professionals are vetted and reviewed" },
+    { icon: DollarSign, title: "Upfront Pricing", description: "Know exactly what you'll pay before booking" },
+    { icon: MapPin, title: "Island-Wide Coverage", description: "From Kingston to Negril, we cover all Jamaica" },
+    { icon: Clock, title: "Easy Booking", description: "Book online 24/7 with secure payments" },
+    { icon: Award, title: "Quality Guarantee", description: "Satisfaction guaranteed or your money back" },
+    { icon: Star, title: "Real Reviews", description: "Read honest feedback from Jamaican homeowners" },
   ];
 
   const testimonials = [
@@ -110,23 +131,28 @@ const Index = () => {
   const faqs = [
     {
       question: "How much does lawn care cost in Jamaica?",
-      answer: "Lawn care prices in Jamaica are based on your lawn size and service type. Basic lawn mowing starts from JMD 2,000 for small lawns, with add-ons available for cleanup (+$500) or overgrown grass (+$1,000). You'll see the exact price upfront before posting your job."
+      answer:
+        "Lawn care prices in Jamaica are based on your lawn size and service type. Basic lawn mowing starts from JMD 2,000 for small lawns, with add-ons available for cleanup (+$500) or overgrown grass (+$1,000). You'll see the exact price upfront before posting your job.",
     },
     {
       question: "How do I find reliable lawn care providers in Jamaica?",
-      answer: "LawnConnect makes it easy to find verified lawn care professionals across Jamaica. Simply post your job with upfront pricing, and verified providers in your area will accept jobs based on their availability."
+      answer:
+        "LawnConnect makes it easy to find verified lawn care professionals across Jamaica. Simply post your job with upfront pricing, and verified providers in your area will accept jobs based on their availability.",
     },
     {
       question: "What areas of Jamaica do you cover?",
-      answer: "LawnConnect connects you with lawn care providers across all 14 parishes including Kingston, St. Andrew, Montego Bay, Ocho Rios, Portmore, Spanish Town, Mandeville, and every parish island-wide."
+      answer:
+        "LawnConnect connects you with lawn care providers across all 14 parishes including Kingston, St. Andrew, Montego Bay, Ocho Rios, Portmore, Spanish Town, Mandeville, and every parish island-wide.",
     },
     {
       question: "What services can I book through LawnConnect?",
-      answer: "You can book lawn mowing, landscaping design, garden maintenance, tree cutting, weed control, irrigation installation, land clearing, and all professional lawn care services in Jamaica."
+      answer:
+        "You can book lawn mowing, landscaping design, garden maintenance, tree cutting, weed control, irrigation installation, land clearing, and all professional lawn care services in Jamaica.",
     },
     {
       question: "Are the lawn care providers verified?",
-      answer: "Yes, all providers on LawnConnect are verified and reviewed by real customers. You can see ratings, reviews, and work history before making your hiring decision."
+      answer:
+        "Yes, all providers on LawnConnect are verified and reviewed by real customers. You can see ratings, reviews, and work history before making your hiring decision.",
     },
   ];
 
@@ -144,10 +170,10 @@ const Index = () => {
         <div className="container mx-auto px-4">
           <div className="flex h-16 items-center justify-between">
             <div className="flex items-center gap-2">
-              <img 
-                src={lawnConnectLogo} 
-                alt="LawnConnect Jamaica Lawn Care Marketplace Logo" 
-                className="h-24 w-24 object-contain" 
+              <img
+                src={lawnConnectLogo}
+                alt="LawnConnect Jamaica Lawn Care Marketplace Logo"
+                className="h-24 w-24 object-contain"
               />
               <span className="text-xl font-bold text-foreground">LawnConnect</span>
             </div>
@@ -157,16 +183,16 @@ const Index = () => {
                 className="p-2 rounded-md hover:bg-muted transition-colors"
                 aria-label="Toggle theme"
               >
-                {theme === 'light' ? (
+                {theme === "light" ? (
                   <Moon className="h-5 w-5 text-muted-foreground" />
                 ) : (
                   <Sun className="h-5 w-5 text-muted-foreground" />
                 )}
               </button>
-              <Button variant="outline" onClick={() => navigate('/about')}>
+              <Button variant="outline" onClick={() => navigate("/about")}>
                 About
               </Button>
-              <Button onClick={() => navigate('/auth')}>Get Started</Button>
+              <Button onClick={() => navigate("/auth")}>Get Started</Button>
             </div>
           </div>
         </div>
@@ -181,16 +207,16 @@ const Index = () => {
               <span className="block text-primary mt-2">Lawn Care Marketplace</span>
             </h1>
             <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto mb-8">
-              Find and hire trusted lawn care professionals across Jamaica. See upfront pricing, 
-              book instantly, and pay securely for lawn mowing, landscaping, and garden maintenance 
-              in Kingston, Montego Bay, and all 14 parishes.
+              Find and hire trusted lawn care professionals across Jamaica. See upfront pricing, book instantly, and pay
+              securely for lawn mowing, landscaping, and garden maintenance in Kingston, Montego Bay, and all 14
+              parishes.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button size="lg" className="text-lg px-8" onClick={() => navigate('/auth')}>
-                Post a Job Now
+              <Button size="lg" className="text-lg px-8" onClick={() => navigate("/auth")}>
+                Get your lawn cut
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
-              <Button size="lg" variant="outline" className="text-lg px-8" onClick={() => navigate('/auth')}>
+              <Button size="lg" variant="outline" className="text-lg px-8" onClick={() => navigate("/auth")}>
                 Join as Provider
               </Button>
             </div>
@@ -212,9 +238,7 @@ const Index = () => {
         {/* How It Works */}
         <section className="bg-muted/30 py-16 md:py-20">
           <div className="container mx-auto px-4">
-            <h2 className="text-3xl md:text-4xl font-bold text-center mb-12">
-              How LawnConnect Works
-            </h2>
+            <h2 className="text-3xl md:text-4xl font-bold text-center mb-12">How LawnConnect Works</h2>
             <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
               {howItWorks.map((step) => (
                 <div key={step.step} className="text-center">
@@ -235,7 +259,8 @@ const Index = () => {
             Professional Lawn Care Services Across Jamaica
           </h2>
           <p className="text-center text-muted-foreground mb-12 max-w-2xl mx-auto">
-            From regular lawn mowing to complete landscaping transformations, find the right professional for every outdoor need.
+            From regular lawn mowing to complete landscaping transformations, find the right professional for every
+            outdoor need.
           </p>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             {services.map((service) => {
@@ -258,16 +283,14 @@ const Index = () => {
         {/* Parish Coverage */}
         <section className="bg-muted/30 py-16 md:py-20">
           <div className="container mx-auto px-4">
-            <h2 className="text-3xl md:text-4xl font-bold text-center mb-4">
-              Serving All 14 Parishes of Jamaica
-            </h2>
+            <h2 className="text-3xl md:text-4xl font-bold text-center mb-4">Serving All 14 Parishes of Jamaica</h2>
             <p className="text-center text-muted-foreground mb-8 max-w-2xl mx-auto">
               We connect you with lawn care professionals across the entire island.
             </p>
             <div className="flex flex-wrap justify-center gap-3 max-w-4xl mx-auto mb-8">
               {parishes.map((parish) => (
-                <span 
-                  key={parish} 
+                <span
+                  key={parish}
                   className="px-4 py-2 bg-card rounded-full text-sm font-medium border border-border hover:border-primary transition-colors"
                 >
                   {parish}
@@ -277,13 +300,25 @@ const Index = () => {
             <div className="text-center">
               <p className="text-sm text-muted-foreground mb-2">Popular locations:</p>
               <div className="flex flex-wrap justify-center gap-2">
-                {popularLocations.map((location) => (
-                  <span key={location} className="text-primary font-medium">
-                    {location}
-                  </span>
-                )).reduce((prev, curr, i) => (
-                  i === 0 ? [curr] : [...prev, <span key={`dot-${i}`} className="text-muted-foreground">•</span>, curr]
-                ), [] as React.ReactNode[])}
+                {popularLocations
+                  .map((location) => (
+                    <span key={location} className="text-primary font-medium">
+                      {location}
+                    </span>
+                  ))
+                  .reduce(
+                    (prev, curr, i) =>
+                      i === 0
+                        ? [curr]
+                        : [
+                            ...prev,
+                            <span key={`dot-${i}`} className="text-muted-foreground">
+                              •
+                            </span>,
+                            curr,
+                          ],
+                    [] as React.ReactNode[],
+                  )}
               </div>
             </div>
           </div>
@@ -315,9 +350,7 @@ const Index = () => {
         {/* Testimonials */}
         <section className="bg-muted/30 py-16 md:py-20">
           <div className="container mx-auto px-4">
-            <h2 className="text-3xl md:text-4xl font-bold text-center mb-12">
-              What Jamaican Homeowners Say
-            </h2>
+            <h2 className="text-3xl md:text-4xl font-bold text-center mb-12">What Jamaican Homeowners Say</h2>
             <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
               {testimonials.map((testimonial, index) => (
                 <Card key={index} className="hover:shadow-lg transition-shadow">
@@ -352,9 +385,7 @@ const Index = () => {
                   <AccordionTrigger className="text-left">
                     <h3 className="font-medium">{faq.question}</h3>
                   </AccordionTrigger>
-                  <AccordionContent className="text-muted-foreground">
-                    {faq.answer}
-                  </AccordionContent>
+                  <AccordionContent className="text-muted-foreground">{faq.answer}</AccordionContent>
                 </AccordionItem>
               ))}
             </Accordion>
@@ -367,11 +398,11 @@ const Index = () => {
             <CardContent className="p-8 md:p-12 text-center">
               <h2 className="text-2xl md:text-3xl font-bold mb-4">Ready to Get Started?</h2>
               <p className="text-lg opacity-90 mb-6 max-w-2xl mx-auto">
-                Whether you need your lawn cut or you're looking to provide lawn care services, 
-                LawnConnect makes it easy to connect.
+                Whether you need your lawn cut or you're looking to provide lawn care services, LawnConnect makes it
+                easy to connect.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Button size="lg" variant="secondary" onClick={() => navigate('/auth')}>
+                <Button size="lg" variant="secondary" onClick={() => navigate("/auth")}>
                   Post Your First Job Free
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
@@ -388,11 +419,7 @@ const Index = () => {
             {/* Company Info */}
             <div>
               <div className="flex items-center gap-2 mb-4">
-                <img 
-                  src={lawnConnectLogo} 
-                  alt="LawnConnect Jamaica" 
-                  className="h-10 w-10 object-contain" 
-                />
+                <img src={lawnConnectLogo} alt="LawnConnect Jamaica" className="h-10 w-10 object-contain" />
                 <span className="font-bold text-lg">LawnConnect</span>
               </div>
               <p className="text-sm text-muted-foreground mb-4">
