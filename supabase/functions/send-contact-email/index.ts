@@ -15,6 +15,16 @@ interface ContactEmailRequest {
   message: string;
 }
 
+// HTML escape function to prevent XSS in emails
+const escapeHtml = (text: string): string => {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#x27;');
+};
+
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -23,7 +33,7 @@ const handler = async (req: Request): Promise<Response> => {
   try {
     const { name, email, subject, message }: ContactEmailRequest = await req.json();
 
-    console.log("Received contact email request:", { name, email, subject });
+    console.log("Received contact email request:", { name: name?.substring(0, 20), email: email?.substring(0, 20) });
 
     // Validate inputs
     if (!name || !email || !subject || !message) {
@@ -33,6 +43,12 @@ const handler = async (req: Request): Promise<Response> => {
         { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
+
+    // Sanitize all user inputs to prevent HTML injection/XSS
+    const safeName = escapeHtml(name.substring(0, 100));
+    const safeEmail = escapeHtml(email.substring(0, 255));
+    const safeSubject = escapeHtml(subject.substring(0, 200));
+    const safeMessage = escapeHtml(message.substring(0, 1000));
 
     // Send email to LawnConnect admin
     console.log("Sending email to admin...");
@@ -45,16 +61,16 @@ const handler = async (req: Request): Promise<Response> => {
       body: JSON.stringify({
         from: "LawnConnect <noreply@connectlawn.com>",
         to: ["officiallawnconnect@gmail.com"],
-        subject: `Contact Form: ${subject}`,
+        subject: `Contact Form: ${safeSubject}`,
         reply_to: email,
         html: `
           <h2>New Contact Form Submission</h2>
-          <p><strong>From:</strong> ${name}</p>
-          <p><strong>Email:</strong> ${email}</p>
-          <p><strong>Subject:</strong> ${subject}</p>
+          <p><strong>From:</strong> ${safeName}</p>
+          <p><strong>Email:</strong> ${safeEmail}</p>
+          <p><strong>Subject:</strong> ${safeSubject}</p>
           <hr />
           <h3>Message:</h3>
-          <p>${message.replace(/\n/g, '<br>')}</p>
+          <p>${safeMessage.replace(/\n/g, '<br>')}</p>
         `,
       }),
     });
@@ -87,14 +103,14 @@ const handler = async (req: Request): Promise<Response> => {
               <h1 style="color: white; margin: 0;">LawnConnect</h1>
             </div>
             <div style="padding: 30px; background-color: #f9fafb;">
-              <h2 style="color: #1f2937; margin-top: 0;">Hi ${name},</h2>
+              <h2 style="color: #1f2937; margin-top: 0;">Hi ${safeName},</h2>
               <p style="color: #4b5563; line-height: 1.6;">
                 Thank you for contacting LawnConnect! We have received your message and will get back to you as soon as possible.
               </p>
               <div style="background-color: white; border-left: 4px solid #16a34a; padding: 15px; margin: 20px 0;">
                 <p style="color: #6b7280; margin: 0 0 10px 0;"><strong>Your message:</strong></p>
-                <p style="color: #6b7280; margin: 0 0 5px 0;"><strong>Subject:</strong> ${subject}</p>
-                <p style="color: #4b5563; margin: 0; white-space: pre-wrap;">${message}</p>
+                <p style="color: #6b7280; margin: 0 0 5px 0;"><strong>Subject:</strong> ${safeSubject}</p>
+                <p style="color: #4b5563; margin: 0; white-space: pre-wrap;">${safeMessage}</p>
               </div>
               <p style="color: #4b5563; line-height: 1.6;">
                 We typically respond within 24 hours during business days. If your matter is urgent, please don't hesitate to send a follow-up email.
