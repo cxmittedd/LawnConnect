@@ -14,7 +14,7 @@ import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/auth';
 import { toast } from 'sonner';
-import { format, nextSaturday, addWeeks, isAfter, isBefore, startOfDay } from 'date-fns';
+import { format, nextFriday, addWeeks, isAfter, isBefore, startOfDay } from 'date-fns';
 import { Navigation } from '@/components/Navigation';
 import { maskAccountNumber, maskTRN } from '@/lib/sensitiveDataUtils';
 import { SensitiveDataField } from '@/components/SensitiveDataField';
@@ -449,14 +449,14 @@ export default function AdminBanking() {
     }
   };
 
-  // Calculate next payout dates (biweekly on Saturdays)
+  // Calculate next payout dates (biweekly on Fridays)
   const getPayoutDates = () => {
     const today = startOfDay(new Date());
-    let nextPayout = nextSaturday(today);
+    let nextPayout = nextFriday(today);
     
-    // Biweekly logic - check if this Saturday is a payout week
+    // Biweekly logic - check if this Friday is a payout week
     // Using a reference date to determine payout weeks
-    const referenceDate = new Date('2024-01-06'); // A known payout Saturday
+    const referenceDate = new Date('2024-01-05'); // A known payout Friday
     const weeksSinceReference = Math.floor((nextPayout.getTime() - referenceDate.getTime()) / (7 * 24 * 60 * 60 * 1000));
     
     if (weeksSinceReference % 2 !== 0) {
@@ -740,7 +740,7 @@ export default function AdminBanking() {
                   <Calendar className="h-5 w-5 text-primary" />
                   Payout Schedule
                 </CardTitle>
-                <CardDescription>Biweekly payouts processed every other Saturday</CardDescription>
+                <CardDescription>Biweekly payouts processed every other Friday</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="flex flex-wrap gap-4">
