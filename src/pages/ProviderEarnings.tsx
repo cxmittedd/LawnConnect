@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/integrations/supabase/client';
 import { DollarSign, CheckCircle, TrendingUp, Calendar, Banknote, Clock, BarChart3 } from 'lucide-react';
-import { format, addDays, nextSaturday, differenceInDays, subMonths, startOfMonth, endOfMonth } from 'date-fns';
+import { format, addDays, nextFriday, differenceInDays, subMonths, startOfMonth, endOfMonth } from 'date-fns';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 interface CompletedJob {
@@ -46,23 +46,23 @@ export default function ProviderEarnings() {
     pendingPayout: 0,
   });
 
-  // Calculate next payout date (biweekly on Saturdays)
+  // Calculate next payout date (biweekly on Fridays)
   const calculateNextPayoutDate = (lastPayoutDate: Date | null): Date => {
     const today = new Date();
     
     if (lastPayoutDate) {
       // Next payout is 14 days after last payout
       let nextPayout = addDays(lastPayoutDate, 14);
-      // If next payout is in the past, find the next upcoming Saturday
+      // If next payout is in the past, find the next upcoming Friday
       while (nextPayout <= today) {
         nextPayout = addDays(nextPayout, 14);
       }
       return nextPayout;
     }
     
-    // If no payouts yet, find the next Saturday
-    const nextSat = nextSaturday(today);
-    return nextSat;
+    // If no payouts yet, find the next Friday
+    const nextFri = nextFriday(today);
+    return nextFri;
   };
 
   const getNextPayoutInfo = () => {
@@ -346,7 +346,7 @@ export default function ProviderEarnings() {
               <div className="text-center py-8 text-muted-foreground">
                 <Banknote className="h-12 w-12 mx-auto mb-4 opacity-50" />
                 <p>No payouts yet</p>
-                <p className="text-sm">Payouts are processed biweekly on Saturdays</p>
+                <p className="text-sm">Payouts are processed biweekly on Fridays</p>
               </div>
             ) : (
               <Table>
