@@ -110,6 +110,7 @@ export default function BrowseJobs() {
         .update({
           status: 'accepted',
           accepted_provider_id: user.id,
+          accepted_at: new Date().toISOString(),
         })
         .eq('id', selectedJob.id)
         .is('accepted_provider_id', null) // Only update if not already assigned
