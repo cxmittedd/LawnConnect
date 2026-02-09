@@ -304,8 +304,8 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
     try {
       const basePrice = currentMinOffer;
       const paymentAmount = getPaymentAmount();
-      const platformFee = Math.round(paymentAmount * 0.30);
-      const providerPayout = paymentAmount - platformFee;
+      const platformFee = 0;
+      const providerPayout = paymentAmount;
       
       const { data: job, error: jobError } = await supabase
         .from('job_requests')
@@ -350,7 +350,7 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
 
     try {
       const paymentAmount = getPaymentAmount();
-      const platformFee = Math.round(paymentAmount * 0.30);
+      const platformFee = 0;
       
       // Update the pending job with payment info
       const { data: job, error: jobError } = await supabase
