@@ -290,7 +290,7 @@ export default function MyJobs() {
               <div className="text-xl font-bold text-primary flex items-center gap-1">
                 <DollarSign className="h-5 w-5" />
                 J${isProviderView 
-                  ? (job.provider_payout || (job.final_price || job.base_price) * 0.70).toFixed(2)
+                  ? (job.provider_payout || (job.final_price || job.base_price)).toFixed(2)
                   : (job.final_price || job.base_price).toFixed(2)}
               </div>
             </div>

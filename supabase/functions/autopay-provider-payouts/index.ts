@@ -8,8 +8,8 @@ const corsHeaders = {
 };
 
 // Provider payout percentages
-const NORMAL_PAYOUT_PERCENTAGE = 0.70;
-const DISPUTED_PAYOUT_PERCENTAGE = 0.60;
+const NORMAL_PAYOUT_PERCENTAGE = 1.00;
+const DISPUTED_PAYOUT_PERCENTAGE = 1.00;
 
 interface ProviderPayout {
   providerId: string;
