@@ -609,7 +609,9 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
                     value={community}
                     onValueChange={(value) => {
                       setCommunity(value);
-                      if (value !== 'coral_spring') {
+                      if (value === 'coral_spring') {
+                        setFormData(prev => ({ ...prev, parish: 'Trelawny' }));
+                      } else {
                         setLotNumber('');
                         setPhase('');
                       }
@@ -632,6 +634,7 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
                       value={formData.parish}
                       onValueChange={(value) => setFormData({ ...formData, parish: value })}
                       required
+                      disabled={community === 'coral_spring'}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select parish" />
