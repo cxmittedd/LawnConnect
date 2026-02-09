@@ -1,11 +1,11 @@
-import { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { DollarSign, Calendar, ChevronRight, Download, CheckCircle, AlertTriangle } from 'lucide-react';
+import { DollarSign, Calendar, ChevronRight, ChevronDown, Download, CheckCircle, AlertTriangle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { format, endOfMonth, startOfDay, subMonths } from 'date-fns';
 import { toast } from 'sonner';
@@ -93,6 +93,7 @@ export function PayPeriodEarnings() {
   const [loading, setLoading] = useState(true);
   const [completedJobs, setCompletedJobs] = useState<CompletedJobForPeriod[]>([]);
   const [profileMap, setProfileMap] = useState<Map<string, string>>(new Map());
+  const [expandedProviders, setExpandedProviders] = useState<Set<string>>(new Set());
   
   const payPeriods = useMemo(() => generatePayPeriods(12), []);
   const [selectedPeriod, setSelectedPeriod] = useState<string>(payPeriods[0]?.value || '');
@@ -327,17 +328,48 @@ export function PayPeriodEarnings() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {providerEarnings.map((provider) => (
-                  <TableRow key={provider.provider_id}>
-                    <TableCell className="font-medium">{provider.provider_name}</TableCell>
-                    <TableCell className="text-center">
-                      <Badge variant="secondary">{provider.jobs_count}</Badge>
-                    </TableCell>
-                    <TableCell className="text-right font-bold text-primary">
-                      J${provider.total_earnings.toLocaleString('en-JM', { minimumFractionDigits: 2 })}
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {providerEarnings.map((provider) => {
+                  const isExpanded = expandedProviders.has(provider.provider_id);
+                  return (
+                    <React.Fragment key={provider.provider_id}>
+                      <TableRow
+                        className="cursor-pointer hover:bg-muted/50"
+                        onClick={() => {
+                          setExpandedProviders(prev => {
+                            const next = new Set(prev);
+                            if (next.has(provider.provider_id)) next.delete(provider.provider_id);
+                            else next.add(provider.provider_id);
+                            return next;
+                          });
+                        }}
+                      >
+                        <TableCell className="font-medium">
+                          <span className="flex items-center gap-2">
+                            {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                            {provider.provider_name}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <Badge variant="secondary">{provider.jobs_count}</Badge>
+                        </TableCell>
+                        <TableCell className="text-right font-bold text-primary">
+                          J${provider.total_earnings.toLocaleString('en-JM', { minimumFractionDigits: 2 })}
+                        </TableCell>
+                      </TableRow>
+                      {isExpanded && provider.jobs.map((job) => (
+                        <TableRow key={job.id} className="bg-muted/30">
+                          <TableCell className="pl-10 text-sm text-muted-foreground">{job.title}</TableCell>
+                          <TableCell className="text-center text-sm text-muted-foreground">
+                            {format(new Date(job.completed_at), 'MMM d, yyyy')}
+                          </TableCell>
+                          <TableCell className="text-right text-sm font-semibold">
+                            J${Number(job.provider_payout || job.final_price || job.base_price).toLocaleString('en-JM', { minimumFractionDigits: 2 })}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </React.Fragment>
+                  );
+                })}
                 {/* Total row */}
                 <TableRow className="border-t-2 font-bold">
                   <TableCell>Total</TableCell>
@@ -348,45 +380,6 @@ export function PayPeriodEarnings() {
                 </TableRow>
               </TableBody>
             </Table>
-          )}
-
-          {/* Individual jobs breakdown */}
-          {providerEarnings.length > 0 && (
-            <div className="mt-6 space-y-4">
-              <h4 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">Job Details</h4>
-              {providerEarnings.map((provider) => (
-                <div key={provider.provider_id} className="border rounded-lg overflow-hidden">
-                  <div className="bg-muted/50 px-4 py-2 flex items-center justify-between">
-                    <span className="font-semibold">{provider.provider_name}</span>
-                    <span className="text-sm text-primary font-bold">
-                      J${provider.total_earnings.toLocaleString('en-JM', { minimumFractionDigits: 2 })}
-                    </span>
-                  </div>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Job</TableHead>
-                        <TableHead>Completed</TableHead>
-                        <TableHead className="text-right">Payout</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {provider.jobs.map((job) => (
-                        <TableRow key={job.id}>
-                          <TableCell className="text-sm">{job.title}</TableCell>
-                          <TableCell className="text-sm text-muted-foreground">
-                            {format(new Date(job.completed_at), 'MMM d, yyyy')}
-                          </TableCell>
-                          <TableCell className="text-right font-semibold">
-                            J${Number(job.provider_payout || job.final_price || job.base_price).toLocaleString('en-JM', { minimumFractionDigits: 2 })}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              ))}
-            </div>
           )}
         </CardContent>
       </Card>
