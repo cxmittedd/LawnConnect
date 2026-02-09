@@ -415,6 +415,7 @@ export type Database = {
       }
       job_requests: {
         Row: {
+          accepted_at: string | null
           accepted_provider_id: string | null
           additional_requirements: string | null
           base_price: number
@@ -443,6 +444,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          accepted_at?: string | null
           accepted_provider_id?: string | null
           additional_requirements?: string | null
           base_price?: number
@@ -471,6 +473,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          accepted_at?: string | null
           accepted_provider_id?: string | null
           additional_requirements?: string | null
           base_price?: number

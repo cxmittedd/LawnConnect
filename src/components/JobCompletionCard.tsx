@@ -44,6 +44,7 @@ interface JobCompletionCardProps {
   providerName: string;
   customerName: string;
   preferredDate: string | null;
+  acceptedAt: string | null;
   finalPrice: number | null;
   onStatusUpdate: () => void;
 }
@@ -81,6 +82,7 @@ export function JobCompletionCard({
   providerName,
   customerName,
   preferredDate,
+  acceptedAt,
   finalPrice,
   onStatusUpdate,
 }: JobCompletionCardProps) {
@@ -374,10 +376,24 @@ export function JobCompletionCard({
     if (!preferredDate) return false;
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    // Deadline is 1 day after the preferred date
-    const dueDate = new Date(preferredDate);
-    dueDate.setHours(0, 0, 0, 0);
-    dueDate.setDate(dueDate.getDate() + 1); // Add 1 day grace period
+
+    const prefDate = new Date(preferredDate);
+    prefDate.setHours(0, 0, 0, 0);
+
+    // If accepted after the preferred date, deadline is 2 days after acceptance
+    if (acceptedAt) {
+      const acceptedDate = new Date(acceptedAt);
+      acceptedDate.setHours(0, 0, 0, 0);
+      if (acceptedDate > prefDate) {
+        const deadline = new Date(acceptedDate);
+        deadline.setDate(deadline.getDate() + 2);
+        return today > deadline;
+      }
+    }
+
+    // Standard: deadline is 1 day after preferred date
+    const dueDate = new Date(prefDate);
+    dueDate.setDate(dueDate.getDate() + 1);
     return today > dueDate;
   };
 

@@ -40,6 +40,7 @@ interface JobDetails {
   created_at: string;
   provider_completed_at: string | null;
   completed_at: string | null;
+  accepted_at: string | null;
 }
 
 interface ProviderInfo {
@@ -358,6 +359,7 @@ export default function JobDetails() {
                 providerName={providerInfo.full_name || 'Provider'}
                 customerName={customerName}
                 preferredDate={job.preferred_date}
+                acceptedAt={job.accepted_at}
                 finalPrice={job.final_price}
                 onStatusUpdate={loadJobDetails}
               />
