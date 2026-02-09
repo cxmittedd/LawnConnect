@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { DollarSign, Calendar, ChevronRight, Download, CheckCircle, AlertTriangle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { format, addWeeks, subWeeks, startOfDay, nextFriday, addDays, isBefore, isAfter } from 'date-fns';
+import { format, endOfMonth, startOfDay, subMonths } from 'date-fns';
 import { toast } from 'sonner';
 
 interface CompletedJobForPeriod {
@@ -26,6 +26,7 @@ interface PayPeriod {
   label: string;
   startDate: Date;
   endDate: Date;
+  payoutDate: Date;
   value: string;
 }
 
@@ -37,36 +38,52 @@ interface ProviderPeriodEarnings {
   jobs_count: number;
 }
 
-// Generate biweekly pay periods based on reference Friday
+// Generate semi-monthly pay periods:
+// 1st-15th → paid on 21st of same month
+// 16th-end of month → paid on 7th of next month
 function generatePayPeriods(count: number = 12): PayPeriod[] {
-  const referenceDate = new Date('2024-01-05'); // Known payout Friday
   const today = startOfDay(new Date());
-  
-  // Find the current/next payout Friday
-  let currentPayday = nextFriday(today);
-  const weeksSinceReference = Math.floor((currentPayday.getTime() - referenceDate.getTime()) / (7 * 24 * 60 * 60 * 1000));
-  if (weeksSinceReference % 2 !== 0) {
-    currentPayday = addWeeks(currentPayday, 1);
-  }
+  const currentMonth = today.getMonth();
+  const currentYear = today.getFullYear();
   
   const periods: PayPeriod[] = [];
   
-  // Generate periods going backward from current
+  // Start from current month and go backward
+  let month = currentMonth;
+  let year = currentYear;
+  
   for (let i = 0; i < count; i++) {
-    const endDate = subWeeks(currentPayday, i * 2);
-    const startDate = addDays(subWeeks(endDate, 2), 1); // Saturday after previous Friday
-    
-    const isCurrent = i === 0;
-    const label = isCurrent
-      ? `Current Period: ${format(startDate, 'MMM d')} – ${format(endDate, 'MMM d, yyyy')}`
-      : `${format(startDate, 'MMM d')} – ${format(endDate, 'MMM d, yyyy')}`;
-    
-    periods.push({
-      label,
-      startDate,
-      endDate,
-      value: endDate.toISOString(),
-    });
+    if (i % 2 === 0) {
+      // Second half of month: 16th - end of month (paid 7th next month)
+      const lastDay = endOfMonth(new Date(year, month, 1));
+      const startDate = new Date(year, month, 16);
+      const endDate = lastDay;
+      const nextMonth = month === 11 ? 0 : month + 1;
+      const nextYear = month === 11 ? year + 1 : year;
+      const payoutDate = new Date(nextYear, nextMonth, 7);
+      
+      const isCurrent = today >= startDate && today <= endDate;
+      const label = isCurrent
+        ? `Current: ${format(startDate, 'MMM d')} – ${format(endDate, 'MMM d, yyyy')} (Paid ${format(payoutDate, 'MMM d')})`
+        : `${format(startDate, 'MMM d')} – ${format(endDate, 'MMM d, yyyy')} (Paid ${format(payoutDate, 'MMM d')})`;
+      
+      periods.push({ label, startDate, endDate, payoutDate, value: `${year}-${month}-2` });
+    } else {
+      // First half of month: 1st - 15th (paid 21st same month)
+      const startDate = new Date(year, month, 1);
+      const endDate = new Date(year, month, 15, 23, 59, 59, 999);
+      const payoutDate = new Date(year, month, 21);
+      
+      const isCurrent = today >= startDate && today <= endDate;
+      const label = isCurrent
+        ? `Current: ${format(startDate, 'MMM d')} – ${format(endDate, 'MMM d, yyyy')} (Paid ${format(payoutDate, 'MMM d')})`
+        : `${format(startDate, 'MMM d')} – ${format(endDate, 'MMM d, yyyy')} (Paid ${format(payoutDate, 'MMM d')})`;
+      
+      periods.push({ label, startDate, endDate, payoutDate, value: `${year}-${month}-1` });
+      
+      // Move to previous month for next iteration
+      if (month === 0) { month = 11; year--; } else { month--; }
+    }
   }
   
   return periods;
