@@ -87,7 +87,7 @@ const getMinOffer = (lawnSize: string): number => {
 const createJobSchema = (minOffer: number) => z.object({
   title: z.string().trim().min(1, 'Title is required').max(200),
   description: z.string().trim().max(1000).optional(),
-  location: z.string().trim().min(1, 'Location is required').max(300),
+  location: z.string().trim().max(300).optional(),
   parish: z.string().min(1, 'Parish is required'),
   lawn_size: z.string().trim().min(1, 'Lawn size is required').max(100),
   preferred_date: z.string().min(1, 'Preferred date is required'),
@@ -109,6 +109,9 @@ export default function PostJob() {
   const [pendingJobId, setPendingJobId] = useState<string | null>(null);
   const [failedJobId, setFailedJobId] = useState<string | null>(null);
   const [calendarOpen, setCalendarOpen] = useState(false);
+  const [community, setCommunity] = useState('');
+  const [lotNumber, setLotNumber] = useState('');
+  const [phase, setPhase] = useState('');
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -184,6 +187,9 @@ export default function PostJob() {
   const clearForm = () => {
     setLawnSizeSelection('');
     setCustomLawnSize('');
+    setCommunity('');
+    setLotNumber('');
+    setPhase('');
     setFormData({
       title: '',
       description: '',
@@ -264,7 +270,16 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
       return;
     }
 
-    if (!formData.location) {
+    if (community === 'coral_spring') {
+      if (!lotNumber.trim()) {
+        toast.error('Please enter a lot number');
+        return;
+      }
+      if (!phase) {
+        toast.error('Please select a phase');
+        return;
+      }
+    } else if (!formData.location) {
       toast.error('Please enter a location');
       return;
     }
@@ -278,6 +293,11 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
       toast.error('Please select a preferred date');
       return;
     }
+
+    // Build location string for community
+    const jobLocation = community === 'coral_spring'
+      ? `Coral Spring, ${phase}, Lot ${lotNumber.trim()}`
+      : formData.location;
 
     // Create a pending job first so we have a job ID for payment
     setLoading(true);
@@ -293,7 +313,7 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
           customer_id: user!.id,
           title: formData.title,
           description: formData.description || null,
-          location: formData.location,
+          location: jobLocation,
           parish: formData.parish,
           lawn_size: formData.lawn_size || null,
           preferred_date: formData.preferred_date || null,
@@ -368,8 +388,11 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
       }
 
       // Save preferences for next time
+      const savedLocation = community === 'coral_spring'
+        ? `Coral Spring, ${phase}, Lot ${lotNumber.trim()}`
+        : formData.location;
       savePreferences({
-        location: formData.location,
+        location: savedLocation,
         parish: formData.parish,
         lawn_size: formData.lawn_size,
         job_type: formData.title,
@@ -394,7 +417,7 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
           customerEmail: user.email,
           customerName,
           jobTitle: formData.title,
-          jobLocation: formData.location,
+          jobLocation: savedLocation,
           parish: formData.parish,
           lawnSize: formData.lawn_size || null,
           amount: paymentAmount,
@@ -580,6 +603,28 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
                   </Select>
                 </div>
 
+                <div className="space-y-2">
+                  <Label>Community</Label>
+                  <Select
+                    value={community}
+                    onValueChange={(value) => {
+                      setCommunity(value);
+                      if (value !== 'coral_spring') {
+                        setLotNumber('');
+                        setPhase('');
+                      }
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select community (optional)" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">None</SelectItem>
+                      <SelectItem value="coral_spring">Coral Spring</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="parish">Parish *</Label>
@@ -600,17 +645,53 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="location">Location *</Label>
-                    <Input
-                      id="location"
-                      placeholder="Street address or neighborhood"
-                      value={formData.location}
-                      onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                      required
-                    />
-                  </div>
+                  {community === 'coral_spring' ? (
+                    <>
+                      <div className="space-y-2">
+                        <Label htmlFor="lot_number">Lot Number *</Label>
+                        <Input
+                          id="lot_number"
+                          type="number"
+                          placeholder="Enter lot number"
+                          value={lotNumber}
+                          onChange={(e) => setLotNumber(e.target.value)}
+                          required
+                        />
+                      </div>
+                    </>
+                  ) : (
+                    <div className="space-y-2">
+                      <Label htmlFor="location">Location *</Label>
+                      <Input
+                        id="location"
+                        placeholder="Street address or neighborhood"
+                        value={formData.location}
+                        onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                        required
+                      />
+                    </div>
+                  )}
                 </div>
+
+                {community === 'coral_spring' && (
+                  <div className="space-y-2">
+                    <Label>Phase *</Label>
+                    <Select
+                      value={phase}
+                      onValueChange={setPhase}
+                      required
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select phase" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Phase 1">Phase 1</SelectItem>
+                        <SelectItem value="Phase 2">Phase 2</SelectItem>
+                        <SelectItem value="Phase 3">Phase 3</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
