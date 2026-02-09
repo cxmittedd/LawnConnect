@@ -10,6 +10,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AlertTriangle, Landmark, CheckCircle, Clock, XCircle, Eye, FileText, DollarSign, Calendar, Copy, ChevronRight, Download, Receipt, Search } from 'lucide-react';
+import { PayPeriodEarnings } from '@/components/PayPeriodEarnings';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/auth';
@@ -733,6 +734,9 @@ export default function AdminBanking() {
 
           {/* Payments Tab */}
           <TabsContent value="payments" className="space-y-6">
+            {/* Pay Period Earnings */}
+            <PayPeriodEarnings />
+
             {/* Payout Timeline */}
             <Card>
               <CardHeader>
