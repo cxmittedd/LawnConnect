@@ -224,7 +224,7 @@ export default function AdminDisputes() {
         refundAmount = selectedDispute.final_price || 0;
         refundReason = `Full refund - Dispute resolved in favor of customer. Original dispute reason: ${selectedDispute.reason}`;
       } else if (resolutionType === 'favor_provider') {
-        const payoutPercentage = 0.70;
+        const payoutPercentage = 1.00;
         const providerPayout = (selectedDispute.final_price || 0) * payoutPercentage;
         const platformFee = (selectedDispute.final_price || 0) * (1 - payoutPercentage);
         
