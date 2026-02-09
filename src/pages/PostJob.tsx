@@ -66,7 +66,7 @@ const getJobTypeExtraCost = (jobType: string): number => {
 };
 
 const LAWN_SIZES = [
-  { value: 'small', label: 'Small (Up to 1/8 acre)', description: 'Typical scheme house yard', minOffer: 7000 },
+  { value: 'small', label: 'Small (Up to 1/8 acre)', description: 'Typical scheme house yard', minOffer: 5000 },
   { value: 'medium', label: 'Medium (1/8 - 1/4 acre)', description: 'Larger residential yard', minOffer: 13000 },
   { value: 'large', label: 'Large (1/4 - 1/2 acre)', description: 'Spacious property', minOffer: 18500 },
   { value: 'xlarge', label: 'Extra Large (1/2 - 1 acre)', description: 'Estate-sized lawn', minOffer: 35000 },
@@ -81,7 +81,7 @@ const LAWN_SIZE_IMAGES = [
 
 const getMinOffer = (lawnSize: string): number => {
   const size = LAWN_SIZES.find(s => s.value === lawnSize);
-  return size?.minOffer || 7000;
+  return size?.minOffer || 5000;
 };
 
 const createJobSchema = (minOffer: number) => z.object({
