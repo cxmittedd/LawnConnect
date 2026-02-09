@@ -392,8 +392,29 @@ export default function JobDetails() {
             )}
           </div>
 
-          {/* Provider Sidebar */}
+          {/* Sidebar */}
           <div className="space-y-4">
+            {/* Show customer info to provider */}
+            {isProvider && (
+              <>
+                <h2 className="text-xl font-semibold">Customer</h2>
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-10 w-10">
+                        <AvatarFallback>{customerName.charAt(0)}</AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <p className="font-semibold">{customerName}</p>
+                        <p className="text-xs text-muted-foreground">Job Customer</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </>
+            )}
+
+            {/* Show provider info to customer / waiting state */}
             <h2 className="text-xl font-semibold">
               {job.accepted_provider_id ? 'Assigned Provider' : 'Provider Status'}
             </h2>
