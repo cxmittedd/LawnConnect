@@ -122,7 +122,7 @@ export function Navigation() {
         <div className="flex h-20 items-center justify-between gap-4">
           <Link to={user ? '/dashboard' : '/'} className="flex items-center gap-2 shrink-0">
             <img src={lawnConnectLogo} alt="LawnConnect" className="h-14 w-14 object-contain" />
-            <span className="text-lg font-bold text-foreground hidden sm:block">LawnConnect</span>
+            <span className="text-lg font-bold text-foreground">LawnConnect</span>
           </Link>
 
           {/* Desktop Navigation */}
