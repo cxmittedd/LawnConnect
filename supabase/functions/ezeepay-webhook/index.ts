@@ -373,6 +373,19 @@ serve(async (req) => {
         );
       }
 
+      // Amount verification: ensure paid amount >= expected job amount
+      const expectedAmount = existingJob.final_price || existingJob.base_price;
+      const paidAmount = payload.Amount ? parseFloat(payload.Amount) : null;
+      console.log(`[${webhookId}] Amount check: paid=${paidAmount}, expected=${expectedAmount}`);
+      
+      if (paidAmount !== null && paidAmount < expectedAmount) {
+        console.error(`[${webhookId}] ERROR: Amount mismatch! Paid J$${paidAmount} but expected >= J$${expectedAmount}`);
+        return new Response(
+          JSON.stringify({ success: false, error: 'Payment amount is less than expected' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
       console.log(`[${webhookId}] Processing successful payment...`);
       console.log(`[${webhookId}]   - Transaction Number: ${TransactionNumber}`);
 
