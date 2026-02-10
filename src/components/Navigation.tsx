@@ -23,6 +23,7 @@ import {
   Settings as SettingsIcon,
   RefreshCw,
   Landmark,
+  MapPin,
 } from 'lucide-react';
 import lawnConnectLogo from '@/assets/lawnconnect-logo.png';
 import { useState, useEffect } from 'react';
@@ -96,6 +97,7 @@ export function Navigation() {
     { path: '/admin/verifications', label: 'ID Verifications', icon: UserCheck },
     { path: '/admin/banking', label: 'Banking', icon: Landmark },
     { path: '/admin/refunds', label: 'Refunds', icon: RefreshCw },
+    { path: '/admin/communities', label: 'Communities', icon: MapPin },
   ];
 
   const navItems = user

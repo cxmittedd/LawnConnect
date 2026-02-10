@@ -419,6 +419,7 @@ export type Database = {
           accepted_provider_id: string | null
           additional_requirements: string | null
           base_price: number
+          community: string | null
           completed_at: string | null
           created_at: string | null
           customer_id: string
@@ -448,6 +449,7 @@ export type Database = {
           accepted_provider_id?: string | null
           additional_requirements?: string | null
           base_price?: number
+          community?: string | null
           completed_at?: string | null
           created_at?: string | null
           customer_id: string
@@ -477,6 +479,7 @@ export type Database = {
           accepted_provider_id?: string | null
           additional_requirements?: string | null
           base_price?: number
+          community?: string | null
           completed_at?: string | null
           created_at?: string | null
           customer_id?: string
@@ -634,6 +637,30 @@ export type Database = {
           status?: Database["public"]["Enums"]["banking_status"]
           trn?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      provider_community_assignments: {
+        Row: {
+          assigned_by: string
+          community: string
+          created_at: string
+          id: string
+          provider_id: string
+        }
+        Insert: {
+          assigned_by: string
+          community: string
+          created_at?: string
+          id?: string
+          provider_id: string
+        }
+        Update: {
+          assigned_by?: string
+          community?: string
+          created_at?: string
+          id?: string
+          provider_id?: string
         }
         Relationships: []
       }

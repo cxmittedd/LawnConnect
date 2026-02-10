@@ -26,6 +26,7 @@ import AdminDisputes from "./pages/AdminDisputes";
 import AdminVerifications from "./pages/AdminVerifications";
 import AdminRefunds from "./pages/AdminRefunds";
 import AdminBanking from "./pages/AdminBanking";
+import AdminCommunities from "./pages/AdminCommunities";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
 import Install from "./pages/Install";
@@ -181,6 +182,14 @@ const App = () => (
                 element={
                   <AdminRoute>
                     <AdminBanking />
+                  </AdminRoute>
+                }
+              />
+              <Route
+                path="/admin/communities"
+                element={
+                  <AdminRoute>
+                    <AdminCommunities />
                   </AdminRoute>
                 }
               />
