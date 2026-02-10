@@ -315,6 +315,7 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
           description: formData.description || null,
           location: jobLocation,
           parish: formData.parish,
+          community: community && community !== 'none' ? community : null,
           lawn_size: formData.lawn_size || null,
           preferred_date: formData.preferred_date || null,
           preferred_time: formData.preferred_time || null,
