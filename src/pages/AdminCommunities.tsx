@@ -17,6 +17,9 @@ import { safeToast } from '@/lib/errorHandler';
 
 const COMMUNITIES = [
   { value: 'coral_spring', label: 'Coral Spring' },
+  { value: 'florence_hall', label: 'Florence Hall' },
+  { value: 'stonebrook_vista', label: 'Stonebrook Vista' },
+  { value: 'stonebrook_manor', label: 'Stonebrook Manor' },
 ] as const;
 
 interface Provider {
