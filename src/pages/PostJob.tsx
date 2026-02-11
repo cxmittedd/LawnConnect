@@ -270,7 +270,7 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
       return;
     }
 
-    if (community === 'coral_spring') {
+    if (community !== 'none' && community !== '') {
       if (!lotNumber.trim()) {
         toast.error('Please enter a lot number');
         return;
@@ -295,8 +295,15 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
     }
 
     // Build location string for community
-    const jobLocation = community === 'coral_spring'
-      ? `Coral Spring, ${phase}, Lot ${lotNumber.trim()}`
+    const communityLabels: Record<string, string> = {
+      coral_spring: 'Coral Spring',
+      florence_hall: 'Florence Hall',
+      stonebrook_vista: 'Stonebrook Vista',
+      stonebrook_manor: 'Stonebrook Manor',
+    };
+    const isCommunityJob = community && community !== 'none' && community !== '';
+    const jobLocation = isCommunityJob
+      ? `${communityLabels[community] || community}, ${phase}, Lot ${lotNumber.trim()}`
       : formData.location;
 
     // Create a pending job first so we have a job ID for payment
@@ -389,8 +396,15 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
       }
 
       // Save preferences for next time
-      const savedLocation = community === 'coral_spring'
-        ? `Coral Spring, ${phase}, Lot ${lotNumber.trim()}`
+      const communityLabelsForSave: Record<string, string> = {
+        coral_spring: 'Coral Spring',
+        florence_hall: 'Florence Hall',
+        stonebrook_vista: 'Stonebrook Vista',
+        stonebrook_manor: 'Stonebrook Manor',
+      };
+      const isCommunityForSave = community && community !== 'none' && community !== '';
+      const savedLocation = isCommunityForSave
+        ? `${communityLabelsForSave[community] || community}, ${phase}, Lot ${lotNumber.trim()}`
         : formData.location;
       savePreferences({
         location: savedLocation,
@@ -610,7 +624,7 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
                     value={community}
                     onValueChange={(value) => {
                       setCommunity(value);
-                      if (value === 'coral_spring') {
+                      if (value !== 'none' && value !== '') {
                         setFormData(prev => ({ ...prev, parish: 'Trelawny' }));
                       } else {
                         setLotNumber('');
@@ -624,6 +638,9 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
                     <SelectContent>
                       <SelectItem value="none">None</SelectItem>
                       <SelectItem value="coral_spring">Coral Spring</SelectItem>
+                      <SelectItem value="florence_hall">Florence Hall</SelectItem>
+                      <SelectItem value="stonebrook_vista">Stonebrook Vista</SelectItem>
+                      <SelectItem value="stonebrook_manor">Stonebrook Manor</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -635,7 +652,7 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
                       value={formData.parish}
                       onValueChange={(value) => setFormData({ ...formData, parish: value })}
                       required
-                      disabled={community === 'coral_spring'}
+                      disabled={community !== 'none' && community !== ''}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select parish" />
@@ -649,7 +666,7 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
                       </SelectContent>
                     </Select>
                   </div>
-                  {community === 'coral_spring' ? (
+                  {(community !== 'none' && community !== '') ? (
                     <>
                       <div className="space-y-2">
                         <Label htmlFor="lot_number">Lot Number *</Label>
@@ -677,7 +694,7 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
                   )}
                 </div>
 
-                {community === 'coral_spring' && (
+                {(community !== 'none' && community !== '') && (
                   <div className="space-y-2">
                     <Label>Phase *</Label>
                     <Select
