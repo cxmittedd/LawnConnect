@@ -132,7 +132,7 @@ const Index = () => {
     {
       question: "How much does lawn care cost in Jamaica?",
       answer:
-        "Lawn care prices in Jamaica are based on your lawn size and service type. Basic lawn mowing starts from JMD 5,000 for small lawns. You'll see the exact price upfront before posting your job.",
+        "Lawn care prices in Jamaica are based on your lawn size and service type. Basic lawn mowing starts from JMD 7,000 for small lawns. You'll see the exact price upfront before posting your job.",
     },
     {
       question: "How do I find reliable lawn care providers in Jamaica?",
