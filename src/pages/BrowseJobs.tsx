@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/integrations/supabase/client';
-import { MapPin, Calendar, DollarSign, Scissors, Shield, Clock, AlertTriangle, Wrench, Filter, Landmark, Camera } from 'lucide-react';
+import { MapPin, Calendar, DollarSign, Scissors, Shield, Clock, AlertTriangle, Wrench, Filter, Landmark, Camera, Building2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { safeToast } from '@/lib/errorHandler';
 import { format } from 'date-fns';
@@ -18,6 +18,20 @@ import { useProviderProfileCompletion } from '@/hooks/useProviderProfileCompleti
 import { useProviderBanking } from '@/hooks/useProviderBanking';
 import { ProfileCompletionDialog } from '@/components/ProfileCompletionDialog';
 import { sendNotification } from '@/lib/notifications';
+
+const COMMUNITY_LABELS: Record<string, string> = {
+  coral_spring: 'Coral Spring',
+  florence_hall: 'Florence Hall',
+  stonebrook_vista: 'Stonebrook Vista',
+  stonebrook_manor: 'Stonebrook Manor',
+  paradisiac_beach_club: 'Paradisiac Beach Club',
+  coral_springs_estates: 'Coral Springs Estates',
+  camelot_village: 'Camelot Village',
+  treasure_bay_estates: 'Treasure Bay Estates',
+  phoenix_park_village: 'Phoenix Park Village',
+  drax_hall_manor: 'Drax Hall Manor',
+  richmond_estate: 'Richmond Estate',
+};
 
 interface Job {
   id: string;
@@ -47,22 +61,41 @@ export default function BrowseJobs() {
   const [profileDialogOpen, setProfileDialogOpen] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [parishFilter, setParishFilter] = useState<string>('all');
+  const [communityFilter, setCommunityFilter] = useState<string>('all');
+  const [assignedCommunities, setAssignedCommunities] = useState<string[]>([]);
 
   // Get unique parishes from jobs for filter options
   const availableParishes = [...new Set(jobs.map(job => job.parish))].sort();
 
-  // Filter jobs based on selected parish
-  const filteredJobs = parishFilter === 'all' 
-    ? jobs 
-    : jobs.filter(job => job.parish === parishFilter);
+  // Filter jobs based on selected parish and community
+  const filteredJobs = jobs.filter(job => {
+    const matchesParish = parishFilter === 'all' || job.parish === parishFilter;
+    const matchesCommunity = communityFilter === 'all' || job.location.includes(COMMUNITY_LABELS[communityFilter] || '');
+    return matchesParish && matchesCommunity;
+  });
 
   useEffect(() => {
     if (!verificationLoading && isVerified) {
       loadJobs();
+      loadAssignedCommunities();
     } else if (!verificationLoading) {
       setLoading(false);
     }
   }, [verificationLoading, isVerified]);
+
+  const loadAssignedCommunities = async () => {
+    if (!user) return;
+    try {
+      const { data, error } = await supabase
+        .from('provider_community_assignments')
+        .select('community')
+        .eq('provider_id', user.id);
+      if (error) throw error;
+      setAssignedCommunities((data || []).map(d => d.community));
+    } catch (error) {
+      console.error('Failed to load community assignments:', error);
+    }
+  };
 
   const loadJobs = async () => {
     try {
@@ -297,9 +330,9 @@ export default function BrowseJobs() {
           <p className="text-muted-foreground">Find lawn cutting opportunities near you</p>
         </div>
 
-        {/* Parish Filter */}
+        {/* Filters */}
         {jobs.length > 0 && (
-          <div className="flex items-center gap-3 mb-6">
+          <div className="flex flex-wrap items-center gap-3 mb-6">
             <Filter className="h-4 w-4 text-muted-foreground" />
             <Select value={parishFilter} onValueChange={setParishFilter}>
               <SelectTrigger className="w-[200px] bg-card">
@@ -312,9 +345,29 @@ export default function BrowseJobs() {
                 ))}
               </SelectContent>
             </Select>
-            {parishFilter !== 'all' && (
+            {assignedCommunities.length > 0 && (
+              <Select value={communityFilter} onValueChange={setCommunityFilter}>
+                <SelectTrigger className="w-[220px] bg-card">
+                  <div className="flex items-center gap-2">
+                    <Building2 className="h-4 w-4 text-muted-foreground" />
+                    <SelectValue placeholder="Filter by community" />
+                  </div>
+                </SelectTrigger>
+                <SelectContent className="bg-card z-50">
+                  <SelectItem value="all">All Communities</SelectItem>
+                  {assignedCommunities.map((community) => (
+                    <SelectItem key={community} value={community}>
+                      {COMMUNITY_LABELS[community] || community}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+            {(parishFilter !== 'all' || communityFilter !== 'all') && (
               <Badge variant="secondary" className="gap-1">
-                {filteredJobs.length} job{filteredJobs.length !== 1 ? 's' : ''} in {parishFilter}
+                {filteredJobs.length} job{filteredJobs.length !== 1 ? 's' : ''}
+                {parishFilter !== 'all' && ` in ${parishFilter}`}
+                {communityFilter !== 'all' && ` · ${COMMUNITY_LABELS[communityFilter] || communityFilter}`}
               </Badge>
             )}
           </div>
@@ -327,11 +380,11 @@ export default function BrowseJobs() {
               <p className="text-muted-foreground">
                 {jobs.length === 0 
                   ? 'No jobs available at the moment' 
-                  : `No jobs available in ${parishFilter}`}
+                  : `No jobs match your filters`}
               </p>
-              {parishFilter !== 'all' && (
-                <Button variant="link" onClick={() => setParishFilter('all')} className="mt-2">
-                  Clear filter
+              {(parishFilter !== 'all' || communityFilter !== 'all') && (
+                <Button variant="link" onClick={() => { setParishFilter('all'); setCommunityFilter('all'); }} className="mt-2">
+                  Clear filters
                 </Button>
               )}
             </CardContent>
