@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/integrations/supabase/client';
-import { MapPin, Calendar, DollarSign, Scissors, Shield, Clock, AlertTriangle, Wrench, Filter, Landmark, Camera } from 'lucide-react';
+import { MapPin, Calendar, DollarSign, Scissors, Shield, Clock, AlertTriangle, Wrench, Filter, Landmark, Camera, Building2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { safeToast } from '@/lib/errorHandler';
 import { format } from 'date-fns';
@@ -18,6 +18,20 @@ import { useProviderProfileCompletion } from '@/hooks/useProviderProfileCompleti
 import { useProviderBanking } from '@/hooks/useProviderBanking';
 import { ProfileCompletionDialog } from '@/components/ProfileCompletionDialog';
 import { sendNotification } from '@/lib/notifications';
+
+const COMMUNITY_LABELS: Record<string, string> = {
+  coral_spring: 'Coral Spring',
+  florence_hall: 'Florence Hall',
+  stonebrook_vista: 'Stonebrook Vista',
+  stonebrook_manor: 'Stonebrook Manor',
+  paradisiac_beach_club: 'Paradisiac Beach Club',
+  coral_springs_estates: 'Coral Springs Estates',
+  camelot_village: 'Camelot Village',
+  treasure_bay_estates: 'Treasure Bay Estates',
+  phoenix_park_village: 'Phoenix Park Village',
+  drax_hall_manor: 'Drax Hall Manor',
+  richmond_estate: 'Richmond Estate',
+};
 
 interface Job {
   id: string;
