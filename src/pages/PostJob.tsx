@@ -300,6 +300,13 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
       florence_hall: 'Florence Hall',
       stonebrook_vista: 'Stonebrook Vista',
       stonebrook_manor: 'Stonebrook Manor',
+      paradisiac_beach_club: 'Paradisiac Beach Club',
+      coral_springs_estates: 'Coral Springs Estates',
+      camelot_village: 'Camelot Village',
+      treasure_bay_estates: 'Treasure Bay Estates',
+      phoenix_park_village: 'Phoenix Park Village',
+      drax_hall_manor: 'Drax Hall Manor',
+      richmond_estate: 'Richmond Estate',
     };
     const isCommunityJob = community && community !== 'none' && community !== '';
     const jobLocation = isCommunityJob
