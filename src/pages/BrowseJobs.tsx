@@ -380,11 +380,11 @@ export default function BrowseJobs() {
               <p className="text-muted-foreground">
                 {jobs.length === 0 
                   ? 'No jobs available at the moment' 
-                  : `No jobs available in ${parishFilter}`}
+                  : `No jobs match your filters`}
               </p>
-              {parishFilter !== 'all' && (
-                <Button variant="link" onClick={() => setParishFilter('all')} className="mt-2">
-                  Clear filter
+              {(parishFilter !== 'all' || communityFilter !== 'all') && (
+                <Button variant="link" onClick={() => { setParishFilter('all'); setCommunityFilter('all'); }} className="mt-2">
+                  Clear filters
                 </Button>
               )}
             </CardContent>
