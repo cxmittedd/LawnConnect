@@ -61,22 +61,41 @@ export default function BrowseJobs() {
   const [profileDialogOpen, setProfileDialogOpen] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [parishFilter, setParishFilter] = useState<string>('all');
+  const [communityFilter, setCommunityFilter] = useState<string>('all');
+  const [assignedCommunities, setAssignedCommunities] = useState<string[]>([]);
 
   // Get unique parishes from jobs for filter options
   const availableParishes = [...new Set(jobs.map(job => job.parish))].sort();
 
-  // Filter jobs based on selected parish
-  const filteredJobs = parishFilter === 'all' 
-    ? jobs 
-    : jobs.filter(job => job.parish === parishFilter);
+  // Filter jobs based on selected parish and community
+  const filteredJobs = jobs.filter(job => {
+    const matchesParish = parishFilter === 'all' || job.parish === parishFilter;
+    const matchesCommunity = communityFilter === 'all' || job.location.includes(COMMUNITY_LABELS[communityFilter] || '');
+    return matchesParish && matchesCommunity;
+  });
 
   useEffect(() => {
     if (!verificationLoading && isVerified) {
       loadJobs();
+      loadAssignedCommunities();
     } else if (!verificationLoading) {
       setLoading(false);
     }
   }, [verificationLoading, isVerified]);
+
+  const loadAssignedCommunities = async () => {
+    if (!user) return;
+    try {
+      const { data, error } = await supabase
+        .from('provider_community_assignments')
+        .select('community')
+        .eq('provider_id', user.id);
+      if (error) throw error;
+      setAssignedCommunities((data || []).map(d => d.community));
+    } catch (error) {
+      console.error('Failed to load community assignments:', error);
+    }
+  };
 
   const loadJobs = async () => {
     try {
