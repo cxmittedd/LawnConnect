@@ -330,9 +330,9 @@ export default function BrowseJobs() {
           <p className="text-muted-foreground">Find lawn cutting opportunities near you</p>
         </div>
 
-        {/* Parish Filter */}
+        {/* Filters */}
         {jobs.length > 0 && (
-          <div className="flex items-center gap-3 mb-6">
+          <div className="flex flex-wrap items-center gap-3 mb-6">
             <Filter className="h-4 w-4 text-muted-foreground" />
             <Select value={parishFilter} onValueChange={setParishFilter}>
               <SelectTrigger className="w-[200px] bg-card">
@@ -345,9 +345,29 @@ export default function BrowseJobs() {
                 ))}
               </SelectContent>
             </Select>
-            {parishFilter !== 'all' && (
+            {assignedCommunities.length > 0 && (
+              <Select value={communityFilter} onValueChange={setCommunityFilter}>
+                <SelectTrigger className="w-[220px] bg-card">
+                  <div className="flex items-center gap-2">
+                    <Building2 className="h-4 w-4 text-muted-foreground" />
+                    <SelectValue placeholder="Filter by community" />
+                  </div>
+                </SelectTrigger>
+                <SelectContent className="bg-card z-50">
+                  <SelectItem value="all">All Communities</SelectItem>
+                  {assignedCommunities.map((community) => (
+                    <SelectItem key={community} value={community}>
+                      {COMMUNITY_LABELS[community] || community}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+            {(parishFilter !== 'all' || communityFilter !== 'all') && (
               <Badge variant="secondary" className="gap-1">
-                {filteredJobs.length} job{filteredJobs.length !== 1 ? 's' : ''} in {parishFilter}
+                {filteredJobs.length} job{filteredJobs.length !== 1 ? 's' : ''}
+                {parishFilter !== 'all' && ` in ${parishFilter}`}
+                {communityFilter !== 'all' && ` · ${COMMUNITY_LABELS[communityFilter] || communityFilter}`}
               </Badge>
             )}
           </div>
