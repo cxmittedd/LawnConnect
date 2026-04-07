@@ -244,9 +244,12 @@ const handleLawnSizeChange = (value: string) => {
     setPhotos(photos.filter((_, i) => i !== index));
   };
 
+  const isCoralSpringSmallDiscount = community === 'coral_spring' && lawnSizeSelection === 'small';
+  const discountAmount = isCoralSpringSmallDiscount ? Math.round(currentMinOffer * 0.5) : 0;
+
   const getPaymentAmount = () => {
     const jobTypeExtra = getJobTypeExtraCost(formData.title);
-    return currentMinOffer + jobTypeExtra;
+    return currentMinOffer - discountAmount + jobTypeExtra;
   };
 
 const handleProceedToPayment = async (e: React.FormEvent) => {
@@ -533,6 +536,8 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
               lawnSize={formData.lawn_size}
               lawnSizeCost={currentMinOffer}
               jobTypeCost={getJobTypeExtraCost(formData.title)}
+              discountAmount={discountAmount}
+              discountLabel={isCoralSpringSmallDiscount ? 'Coral Spring Resident Discount (50%)' : undefined}
               jobId={pendingJobId}
               customerEmail={user?.email || ''}
               customerName={user?.user_metadata?.first_name || ''}
