@@ -12,6 +12,8 @@ interface JobPaymentFormProps {
   lawnSize?: string;
   lawnSizeCost?: number;
   jobTypeCost?: number;
+  discountAmount?: number;
+  discountLabel?: string;
   jobId: string;
   customerEmail: string;
   customerName?: string;
