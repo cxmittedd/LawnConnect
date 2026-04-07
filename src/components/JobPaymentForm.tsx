@@ -40,6 +40,8 @@ export function JobPaymentForm({
   lawnSize, 
   lawnSizeCost, 
   jobTypeCost, 
+  discountAmount,
+  discountLabel,
   jobId,
   customerEmail,
   customerName,
@@ -213,6 +215,12 @@ export function JobPaymentForm({
                   {jobTypeCost && jobTypeCost > 0 ? `+J$${jobTypeCost.toLocaleString()}` : 'Included'}
                 </span>
               </div>
+              {discountAmount && discountAmount > 0 && (
+                <div className="flex justify-between text-green-600">
+                  <span>{discountLabel || 'Discount'}</span>
+                  <span>-J${discountAmount.toLocaleString()}</span>
+                </div>
+              )}
               <Separator />
               <div className="flex justify-between font-medium">
                 <span className="text-foreground">Total</span>
