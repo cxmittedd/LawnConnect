@@ -216,8 +216,8 @@ export function JobPaymentForm({
                 </span>
               </div>
               {discountAmount && discountAmount > 0 && (
-                <div className="flex justify-between text-green-600">
-                  <span>{discountLabel || 'Discount'}</span>
+                <div className="flex justify-between text-emerald-600 dark:text-emerald-400 font-medium">
+                  <span>🎉 {discountLabel || 'Discount'}</span>
                   <span>-J${discountAmount.toLocaleString()}</span>
                 </div>
               )}
