@@ -1,17 +1,16 @@
 import { useState, useEffect } from 'react';
 import { Navigation } from '@/components/Navigation';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Switch } from '@/components/ui/switch';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/auth';
 import { safeToast } from '@/lib/errorHandler';
 import { toast } from 'sonner';
-import { Loader2, Percent, Plus, Trash2 } from 'lucide-react';
+import { Loader2, Tag, Plus, Trash2, Copy, CheckCircle } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -21,26 +20,41 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 
-interface CustomerDiscount {
+interface CouponDiscount {
   id: string;
   customer_id: string;
   discount_percentage: number;
   label: string;
+  code: string;
   active: boolean;
+  used: boolean;
+  used_at: string | null;
   created_at: string;
-  customer_email?: string;
   customer_name?: string;
+}
+
+function generateCouponCode(): string {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let code = '';
+  for (let i = 0; i < 8; i++) code += chars[Math.floor(Math.random() * chars.length)];
+  return code;
 }
 
 export default function AdminDiscounts() {
   const { user } = useAuth();
-  const [discounts, setDiscounts] = useState<CustomerDiscount[]>([]);
+  const [coupons, setCoupons] = useState<CouponDiscount[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [newDiscount, setNewDiscount] = useState({ email: '', percentage: '', label: 'Discount' });
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [newCoupon, setNewCoupon] = useState({
+    email: '',
+    percentage: '',
+    label: 'Discount',
+    code: generateCouponCode(),
+  });
 
-  const loadDiscounts = async () => {
+  const loadCoupons = async () => {
     setLoading(true);
     const { data, error } = await supabase
       .from('customer_discounts')
@@ -53,7 +67,6 @@ export default function AdminDiscounts() {
       return;
     }
 
-    // Fetch profile info for each discount
     const enriched = await Promise.all(
       (data || []).map(async (d) => {
         const { data: profile } = await supabase
@@ -68,18 +81,18 @@ export default function AdminDiscounts() {
       })
     );
 
-    setDiscounts(enriched);
+    setCoupons(enriched);
     setLoading(false);
   };
 
   useEffect(() => {
-    loadDiscounts();
+    loadCoupons();
   }, []);
 
-  const handleAddDiscount = async () => {
-    if (!newDiscount.email || !newDiscount.percentage || !user) return;
+  const handleAddCoupon = async () => {
+    if (!newCoupon.email || !newCoupon.percentage || !user) return;
 
-    const pct = parseInt(newDiscount.percentage);
+    const pct = parseInt(newCoupon.percentage);
     if (isNaN(pct) || pct < 1 || pct > 100) {
       toast.error('Percentage must be between 1 and 100');
       return;
@@ -87,10 +100,10 @@ export default function AdminDiscounts() {
 
     setSaving(true);
 
-    const { data: customerId, error: lookupError } = await supabase.rpc('get_customer_id_by_email', { email_input: newDiscount.email });
+    const { data: customerId, error: lookupError } = await supabase.rpc('get_customer_id_by_email', { email_input: newCoupon.email });
 
     if (lookupError || !customerId) {
-      toast.error('Could not find a customer with that email. Please verify the email address.');
+      toast.error('Could not find a customer with that email.');
       setSaving(false);
       return;
     }
@@ -98,13 +111,14 @@ export default function AdminDiscounts() {
     const { error } = await supabase.from('customer_discounts').insert([{
       customer_id: customerId as string,
       discount_percentage: pct,
-      label: newDiscount.label || 'Discount',
+      label: newCoupon.label || 'Discount',
+      code: newCoupon.code,
       created_by: user.id,
     }]);
 
     if (error) {
       if (error.code === '23505') {
-        toast.error('This customer already has a discount. Update or remove the existing one first.');
+        toast.error('This coupon code already exists. Try generating a new one.');
       } else {
         safeToast.error(error);
       }
@@ -112,35 +126,28 @@ export default function AdminDiscounts() {
       return;
     }
 
-    toast.success('Discount added successfully');
+    toast.success('Coupon created successfully');
     setShowAddDialog(false);
-    setNewDiscount({ email: '', percentage: '', label: 'Discount' });
+    setNewCoupon({ email: '', percentage: '', label: 'Discount', code: generateCouponCode() });
     setSaving(false);
-    loadDiscounts();
+    loadCoupons();
   };
 
-  const toggleActive = async (id: string, active: boolean) => {
-    const { error } = await supabase
-      .from('customer_discounts')
-      .update({ active: !active })
-      .eq('id', id);
-
-    if (error) {
-      safeToast.error(error);
-      return;
-    }
-    toast.success(active ? 'Discount deactivated' : 'Discount activated');
-    loadDiscounts();
-  };
-
-  const deleteDiscount = async (id: string) => {
+  const deleteCoupon = async (id: string) => {
     const { error } = await supabase.from('customer_discounts').delete().eq('id', id);
     if (error) {
       safeToast.error(error);
       return;
     }
-    toast.success('Discount removed');
-    loadDiscounts();
+    toast.success('Coupon removed');
+    loadCoupons();
+  };
+
+  const copyCode = (id: string, code: string) => {
+    navigator.clipboard.writeText(code);
+    setCopiedId(id);
+    toast.success('Coupon code copied!');
+    setTimeout(() => setCopiedId(null), 2000);
   };
 
   return (
@@ -149,12 +156,12 @@ export default function AdminDiscounts() {
       <main className="container mx-auto px-4 py-8 max-w-5xl">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Customer Discounts</h1>
-            <p className="text-muted-foreground">Manage percentage discounts for specific customer accounts</p>
+            <h1 className="text-2xl font-bold text-foreground">Discount Coupons</h1>
+            <p className="text-muted-foreground">Create and manage coupon codes for specific customers</p>
           </div>
-          <Button onClick={() => setShowAddDialog(true)}>
+          <Button onClick={() => { setNewCoupon({ email: '', percentage: '', label: 'Discount', code: generateCouponCode() }); setShowAddDialog(true); }}>
             <Plus className="h-4 w-4 mr-2" />
-            Add Discount
+            Create Coupon
           </Button>
         </div>
 
@@ -164,15 +171,16 @@ export default function AdminDiscounts() {
               <div className="flex items-center justify-center py-12">
                 <Loader2 className="h-6 w-6 animate-spin text-primary" />
               </div>
-            ) : discounts.length === 0 ? (
+            ) : coupons.length === 0 ? (
               <div className="text-center py-12 text-muted-foreground">
-                <Percent className="h-10 w-10 mx-auto mb-3 opacity-40" />
-                <p>No customer discounts configured yet.</p>
+                <Tag className="h-10 w-10 mx-auto mb-3 opacity-40" />
+                <p>No coupons created yet.</p>
               </div>
             ) : (
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead>Code</TableHead>
                     <TableHead>Customer</TableHead>
                     <TableHead>Discount</TableHead>
                     <TableHead>Label</TableHead>
@@ -181,21 +189,41 @@ export default function AdminDiscounts() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {discounts.map((d) => (
-                    <TableRow key={d.id}>
-                      <TableCell className="font-medium">{d.customer_name}</TableCell>
+                  {coupons.map((c) => (
+                    <TableRow key={c.id}>
                       <TableCell>
-                        <Badge variant="secondary">{d.discount_percentage}%</Badge>
+                        <div className="flex items-center gap-2">
+                          <code className="bg-muted px-2 py-1 rounded text-sm font-mono">{c.code}</code>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7"
+                            onClick={() => copyCode(c.id, c.code)}
+                          >
+                            {copiedId === c.id ? (
+                              <CheckCircle className="h-3.5 w-3.5 text-emerald-500" />
+                            ) : (
+                              <Copy className="h-3.5 w-3.5" />
+                            )}
+                          </Button>
+                        </div>
                       </TableCell>
-                      <TableCell className="text-muted-foreground">{d.label}</TableCell>
+                      <TableCell className="font-medium">{c.customer_name}</TableCell>
                       <TableCell>
-                        <Switch
-                          checked={d.active}
-                          onCheckedChange={() => toggleActive(d.id, d.active)}
-                        />
+                        <Badge variant="secondary">{c.discount_percentage}%</Badge>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">{c.label}</TableCell>
+                      <TableCell>
+                        {c.used ? (
+                          <Badge variant="outline" className="text-muted-foreground">Used</Badge>
+                        ) : c.active ? (
+                          <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 hover:bg-emerald-100">Active</Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-muted-foreground">Inactive</Badge>
+                        )}
                       </TableCell>
                       <TableCell>
-                        <Button variant="ghost" size="icon" onClick={() => deleteDiscount(d.id)}>
+                        <Button variant="ghost" size="icon" onClick={() => deleteCoupon(c.id)}>
                           <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
                       </TableCell>
@@ -207,24 +235,38 @@ export default function AdminDiscounts() {
           </CardContent>
         </Card>
 
-        {/* Add Discount Dialog */}
+        {/* Create Coupon Dialog */}
         <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Add Customer Discount</DialogTitle>
+              <DialogTitle>Create Coupon Code</DialogTitle>
               <DialogDescription>
-                Enter the customer's email and the discount percentage to apply to their account.
+                Create a one-time use coupon code for a specific customer. They'll enter the code at checkout.
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="coupon-code">Coupon Code</Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="coupon-code"
+                    value={newCoupon.code}
+                    onChange={(e) => setNewCoupon({ ...newCoupon, code: e.target.value.toUpperCase() })}
+                    className="font-mono"
+                  />
+                  <Button type="button" variant="outline" onClick={() => setNewCoupon({ ...newCoupon, code: generateCouponCode() })}>
+                    Generate
+                  </Button>
+                </div>
+              </div>
               <div className="space-y-2">
                 <Label htmlFor="email">Customer Email</Label>
                 <Input
                   id="email"
                   type="email"
                   placeholder="customer@example.com"
-                  value={newDiscount.email}
-                  onChange={(e) => setNewDiscount({ ...newDiscount, email: e.target.value })}
+                  value={newCoupon.email}
+                  onChange={(e) => setNewCoupon({ ...newCoupon, email: e.target.value })}
                 />
               </div>
               <div className="space-y-2">
@@ -235,25 +277,26 @@ export default function AdminDiscounts() {
                   min="1"
                   max="100"
                   placeholder="e.g. 50"
-                  value={newDiscount.percentage}
-                  onChange={(e) => setNewDiscount({ ...newDiscount, percentage: e.target.value })}
+                  value={newCoupon.percentage}
+                  onChange={(e) => setNewCoupon({ ...newCoupon, percentage: e.target.value })}
                 />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="label">Discount Label</Label>
                 <Input
                   id="label"
-                  placeholder="e.g. Coral Spring Resident Discount"
-                  value={newDiscount.label}
-                  onChange={(e) => setNewDiscount({ ...newDiscount, label: e.target.value })}
+                  placeholder="e.g. Welcome Discount"
+                  value={newCoupon.label}
+                  onChange={(e) => setNewCoupon({ ...newCoupon, label: e.target.value })}
                 />
+                <p className="text-xs text-muted-foreground">This label is shown to the customer at checkout</p>
               </div>
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setShowAddDialog(false)}>Cancel</Button>
-              <Button onClick={handleAddDiscount} disabled={saving || !newDiscount.email || !newDiscount.percentage}>
+              <Button onClick={handleAddCoupon} disabled={saving || !newCoupon.email || !newCoupon.percentage || !newCoupon.code}>
                 {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
-                Add Discount
+                Create Coupon
               </Button>
             </DialogFooter>
           </DialogContent>
