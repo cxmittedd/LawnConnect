@@ -302,22 +302,29 @@ export function JobPaymentForm({
               </div>
             </div>
           ) : (
-            <div className="bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded-lg p-3 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Tag className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-                <span className="text-sm font-medium text-emerald-700 dark:text-emerald-300">
-                  {appliedCoupon.code} — {appliedCoupon.discount_percentage}% off
-                </span>
+            <div className="space-y-2">
+              <div className="bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded-lg p-3 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Tag className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                  <span className="text-sm font-medium text-emerald-700 dark:text-emerald-300">
+                    {appliedCoupon.code} — {appliedCoupon.discount_percentage}% off
+                  </span>
+                </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7"
+                  onClick={onRemoveCoupon}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
               </div>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7"
-                onClick={onRemoveCoupon}
-              >
-                <X className="h-4 w-4" />
-              </Button>
+              {smallLotOnly && !isSmallLot && (
+                <p className="text-xs text-amber-600 dark:text-amber-400">
+                  ⚠️ This coupon only applies to Small lot size. Select a Small lot to use this discount.
+                </p>
+              )}
             </div>
           )}
 
