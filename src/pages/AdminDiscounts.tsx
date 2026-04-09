@@ -87,27 +87,20 @@ export default function AdminDiscounts() {
 
     setSaving(true);
 
-    // Look up customer by email via auth - we need to find their profile
-    // Since we can't query auth.users, we'll ask admin to use the user ID or find by profile
-    const { data: authData } = await supabase.rpc('get_customer_id_by_email', { email_input: newDiscount.email });
+    const { data: customerId, error: lookupError } = await supabase.rpc('get_customer_id_by_email', { email_input: newDiscount.email });
 
-    // Fallback: search profiles by matching email isn't possible directly
-    // Instead, let's use a simpler approach - search by user ID if email lookup fails
-    let customerId = authData;
-
-    if (!customerId) {
-      // Try to find in profiles by searching (admin has access to all profiles)
+    if (lookupError || !customerId) {
       toast.error('Could not find a customer with that email. Please verify the email address.');
       setSaving(false);
       return;
     }
 
-    const { error } = await supabase.from('customer_discounts').insert({
-      customer_id: customerId,
+    const { error } = await supabase.from('customer_discounts').insert([{
+      customer_id: customerId as string,
       discount_percentage: pct,
       label: newDiscount.label || 'Discount',
       created_by: user.id,
-    });
+    }]);
 
     if (error) {
       if (error.code === '23505') {
