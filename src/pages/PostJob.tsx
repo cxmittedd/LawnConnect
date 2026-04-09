@@ -246,7 +246,8 @@ const handleLawnSizeChange = (value: string) => {
 
   const [appliedCoupon, setAppliedCoupon] = useState<{ id: string; discount_percentage: number; label: string; code: string } | null>(null);
 
-  const discountAmount = appliedCoupon ? Math.round(currentMinOffer * (appliedCoupon.discount_percentage / 100)) : 0;
+  const isSmallLot = lawnSizeSelection === 'small';
+  const discountAmount = (appliedCoupon && isSmallLot) ? Math.round(currentMinOffer * (appliedCoupon.discount_percentage / 100)) : 0;
 
   const getPaymentAmount = () => {
     const jobTypeExtra = getJobTypeExtraCost(formData.title);
@@ -549,6 +550,8 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
               appliedCoupon={appliedCoupon}
               onApplyCoupon={setAppliedCoupon}
               onRemoveCoupon={() => setAppliedCoupon(null)}
+              smallLotOnly={true}
+              isSmallLot={isSmallLot}
             />
           ) : step === 'payment' ? (
             <div className="flex items-center justify-center p-8">
