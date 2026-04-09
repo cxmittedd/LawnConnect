@@ -44,6 +44,39 @@ export type Database = {
         }
         Relationships: []
       }
+      customer_discounts: {
+        Row: {
+          active: boolean
+          created_at: string
+          created_by: string
+          customer_id: string
+          discount_percentage: number
+          id: string
+          label: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          created_by: string
+          customer_id: string
+          discount_percentage: number
+          id?: string
+          label?: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          created_by?: string
+          customer_id?: string
+          discount_percentage?: number
+          id?: string
+          label?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       customer_preferences: {
         Row: {
           additional_requirements: string | null
@@ -1049,6 +1082,10 @@ export type Database = {
       }
     }
     Functions: {
+      get_customer_id_by_email: {
+        Args: { email_input: string }
+        Returns: string
+      }
       get_profile_safe: {
         Args: { target_user_id: string }
         Returns: {
