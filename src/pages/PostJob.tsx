@@ -244,8 +244,24 @@ const handleLawnSizeChange = (value: string) => {
     setPhotos(photos.filter((_, i) => i !== index));
   };
 
-  const isCoralSpringSmallDiscount = community === 'coral_spring' && lawnSizeSelection === 'small';
-  const discountAmount = isCoralSpringSmallDiscount ? Math.round(currentMinOffer * 0.5) : 0;
+  const [customerDiscount, setCustomerDiscount] = useState<{ discount_percentage: number; label: string } | null>(null);
+
+  // Fetch customer discount on mount
+  useEffect(() => {
+    const fetchDiscount = async () => {
+      if (!user) return;
+      const { data } = await supabase
+        .from('customer_discounts')
+        .select('discount_percentage, label')
+        .eq('customer_id', user.id)
+        .eq('active', true)
+        .maybeSingle();
+      if (data) setCustomerDiscount(data);
+    };
+    fetchDiscount();
+  }, [user]);
+
+  const discountAmount = customerDiscount ? Math.round(currentMinOffer * (customerDiscount.discount_percentage / 100)) : 0;
 
   const getPaymentAmount = () => {
     const jobTypeExtra = getJobTypeExtraCost(formData.title);
@@ -537,7 +553,7 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
               lawnSizeCost={currentMinOffer}
               jobTypeCost={getJobTypeExtraCost(formData.title)}
               discountAmount={discountAmount}
-              discountLabel={isCoralSpringSmallDiscount ? 'Coral Spring Resident Discount (50%)' : undefined}
+              discountLabel={customerDiscount ? `${customerDiscount.label} (${customerDiscount.discount_percentage}%)` : undefined}
               jobId={pendingJobId}
               customerEmail={user?.email || ''}
               customerName={user?.user_metadata?.first_name || ''}
