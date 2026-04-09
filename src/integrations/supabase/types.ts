@@ -1082,6 +1082,10 @@ export type Database = {
       }
     }
     Functions: {
+      get_customer_id_by_email: {
+        Args: { email_input: string }
+        Returns: string
+      }
       get_profile_safe: {
         Args: { target_user_id: string }
         Returns: {
