@@ -1,10 +1,20 @@
 import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
-import { Lock, CheckCircle, CreditCard, Loader2 } from 'lucide-react';
+import { Lock, CheckCircle, CreditCard, Loader2, Tag, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { safeToast } from '@/lib/errorHandler';
+import { toast } from 'sonner';
+import { useAuth } from '@/lib/auth';
+
+interface AppliedCoupon {
+  id: string;
+  discount_percentage: number;
+  label: string;
+  code: string;
+}
 
 interface JobPaymentFormProps {
   amount: number;
@@ -21,6 +31,9 @@ interface JobPaymentFormProps {
   onPaymentFailed?: (jobId: string) => void;
   onCancel: () => void;
   loading?: boolean;
+  appliedCoupon?: AppliedCoupon | null;
+  onApplyCoupon?: (coupon: AppliedCoupon) => void;
+  onRemoveCoupon?: () => void;
 }
 
 interface EzeePaymentData {
@@ -48,33 +61,32 @@ export function JobPaymentForm({
   onPaymentSuccess,
   onPaymentFailed,
   onCancel, 
-  loading 
+  loading,
+  appliedCoupon,
+  onApplyCoupon,
+  onRemoveCoupon,
 }: JobPaymentFormProps) {
+  const { user } = useAuth();
   const [processing, setProcessing] = useState(false);
   const [paymentData, setPaymentData] = useState<EzeePaymentData | null>(null);
   const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
   const [checkingStatus, setCheckingStatus] = useState(false);
+  const [couponCode, setCouponCode] = useState('');
+  const [applyingCoupon, setApplyingCoupon] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
 
-  // Check for payment completion on mount (user returned from EzeePay)
-  // This checks the jobId status immediately if there's no paymentUrl set (meaning we didn't just initiate payment)
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const paymentComplete = urlParams.get('payment_complete');
     const urlOrderId = urlParams.get('order_id');
     
-    // If URL has payment_complete and order_id matches, or if we're returning from payment
     if ((paymentComplete === 'true' && urlOrderId === jobId) || 
         (paymentComplete === 'true' && !urlOrderId)) {
-      // Check payment status from database with polling
       checkPaymentStatusWithRetry(jobId);
     }
   }, [jobId]);
 
-  // Also check immediately if this component was mounted after a redirect
   useEffect(() => {
-    // If we have a jobId but no payment data, it means we're returning from payment
-    // Check the status right away
     const checkOnMount = async () => {
       if (jobId && !paymentData && !processing) {
         const { data: job } = await supabase
@@ -83,7 +95,6 @@ export function JobPaymentForm({
           .eq('id', jobId)
           .single();
         
-        // If the job is already paid or failed, trigger status check
         if (job?.payment_status === 'paid' || job?.payment_status === 'failed') {
           checkPaymentStatusWithRetry(jobId);
         }
@@ -106,6 +117,14 @@ export function JobPaymentForm({
         if (error) throw error;
 
         if (job?.payment_status === 'paid') {
+          // Mark coupon as used if one was applied
+          if (appliedCoupon) {
+            await supabase.from('customer_discounts').update({
+              used: true,
+              used_at: new Date().toISOString(),
+              used_on_job_id: orderId,
+            }).eq('id', appliedCoupon.id);
+          }
           setCheckingStatus(false);
           onPaymentSuccess(job.payment_reference || `EZEE-${Date.now()}`, {
             lastFour: '****',
@@ -118,7 +137,6 @@ export function JobPaymentForm({
           return;
         }
         
-        // Still pending, wait and retry (webhook may not have processed yet)
         if (attempt < retries - 1) {
           await new Promise(resolve => setTimeout(resolve, delay));
         }
@@ -127,16 +145,39 @@ export function JobPaymentForm({
       }
     }
     
-    // After all retries, if still pending, treat as potential failure
     setCheckingStatus(false);
     safeToast.error('Payment verification timed out. Please check your job status.');
+  };
+
+  const handleApplyCoupon = async () => {
+    if (!couponCode.trim() || !user) return;
+    setApplyingCoupon(true);
+
+    const { data, error } = await supabase
+      .from('customer_discounts')
+      .select('id, discount_percentage, label, code')
+      .eq('code', couponCode.trim().toUpperCase())
+      .eq('customer_id', user.id)
+      .eq('active', true)
+      .eq('used', false)
+      .maybeSingle();
+
+    if (error || !data) {
+      toast.error('Invalid or expired coupon code');
+      setApplyingCoupon(false);
+      return;
+    }
+
+    onApplyCoupon?.(data);
+    setCouponCode('');
+    toast.success('Coupon applied!');
+    setApplyingCoupon(false);
   };
 
   const initiatePayment = async () => {
     setProcessing(true);
 
     try {
-      // Pass the current origin so redirects come back to the same domain
       const originUrl = window.location.origin;
       
       const { data, error } = await supabase.functions.invoke('ezeepay-create-token', {
@@ -159,7 +200,6 @@ export function JobPaymentForm({
       setPaymentUrl(data.payment_url);
       setPaymentData(data.payment_data);
 
-      // Auto-submit the form after state is set
       setTimeout(() => {
         if (formRef.current) {
           formRef.current.submit();
@@ -173,7 +213,6 @@ export function JobPaymentForm({
     }
   };
 
-  // Show loading state while checking payment status
   if (checkingStatus) {
     return (
       <Card className="w-full">
@@ -232,6 +271,51 @@ export function JobPaymentForm({
               Protected by escrow - money released only after job completion
             </p>
           </div>
+
+          {/* Coupon Code Input */}
+          {!appliedCoupon ? (
+            <div className="border border-dashed border-border rounded-lg p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <Tag className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm font-medium text-foreground">Have a coupon code?</span>
+              </div>
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Enter coupon code"
+                  value={couponCode}
+                  onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                  className="flex-1"
+                  disabled={applyingCoupon}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleApplyCoupon}
+                  disabled={applyingCoupon || !couponCode.trim()}
+                >
+                  {applyingCoupon ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Apply'}
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded-lg p-3 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Tag className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                <span className="text-sm font-medium text-emerald-700 dark:text-emerald-300">
+                  {appliedCoupon.code} — {appliedCoupon.discount_percentage}% off
+                </span>
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
+                onClick={onRemoveCoupon}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
 
           {/* Hidden form for EzeePay redirect */}
           {paymentUrl && paymentData && (

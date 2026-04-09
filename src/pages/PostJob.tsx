@@ -244,24 +244,9 @@ const handleLawnSizeChange = (value: string) => {
     setPhotos(photos.filter((_, i) => i !== index));
   };
 
-  const [customerDiscount, setCustomerDiscount] = useState<{ discount_percentage: number; label: string } | null>(null);
+  const [appliedCoupon, setAppliedCoupon] = useState<{ id: string; discount_percentage: number; label: string; code: string } | null>(null);
 
-  // Fetch customer discount on mount
-  useEffect(() => {
-    const fetchDiscount = async () => {
-      if (!user) return;
-      const { data } = await supabase
-        .from('customer_discounts')
-        .select('discount_percentage, label')
-        .eq('customer_id', user.id)
-        .eq('active', true)
-        .maybeSingle();
-      if (data) setCustomerDiscount(data);
-    };
-    fetchDiscount();
-  }, [user]);
-
-  const discountAmount = customerDiscount ? Math.round(currentMinOffer * (customerDiscount.discount_percentage / 100)) : 0;
+  const discountAmount = appliedCoupon ? Math.round(currentMinOffer * (appliedCoupon.discount_percentage / 100)) : 0;
 
   const getPaymentAmount = () => {
     const jobTypeExtra = getJobTypeExtraCost(formData.title);
@@ -553,7 +538,7 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
               lawnSizeCost={currentMinOffer}
               jobTypeCost={getJobTypeExtraCost(formData.title)}
               discountAmount={discountAmount}
-              discountLabel={customerDiscount ? `${customerDiscount.label} (${customerDiscount.discount_percentage}%)` : undefined}
+              discountLabel={appliedCoupon ? `${appliedCoupon.label} (${appliedCoupon.discount_percentage}%)` : undefined}
               jobId={pendingJobId}
               customerEmail={user?.email || ''}
               customerName={user?.user_metadata?.first_name || ''}
@@ -561,6 +546,9 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
               onPaymentFailed={handlePaymentFailed}
               onCancel={() => setStep('details')}
               loading={loading}
+              appliedCoupon={appliedCoupon}
+              onApplyCoupon={setAppliedCoupon}
+              onRemoveCoupon={() => setAppliedCoupon(null)}
             />
           ) : step === 'payment' ? (
             <div className="flex items-center justify-center p-8">

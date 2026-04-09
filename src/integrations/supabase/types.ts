@@ -47,6 +47,7 @@ export type Database = {
       customer_discounts: {
         Row: {
           active: boolean
+          code: string
           created_at: string
           created_by: string
           customer_id: string
@@ -54,9 +55,13 @@ export type Database = {
           id: string
           label: string
           updated_at: string
+          used: boolean
+          used_at: string | null
+          used_on_job_id: string | null
         }
         Insert: {
           active?: boolean
+          code?: string
           created_at?: string
           created_by: string
           customer_id: string
@@ -64,9 +69,13 @@ export type Database = {
           id?: string
           label?: string
           updated_at?: string
+          used?: boolean
+          used_at?: string | null
+          used_on_job_id?: string | null
         }
         Update: {
           active?: boolean
+          code?: string
           created_at?: string
           created_by?: string
           customer_id?: string
@@ -74,6 +83,9 @@ export type Database = {
           id?: string
           label?: string
           updated_at?: string
+          used?: boolean
+          used_at?: string | null
+          used_on_job_id?: string | null
         }
         Relationships: []
       }
