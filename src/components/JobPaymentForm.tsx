@@ -34,6 +34,8 @@ interface JobPaymentFormProps {
   appliedCoupon?: AppliedCoupon | null;
   onApplyCoupon?: (coupon: AppliedCoupon) => void;
   onRemoveCoupon?: () => void;
+  smallLotOnly?: boolean;
+  isSmallLot?: boolean;
 }
 
 interface EzeePaymentData {
