@@ -67,6 +67,8 @@ export function JobPaymentForm({
   appliedCoupon,
   onApplyCoupon,
   onRemoveCoupon,
+  smallLotOnly,
+  isSmallLot,
 }: JobPaymentFormProps) {
   const { user } = useAuth();
   const [processing, setProcessing] = useState(false);
