@@ -16,6 +16,7 @@ interface MonthlyStats {
   totalTransactions: number;
   completedJobs: number;
   disputedJobsRevenue: number;
+  providerPayouts: number;
 }
 
 interface JobCounts {
@@ -42,6 +43,7 @@ const AdminDashboard = () => {
     totalRevenue: 0,
     totalTransactions: 0,
     completedJobs: 0,
+    providerPayouts: 0,
   });
   const [jobCounts, setJobCounts] = useState<JobCounts>({
     today: 0,
@@ -179,6 +181,7 @@ const AdminDashboard = () => {
     let grandTotalRevenue = 0;
     let grandTotalTransactions = 0;
     let grandTotalJobs = 0;
+    let grandTotalProviderPayouts = 0;
 
     for (let i = 0; i < monthsToLoad; i++) {
       const targetDate = subMonths(new Date(), i);
@@ -194,16 +197,14 @@ const AdminDashboard = () => {
         .lte("completed_at", monthEnd.toISOString());
 
       if (jobs && jobs.length > 0) {
-        // Calculate platform revenue (30% normally, 40% from disputed providers)
         const totalPlatformFee = jobs.reduce((sum, job) => sum + (Number(job.platform_fee) || 0), 0);
         const totalTransactionVolume = jobs.reduce((sum, job) => sum + (Number(job.final_price) || 0), 0);
+        const totalProviderPayouts = jobs.reduce((sum, job) => sum + (Number(job.provider_payout) || 0), 0);
         
-        // Calculate revenue from disputed accounts (jobs where platform took 40% instead of 30%)
         const disputedRevenue = jobs
           .filter(job => {
             const finalPrice = Number(job.final_price) || 0;
             const providerPayout = Number(job.provider_payout) || 0;
-            // If payout is 60% of final price, it was a disputed provider
             return finalPrice > 0 && Math.abs(providerPayout / finalPrice - 0.6) < 0.01;
           })
           .reduce((sum, job) => sum + (Number(job.platform_fee) || 0), 0);
@@ -214,11 +215,13 @@ const AdminDashboard = () => {
           totalTransactions: totalTransactionVolume,
           completedJobs: jobs.length,
           disputedJobsRevenue: disputedRevenue,
+          providerPayouts: totalProviderPayouts,
         });
 
         grandTotalRevenue += totalPlatformFee;
         grandTotalTransactions += totalTransactionVolume;
         grandTotalJobs += jobs.length;
+        grandTotalProviderPayouts += totalProviderPayouts;
       } else {
         monthlyStats.push({
           month: format(targetDate, "MMMM yyyy"),
@@ -226,6 +229,7 @@ const AdminDashboard = () => {
           totalTransactions: 0,
           completedJobs: 0,
           disputedJobsRevenue: 0,
+          providerPayouts: 0,
         });
       }
     }
@@ -235,6 +239,7 @@ const AdminDashboard = () => {
       totalRevenue: grandTotalRevenue,
       totalTransactions: grandTotalTransactions,
       completedJobs: grandTotalJobs,
+      providerPayouts: grandTotalProviderPayouts,
     });
     setLoading(false);
   };
@@ -281,24 +286,7 @@ const AdminDashboard = () => {
         </div>
 
         {/* Summary Cards */}
-        <div className="grid gap-4 md:grid-cols-3 mb-8">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Platform Revenue</CardTitle>
-              <DollarSign className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              {loading ? (
-                <Skeleton className="h-8 w-32" />
-              ) : (
-                <>
-                  <div className="text-2xl font-bold text-primary">{formatCurrency(totals.totalRevenue)}</div>
-                  <p className="text-xs text-muted-foreground">All time platform earnings</p>
-                </>
-              )}
-            </CardContent>
-          </Card>
-
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-8">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Transaction Volume</CardTitle>
@@ -310,7 +298,41 @@ const AdminDashboard = () => {
               ) : (
                 <>
                   <div className="text-2xl font-bold">{formatCurrency(totals.totalTransactions)}</div>
-                  <p className="text-xs text-muted-foreground">Total money processed through platform</p>
+                  <p className="text-xs text-muted-foreground">Total money collected from customers</p>
+                </>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Platform Revenue (30%)</CardTitle>
+              <DollarSign className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <Skeleton className="h-8 w-32" />
+              ) : (
+                <>
+                  <div className="text-2xl font-bold text-primary">{formatCurrency(totals.totalRevenue)}</div>
+                  <p className="text-xs text-muted-foreground">Platform's 30% cut</p>
+                </>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Provider Payouts (70%)</CardTitle>
+              <Users className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <Skeleton className="h-8 w-32" />
+              ) : (
+                <>
+                  <div className="text-2xl font-bold">{formatCurrency(totals.providerPayouts)}</div>
+                  <p className="text-xs text-muted-foreground">Total paid to providers</p>
                 </>
               )}
             </CardContent>
