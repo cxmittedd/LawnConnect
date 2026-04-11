@@ -16,6 +16,7 @@ interface MonthlyStats {
   totalTransactions: number;
   completedJobs: number;
   disputedJobsRevenue: number;
+  providerPayouts: number;
 }
 
 interface JobCounts {
