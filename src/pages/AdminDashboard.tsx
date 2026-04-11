@@ -43,6 +43,7 @@ const AdminDashboard = () => {
     totalRevenue: 0,
     totalTransactions: 0,
     completedJobs: 0,
+    providerPayouts: 0,
   });
   const [jobCounts, setJobCounts] = useState<JobCounts>({
     today: 0,
@@ -180,6 +181,7 @@ const AdminDashboard = () => {
     let grandTotalRevenue = 0;
     let grandTotalTransactions = 0;
     let grandTotalJobs = 0;
+    let grandTotalProviderPayouts = 0;
 
     for (let i = 0; i < monthsToLoad; i++) {
       const targetDate = subMonths(new Date(), i);
