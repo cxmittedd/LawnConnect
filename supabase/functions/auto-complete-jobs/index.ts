@@ -75,7 +75,7 @@ serve(async (req) => {
         const { data: disputeCount } = await supabase
           .rpc("get_provider_disputes_this_month", { provider_id: job.accepted_provider_id });
 
-        const payoutPercentage = 1.00;
+        const payoutPercentage = 0.70;
         const platformFee = job.final_price * (1 - payoutPercentage);
         const providerPayout = job.final_price * payoutPercentage;
 

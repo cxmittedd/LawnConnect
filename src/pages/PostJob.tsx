@@ -323,10 +323,11 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
     try {
       const basePrice = currentMinOffer;
       const paymentAmount = getPaymentAmount();
-      const platformFee = 0;
-      // Provider payout is always based on the full (undiscounted) price
+      // Provider payout is always based on the full (undiscounted) price at 70%
       const jobTypeExtra = getJobTypeExtraCost(formData.title);
-      const providerPayout = currentMinOffer + jobTypeExtra;
+      const fullPrice = currentMinOffer + jobTypeExtra;
+      const providerPayout = fullPrice * 0.70;
+      const platformFee = fullPrice * 0.30;
       
       const { data: job, error: jobError } = await supabase
         .from('job_requests')

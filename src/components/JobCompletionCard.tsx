@@ -498,8 +498,8 @@ export function JobCompletionCard({
         provider_id: providerId,
       });
 
-      // Calculate payout percentage (100% - startup phase, 0% platform fee)
-      const payoutPercentage = 1.00;
+      // Calculate payout percentage (70% to provider, 30% platform fee)
+      const payoutPercentage = 0.70;
       const providerPayout = finalPrice ? finalPrice * payoutPercentage : null;
       const platformFee = finalPrice ? finalPrice * (1 - payoutPercentage) : null;
 
