@@ -286,24 +286,7 @@ const AdminDashboard = () => {
         </div>
 
         {/* Summary Cards */}
-        <div className="grid gap-4 md:grid-cols-3 mb-8">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Platform Revenue</CardTitle>
-              <DollarSign className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              {loading ? (
-                <Skeleton className="h-8 w-32" />
-              ) : (
-                <>
-                  <div className="text-2xl font-bold text-primary">{formatCurrency(totals.totalRevenue)}</div>
-                  <p className="text-xs text-muted-foreground">All time platform earnings</p>
-                </>
-              )}
-            </CardContent>
-          </Card>
-
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-8">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Transaction Volume</CardTitle>
@@ -315,7 +298,41 @@ const AdminDashboard = () => {
               ) : (
                 <>
                   <div className="text-2xl font-bold">{formatCurrency(totals.totalTransactions)}</div>
-                  <p className="text-xs text-muted-foreground">Total money processed through platform</p>
+                  <p className="text-xs text-muted-foreground">Total money collected from customers</p>
+                </>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Platform Revenue (30%)</CardTitle>
+              <DollarSign className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <Skeleton className="h-8 w-32" />
+              ) : (
+                <>
+                  <div className="text-2xl font-bold text-primary">{formatCurrency(totals.totalRevenue)}</div>
+                  <p className="text-xs text-muted-foreground">Platform's 30% cut</p>
+                </>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Provider Payouts (70%)</CardTitle>
+              <Users className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <Skeleton className="h-8 w-32" />
+              ) : (
+                <>
+                  <div className="text-2xl font-bold">{formatCurrency(totals.providerPayouts)}</div>
+                  <p className="text-xs text-muted-foreground">Total paid to providers</p>
                 </>
               )}
             </CardContent>
