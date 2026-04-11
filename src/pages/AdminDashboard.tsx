@@ -197,16 +197,14 @@ const AdminDashboard = () => {
         .lte("completed_at", monthEnd.toISOString());
 
       if (jobs && jobs.length > 0) {
-        // Calculate platform revenue (30% normally, 40% from disputed providers)
         const totalPlatformFee = jobs.reduce((sum, job) => sum + (Number(job.platform_fee) || 0), 0);
         const totalTransactionVolume = jobs.reduce((sum, job) => sum + (Number(job.final_price) || 0), 0);
+        const totalProviderPayouts = jobs.reduce((sum, job) => sum + (Number(job.provider_payout) || 0), 0);
         
-        // Calculate revenue from disputed accounts (jobs where platform took 40% instead of 30%)
         const disputedRevenue = jobs
           .filter(job => {
             const finalPrice = Number(job.final_price) || 0;
             const providerPayout = Number(job.provider_payout) || 0;
-            // If payout is 60% of final price, it was a disputed provider
             return finalPrice > 0 && Math.abs(providerPayout / finalPrice - 0.6) < 0.01;
           })
           .reduce((sum, job) => sum + (Number(job.platform_fee) || 0), 0);
@@ -217,11 +215,13 @@ const AdminDashboard = () => {
           totalTransactions: totalTransactionVolume,
           completedJobs: jobs.length,
           disputedJobsRevenue: disputedRevenue,
+          providerPayouts: totalProviderPayouts,
         });
 
         grandTotalRevenue += totalPlatformFee;
         grandTotalTransactions += totalTransactionVolume;
         grandTotalJobs += jobs.length;
+        grandTotalProviderPayouts += totalProviderPayouts;
       } else {
         monthlyStats.push({
           month: format(targetDate, "MMMM yyyy"),
@@ -229,6 +229,7 @@ const AdminDashboard = () => {
           totalTransactions: 0,
           completedJobs: 0,
           disputedJobsRevenue: 0,
+          providerPayouts: 0,
         });
       }
     }
@@ -238,6 +239,7 @@ const AdminDashboard = () => {
       totalRevenue: grandTotalRevenue,
       totalTransactions: grandTotalTransactions,
       completedJobs: grandTotalJobs,
+      providerPayouts: grandTotalProviderPayouts,
     });
     setLoading(false);
   };
