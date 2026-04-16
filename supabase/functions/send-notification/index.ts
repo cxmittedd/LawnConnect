@@ -12,8 +12,8 @@ const corsHeaders = {
 
 // Zod schema for input validation
 const notificationSchema = z.object({
-  type: z.enum(['proposal_received', 'proposal_accepted', 'job_confirmed', 'payment_submitted', 'payment_confirmed', 'job_completed', 'review_received', 'late_completion_warning', 'late_completion_apology', 'completion_confirmation_needed', 'dispute_opened', 'dispute_response', 'secure_call_enabled']),
-  recipientId: z.string().uuid(),
+  type: z.enum(['proposal_received', 'proposal_accepted', 'job_confirmed', 'payment_submitted', 'payment_confirmed', 'job_completed', 'review_received', 'late_completion_warning', 'late_completion_apology', 'completion_confirmation_needed', 'dispute_opened', 'dispute_response', 'secure_call_enabled', 'job_posted']),
+  recipientId: z.string().uuid().optional(),
   jobTitle: z.string().min(1).max(200),
   jobId: z.string().uuid(),
   additionalData: z.object({
