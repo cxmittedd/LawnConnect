@@ -565,6 +565,44 @@ const getEmailContent = (type: string, jobTitle: string, jobId: string, addition
           undefined
         )
       };
+
+    case 'job_posted':
+      return {
+        subject: `🆕 New Job Posted - "${jobTitle}"`,
+        html: createBrandedEmail(
+          'linear-gradient(135deg, #22c55e, #16a34a)',
+          '🆕',
+          'New Job Posted!',
+          `
+            <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 26px; color: #3f3f46;">
+              A new job has been posted and paid for on LawnConnect:
+            </p>
+            <div style="background: #f0fdf4; padding: 16px 20px; border-radius: 10px; border-left: 4px solid #16a34a; margin-bottom: 16px;">
+              <p style="margin: 0; font-size: 18px; font-weight: 600; color: #166534;">${jobTitle}</p>
+            </div>
+            ${additionalData?.customerName ? `
+              <p style="margin: 0 0 8px 0; font-size: 14px; color: #52525b;">
+                <strong>Customer:</strong> ${additionalData.customerName}
+              </p>
+            ` : ''}
+            ${additionalData?.amount ? `
+              <p style="margin: 0 0 8px 0; font-size: 14px; color: #52525b;">
+                <strong>Amount Paid:</strong> <span style="color: #16a34a; font-weight: 600;">J$${additionalData.amount.toLocaleString()}</span>
+              </p>
+            ` : ''}
+            ${additionalData?.preferredDate ? `
+              <p style="margin: 0 0 16px 0; font-size: 14px; color: #52525b;">
+                <strong>Preferred Date:</strong> ${additionalData.preferredDate}
+              </p>
+            ` : ''}
+            <p style="margin: 0; font-size: 14px; color: #71717a;">
+              Log in to the admin dashboard to view details.
+            </p>
+          `,
+          jobUrl,
+          'View Job'
+        )
+      };
   }
 };
 
