@@ -466,12 +466,17 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
       // Notify admin about new job posting
       try {
         const { sendNotification } = await import('@/lib/notifications');
+        const { data: notifProfile } = await supabase
+          .from('profiles')
+          .select('first_name, last_name')
+          .eq('id', user!.id)
+          .single();
         await sendNotification({
           type: 'job_posted',
           jobTitle: formData.title,
           jobId: job.id,
           additionalData: {
-            customerName: profile ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() : undefined,
+            customerName: notifProfile ? `${notifProfile.first_name || ''} ${notifProfile.last_name || ''}`.trim() : undefined,
             amount: paymentAmount,
             preferredDate: formData.preferred_date || undefined,
           },
