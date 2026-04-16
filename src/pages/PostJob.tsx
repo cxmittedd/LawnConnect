@@ -463,6 +463,23 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
         });
       }
 
+      // Notify admin about new job posting
+      try {
+        const { sendNotification } = await import('@/lib/notifications');
+        await sendNotification({
+          type: 'job_posted',
+          jobTitle: formData.title,
+          jobId: job.id,
+          additionalData: {
+            customerName: profile ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() : undefined,
+            amount: paymentAmount,
+            preferredDate: formData.preferred_date || undefined,
+          },
+        });
+      } catch (notifError) {
+        console.error('Failed to send job posted notification:', notifError);
+      }
+
       toast.success('Job posted successfully! Payment received.');
       navigate('/my-jobs');
     } catch (error) {
