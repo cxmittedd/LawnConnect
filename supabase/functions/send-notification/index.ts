@@ -12,8 +12,8 @@ const corsHeaders = {
 
 // Zod schema for input validation
 const notificationSchema = z.object({
-  type: z.enum(['proposal_received', 'proposal_accepted', 'job_confirmed', 'payment_submitted', 'payment_confirmed', 'job_completed', 'review_received', 'late_completion_warning', 'late_completion_apology', 'completion_confirmation_needed', 'dispute_opened', 'dispute_response', 'secure_call_enabled']),
-  recipientId: z.string().uuid(),
+  type: z.enum(['proposal_received', 'proposal_accepted', 'job_confirmed', 'payment_submitted', 'payment_confirmed', 'job_completed', 'review_received', 'late_completion_warning', 'late_completion_apology', 'completion_confirmation_needed', 'dispute_opened', 'dispute_response', 'secure_call_enabled', 'job_posted']),
+  recipientId: z.string().uuid().optional(),
   jobTitle: z.string().min(1).max(200),
   jobId: z.string().uuid(),
   additionalData: z.object({
@@ -565,6 +565,44 @@ const getEmailContent = (type: string, jobTitle: string, jobId: string, addition
           undefined
         )
       };
+
+    case 'job_posted':
+      return {
+        subject: `🆕 New Job Posted - "${jobTitle}"`,
+        html: createBrandedEmail(
+          'linear-gradient(135deg, #22c55e, #16a34a)',
+          '🆕',
+          'New Job Posted!',
+          `
+            <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 26px; color: #3f3f46;">
+              A new job has been posted and paid for on LawnConnect:
+            </p>
+            <div style="background: #f0fdf4; padding: 16px 20px; border-radius: 10px; border-left: 4px solid #16a34a; margin-bottom: 16px;">
+              <p style="margin: 0; font-size: 18px; font-weight: 600; color: #166534;">${jobTitle}</p>
+            </div>
+            ${additionalData?.customerName ? `
+              <p style="margin: 0 0 8px 0; font-size: 14px; color: #52525b;">
+                <strong>Customer:</strong> ${additionalData.customerName}
+              </p>
+            ` : ''}
+            ${additionalData?.amount ? `
+              <p style="margin: 0 0 8px 0; font-size: 14px; color: #52525b;">
+                <strong>Amount Paid:</strong> <span style="color: #16a34a; font-weight: 600;">J$${additionalData.amount.toLocaleString()}</span>
+              </p>
+            ` : ''}
+            ${additionalData?.preferredDate ? `
+              <p style="margin: 0 0 16px 0; font-size: 14px; color: #52525b;">
+                <strong>Preferred Date:</strong> ${additionalData.preferredDate}
+              </p>
+            ` : ''}
+            <p style="margin: 0; font-size: 14px; color: #71717a;">
+              Log in to the admin dashboard to view details.
+            </p>
+          `,
+          jobUrl,
+          'View Job'
+        )
+      };
   }
 };
 
@@ -626,7 +664,31 @@ serve(async (req: Request): Promise<Response> => {
 
     const { type, recipientId, jobTitle, jobId, additionalData } = parseResult.data;
 
-    console.log(`Processing ${type} notification for recipient ${recipientId}, job: ${jobTitle}`);
+    console.log(`Processing ${type} notification for job: ${jobTitle}`);
+
+    // For job_posted, send directly to admin email without participant checks
+    if (type === 'job_posted') {
+      const { subject, html } = getEmailContent(type, jobTitle, jobId, additionalData);
+      const emailResponse = await resend.emails.send({
+        from: "LawnConnect <noreply@connectlawn.com>",
+        to: ["officiallawnconnect@gmail.com"],
+        subject,
+        html,
+      });
+      console.log("Admin notification sent successfully:", emailResponse);
+      return new Response(
+        JSON.stringify({ success: true, emailResponse }),
+        { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    // For all other types, recipientId is required
+    if (!recipientId) {
+      return new Response(
+        JSON.stringify({ error: "recipientId is required for this notification type" }),
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
 
     // Verify job exists and caller is a participant (unless service role call)
     if (!isServiceRoleCall && callerId) {
@@ -644,7 +706,6 @@ serve(async (req: Request): Promise<Response> => {
         );
       }
 
-      // Verify caller is a participant in this job
       const isCustomer = job.customer_id === callerId;
       const isProvider = job.accepted_provider_id === callerId;
 
@@ -656,7 +717,6 @@ serve(async (req: Request): Promise<Response> => {
         );
       }
 
-      // Verify recipient is the other participant in the job
       const validRecipient = recipientId === job.customer_id || recipientId === job.accepted_provider_id;
       if (!validRecipient) {
         console.error(`Recipient ${recipientId} is not a participant in job ${jobId}`);

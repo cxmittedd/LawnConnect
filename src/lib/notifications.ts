@@ -13,11 +13,12 @@ type NotificationType =
   | 'completion_confirmation_needed'
   | 'dispute_opened'
   | 'dispute_response'
-  | 'secure_call_enabled';
+  | 'secure_call_enabled'
+  | 'job_posted';
 
 interface NotificationParams {
   type: NotificationType;
-  recipientId: string;
+  recipientId?: string;
   jobTitle: string;
   jobId: string;
   additionalData?: {
