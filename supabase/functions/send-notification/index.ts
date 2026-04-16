@@ -664,7 +664,31 @@ serve(async (req: Request): Promise<Response> => {
 
     const { type, recipientId, jobTitle, jobId, additionalData } = parseResult.data;
 
-    console.log(`Processing ${type} notification for recipient ${recipientId}, job: ${jobTitle}`);
+    console.log(`Processing ${type} notification for job: ${jobTitle}`);
+
+    // For job_posted, send directly to admin email without participant checks
+    if (type === 'job_posted') {
+      const { subject, html } = getEmailContent(type, jobTitle, jobId, additionalData);
+      const emailResponse = await resend.emails.send({
+        from: "LawnConnect <noreply@connectlawn.com>",
+        to: ["officiallawnconnect@gmail.com"],
+        subject,
+        html,
+      });
+      console.log("Admin notification sent successfully:", emailResponse);
+      return new Response(
+        JSON.stringify({ success: true, emailResponse }),
+        { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    // For all other types, recipientId is required
+    if (!recipientId) {
+      return new Response(
+        JSON.stringify({ error: "recipientId is required for this notification type" }),
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
 
     // Verify job exists and caller is a participant (unless service role call)
     if (!isServiceRoleCall && callerId) {
@@ -682,7 +706,6 @@ serve(async (req: Request): Promise<Response> => {
         );
       }
 
-      // Verify caller is a participant in this job
       const isCustomer = job.customer_id === callerId;
       const isProvider = job.accepted_provider_id === callerId;
 
@@ -694,7 +717,6 @@ serve(async (req: Request): Promise<Response> => {
         );
       }
 
-      // Verify recipient is the other participant in the job
       const validRecipient = recipientId === job.customer_id || recipientId === job.accepted_provider_id;
       if (!validRecipient) {
         console.error(`Recipient ${recipientId} is not a participant in job ${jobId}`);
