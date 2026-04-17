@@ -109,7 +109,16 @@ export function JobCompletionCard({
   const [disputeMessages, setDisputeMessages] = useState<{ id: string; sender_type: string; message: string; created_at: string }[]>([]);
   const [customerMessage, setCustomerMessage] = useState("");
   const [sendingMessage, setSendingMessage] = useState(false);
-  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
+  const [lightboxPhotos, setLightboxPhotos] = useState<string[]>([]);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
+  const lightboxOpen = lightboxPhotos.length > 0;
+  const openLightbox = (urls: string[], index: number) => {
+    setLightboxPhotos(urls);
+    setLightboxIndex(index);
+  };
+  const closeLightbox = () => setLightboxPhotos([]);
+  const showPrev = () => setLightboxIndex((i) => (i - 1 + lightboxPhotos.length) % lightboxPhotos.length);
+  const showNext = () => setLightboxIndex((i) => (i + 1) % lightboxPhotos.length);
   const [selectedDisputeFiles, setSelectedDisputeFiles] = useState<File[]>([]);
   const [previewDisputeUrls, setPreviewDisputeUrls] = useState<string[]>([]);
   const [selectedResponseFiles, setSelectedResponseFiles] = useState<File[]>([]);
