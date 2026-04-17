@@ -24,6 +24,8 @@ import {
   Image,
   AlertTriangle,
   MessageSquare,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -107,7 +109,16 @@ export function JobCompletionCard({
   const [disputeMessages, setDisputeMessages] = useState<{ id: string; sender_type: string; message: string; created_at: string }[]>([]);
   const [customerMessage, setCustomerMessage] = useState("");
   const [sendingMessage, setSendingMessage] = useState(false);
-  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
+  const [lightboxPhotos, setLightboxPhotos] = useState<string[]>([]);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
+  const lightboxOpen = lightboxPhotos.length > 0;
+  const openLightbox = (urls: string[], index: number) => {
+    setLightboxPhotos(urls);
+    setLightboxIndex(index);
+  };
+  const closeLightbox = () => setLightboxPhotos([]);
+  const showPrev = () => setLightboxIndex((i) => (i - 1 + lightboxPhotos.length) % lightboxPhotos.length);
+  const showNext = () => setLightboxIndex((i) => (i + 1) % lightboxPhotos.length);
   const [selectedDisputeFiles, setSelectedDisputeFiles] = useState<File[]>([]);
   const [previewDisputeUrls, setPreviewDisputeUrls] = useState<string[]>([]);
   const [selectedResponseFiles, setSelectedResponseFiles] = useState<File[]>([]);
@@ -741,13 +752,13 @@ export function JobCompletionCard({
                   <div className="mt-2">
                     <p className="text-xs font-medium">Customer's evidence photos:</p>
                     <div className="grid grid-cols-3 gap-1 mt-1">
-                      {disputePhotos.map((photo) => (
+                      {disputePhotos.map((photo, idx) => (
                         <img
                           key={photo.id}
                           src={photo.photo_url}
                           alt="Dispute evidence"
                           className="w-full h-16 object-cover rounded cursor-pointer"
-                          onClick={() => setLightboxUrl(photo.photo_url)}
+                          onClick={() => openLightbox(disputePhotos.map((p) => p.photo_url), idx)}
                         />
                       ))}
                     </div>
@@ -826,13 +837,13 @@ export function JobCompletionCard({
                     <Image className="h-4 w-4" /> Before photos
                   </p>
                   <div className="grid grid-cols-3 gap-2">
-                    {beforePhotos.map((photo) => (
+                    {beforePhotos.map((photo, idx) => (
                       <img
                         key={photo.id}
                         src={photo.photo_url}
                         alt="Before photo"
                         className="w-full h-20 object-cover rounded-md cursor-pointer hover:opacity-90 transition-opacity"
-                        onClick={() => setLightboxUrl(photo.photo_url)}
+                        onClick={() => openLightbox(beforePhotos.map((p) => p.photo_url), idx)}
                       />
                     ))}
                   </div>
@@ -844,13 +855,13 @@ export function JobCompletionCard({
                     <Image className="h-4 w-4" /> After photos
                   </p>
                   <div className="grid grid-cols-3 gap-2">
-                    {afterPhotos.map((photo) => (
+                    {afterPhotos.map((photo, idx) => (
                       <img
                         key={photo.id}
                         src={photo.photo_url}
                         alt="After photo"
                         className="w-full h-20 object-cover rounded-md cursor-pointer hover:opacity-90 transition-opacity"
-                        onClick={() => setLightboxUrl(photo.photo_url)}
+                        onClick={() => openLightbox(afterPhotos.map((p) => p.photo_url), idx)}
                       />
                     ))}
                   </div>
@@ -882,13 +893,13 @@ export function JobCompletionCard({
                     <Image className="h-4 w-4" /> Completion photos
                   </p>
                   <div className="grid grid-cols-3 gap-2">
-                    {afterPhotos.map((photo) => (
+                    {afterPhotos.map((photo, idx) => (
                       <img
                         key={photo.id}
                         src={photo.photo_url}
                         alt="Completion photo"
                         className="w-full h-20 object-cover rounded-md cursor-pointer hover:opacity-90 transition-opacity"
-                        onClick={() => setLightboxUrl(photo.photo_url)}
+                        onClick={() => openLightbox(afterPhotos.map((p) => p.photo_url), idx)}
                       />
                     ))}
                   </div>
@@ -933,13 +944,13 @@ export function JobCompletionCard({
                     <Camera className="h-4 w-4" /> Before photos
                   </p>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                    {beforePhotos.map((photo) => (
+                    {beforePhotos.map((photo, idx) => (
                       <img
                         key={photo.id}
                         src={photo.photo_url}
                         alt="Before photo"
                         className="w-full h-24 object-cover rounded-md cursor-pointer hover:opacity-90 transition-opacity"
-                        onClick={() => setLightboxUrl(photo.photo_url)}
+                        onClick={() => openLightbox(beforePhotos.map((p) => p.photo_url), idx)}
                       />
                     ))}
                   </div>
@@ -953,13 +964,13 @@ export function JobCompletionCard({
                     <Camera className="h-4 w-4" /> After photos
                   </p>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                    {afterPhotos.map((photo) => (
+                    {afterPhotos.map((photo, idx) => (
                       <img
                         key={photo.id}
                         src={photo.photo_url}
                         alt="After photo"
                         className="w-full h-24 object-cover rounded-md cursor-pointer hover:opacity-90 transition-opacity"
-                        onClick={() => setLightboxUrl(photo.photo_url)}
+                        onClick={() => openLightbox(afterPhotos.map((p) => p.photo_url), idx)}
                       />
                     ))}
                   </div>
@@ -1002,13 +1013,13 @@ export function JobCompletionCard({
                     <Image className="h-4 w-4" /> Completion photos
                   </p>
                   <div className="grid grid-cols-3 gap-2">
-                    {afterPhotos.map((photo) => (
+                    {afterPhotos.map((photo, idx) => (
                       <img
                         key={photo.id}
                         src={photo.photo_url}
                         alt="Completion photo"
                         className="w-full h-20 object-cover rounded-md cursor-pointer hover:opacity-90"
-                        onClick={() => setLightboxUrl(photo.photo_url)}
+                        onClick={() => openLightbox(afterPhotos.map((p) => p.photo_url), idx)}
                       />
                     ))}
                   </div>
@@ -1092,13 +1103,13 @@ export function JobCompletionCard({
                     <Image className="h-4 w-4" /> Provider's completion photos
                   </p>
                   <div className="grid grid-cols-3 gap-2">
-                    {afterPhotos.map((photo) => (
+                    {afterPhotos.map((photo, idx) => (
                       <img
                         key={photo.id}
                         src={photo.photo_url}
                         alt="Completion photo"
                         className="w-full h-20 object-cover rounded-md cursor-pointer hover:opacity-90"
-                        onClick={() => setLightboxUrl(photo.photo_url)}
+                        onClick={() => openLightbox(afterPhotos.map((p) => p.photo_url), idx)}
                       />
                     ))}
                   </div>
@@ -1135,13 +1146,13 @@ export function JobCompletionCard({
                     <Image className="h-4 w-4" /> Your completion photos
                   </p>
                   <div className="grid grid-cols-3 gap-2">
-                    {afterPhotos.map((photo) => (
+                    {afterPhotos.map((photo, idx) => (
                       <img
                         key={photo.id}
                         src={photo.photo_url}
                         alt="Completion photo"
                         className="w-full h-20 object-cover rounded-md cursor-pointer hover:opacity-90"
-                        onClick={() => setLightboxUrl(photo.photo_url)}
+                        onClick={() => openLightbox(afterPhotos.map((p) => p.photo_url), idx)}
                       />
                     ))}
                   </div>
@@ -1516,17 +1527,50 @@ export function JobCompletionCard({
       </Dialog>
 
       {/* Photo Lightbox */}
-      <Dialog open={!!lightboxUrl} onOpenChange={(open) => !open && setLightboxUrl(null)}>
-        <DialogContent className="max-w-3xl p-2 sm:p-4 bg-background">
+      <Dialog open={lightboxOpen} onOpenChange={(open) => !open && closeLightbox()}>
+        <DialogContent
+          className="max-w-3xl p-2 sm:p-4 bg-background"
+          onKeyDown={(e) => {
+            if (e.key === "ArrowLeft") showPrev();
+            if (e.key === "ArrowRight") showNext();
+          }}
+        >
           <DialogHeader className="sr-only">
             <DialogTitle>Photo preview</DialogTitle>
           </DialogHeader>
-          {lightboxUrl && (
-            <img
-              src={lightboxUrl}
-              alt="Photo preview"
-              className="w-full h-auto max-h-[80vh] object-contain rounded-md"
-            />
+          {lightboxOpen && (
+            <div className="relative">
+              <img
+                src={lightboxPhotos[lightboxIndex]}
+                alt={`Photo ${lightboxIndex + 1} of ${lightboxPhotos.length}`}
+                className="w-full h-auto max-h-[80vh] object-contain rounded-md"
+              />
+              {lightboxPhotos.length > 1 && (
+                <>
+                  <Button
+                    variant="secondary"
+                    size="icon"
+                    className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full opacity-90 hover:opacity-100 shadow-md"
+                    onClick={showPrev}
+                    aria-label="Previous photo"
+                  >
+                    <ChevronLeft className="h-5 w-5" />
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="icon"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full opacity-90 hover:opacity-100 shadow-md"
+                    onClick={showNext}
+                    aria-label="Next photo"
+                  >
+                    <ChevronRight className="h-5 w-5" />
+                  </Button>
+                  <div className="absolute bottom-2 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-background/80 text-xs font-medium border">
+                    {lightboxIndex + 1} / {lightboxPhotos.length}
+                  </div>
+                </>
+              )}
+            </div>
           )}
         </DialogContent>
       </Dialog>
