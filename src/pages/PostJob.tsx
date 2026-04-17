@@ -300,7 +300,7 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
 
     // Build location string for community
     const communityLabels: Record<string, string> = {
-      coral_spring: 'Coral Spring',
+      coral_spring: 'Coral Springs Village',
       florence_hall: 'Florence Hall',
       stonebrook_vista: 'Stonebrook Vista',
       stonebrook_manor: 'Stonebrook Manor',
@@ -411,7 +411,7 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
 
       // Save preferences for next time
       const communityLabelsForSave: Record<string, string> = {
-        coral_spring: 'Coral Spring',
+        coral_spring: 'Coral Springs Village',
         florence_hall: 'Florence Hall',
         stonebrook_vista: 'Stonebrook Vista',
         stonebrook_manor: 'Stonebrook Manor',
@@ -687,7 +687,7 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="none">None</SelectItem>
-                      <SelectItem value="coral_spring">Coral Spring</SelectItem>
+                      <SelectItem value="coral_spring">Coral Springs Village</SelectItem>
                       <SelectItem value="florence_hall">Florence Hall</SelectItem>
                       <SelectItem value="stonebrook_vista">Stonebrook Vista</SelectItem>
                       <SelectItem value="stonebrook_manor">Stonebrook Manor</SelectItem>

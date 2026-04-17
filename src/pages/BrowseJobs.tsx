@@ -20,7 +20,7 @@ import { ProfileCompletionDialog } from '@/components/ProfileCompletionDialog';
 import { sendNotification } from '@/lib/notifications';
 
 const COMMUNITY_LABELS: Record<string, string> = {
-  coral_spring: 'Coral Spring',
+  coral_spring: 'Coral Springs Village',
   florence_hall: 'Florence Hall',
   stonebrook_vista: 'Stonebrook Vista',
   stonebrook_manor: 'Stonebrook Manor',
