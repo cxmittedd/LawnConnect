@@ -107,6 +107,7 @@ export function JobCompletionCard({
   const [disputeMessages, setDisputeMessages] = useState<{ id: string; sender_type: string; message: string; created_at: string }[]>([]);
   const [customerMessage, setCustomerMessage] = useState("");
   const [sendingMessage, setSendingMessage] = useState(false);
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const [selectedDisputeFiles, setSelectedDisputeFiles] = useState<File[]>([]);
   const [previewDisputeUrls, setPreviewDisputeUrls] = useState<string[]>([]);
   const [selectedResponseFiles, setSelectedResponseFiles] = useState<File[]>([]);
