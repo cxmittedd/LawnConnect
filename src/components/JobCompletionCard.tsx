@@ -1527,17 +1527,50 @@ export function JobCompletionCard({
       </Dialog>
 
       {/* Photo Lightbox */}
-      <Dialog open={!!lightboxUrl} onOpenChange={(open) => !open && setLightboxUrl(null)}>
-        <DialogContent className="max-w-3xl p-2 sm:p-4 bg-background">
+      <Dialog open={lightboxOpen} onOpenChange={(open) => !open && closeLightbox()}>
+        <DialogContent
+          className="max-w-3xl p-2 sm:p-4 bg-background"
+          onKeyDown={(e) => {
+            if (e.key === "ArrowLeft") showPrev();
+            if (e.key === "ArrowRight") showNext();
+          }}
+        >
           <DialogHeader className="sr-only">
             <DialogTitle>Photo preview</DialogTitle>
           </DialogHeader>
-          {lightboxUrl && (
-            <img
-              src={lightboxUrl}
-              alt="Photo preview"
-              className="w-full h-auto max-h-[80vh] object-contain rounded-md"
-            />
+          {lightboxOpen && (
+            <div className="relative">
+              <img
+                src={lightboxPhotos[lightboxIndex]}
+                alt={`Photo ${lightboxIndex + 1} of ${lightboxPhotos.length}`}
+                className="w-full h-auto max-h-[80vh] object-contain rounded-md"
+              />
+              {lightboxPhotos.length > 1 && (
+                <>
+                  <Button
+                    variant="secondary"
+                    size="icon"
+                    className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full opacity-90 hover:opacity-100 shadow-md"
+                    onClick={showPrev}
+                    aria-label="Previous photo"
+                  >
+                    <ChevronLeft className="h-5 w-5" />
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="icon"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full opacity-90 hover:opacity-100 shadow-md"
+                    onClick={showNext}
+                    aria-label="Next photo"
+                  >
+                    <ChevronRight className="h-5 w-5" />
+                  </Button>
+                  <div className="absolute bottom-2 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-background/80 text-xs font-medium border">
+                    {lightboxIndex + 1} / {lightboxPhotos.length}
+                  </div>
+                </>
+              )}
+            </div>
           )}
         </DialogContent>
       </Dialog>
