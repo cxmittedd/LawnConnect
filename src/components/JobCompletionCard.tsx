@@ -1514,6 +1514,22 @@ export function JobCompletionCard({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Photo Lightbox */}
+      <Dialog open={!!lightboxUrl} onOpenChange={(open) => !open && setLightboxUrl(null)}>
+        <DialogContent className="max-w-3xl p-2 sm:p-4 bg-background">
+          <DialogHeader className="sr-only">
+            <DialogTitle>Photo preview</DialogTitle>
+          </DialogHeader>
+          {lightboxUrl && (
+            <img
+              src={lightboxUrl}
+              alt="Photo preview"
+              className="w-full h-auto max-h-[80vh] object-contain rounded-md"
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
