@@ -54,8 +54,7 @@ const JAMAICA_PARISHES = [
 ] as const;
 
 const JOB_TYPES = [
-  { value: 'Regular Lawn Cut', label: 'Regular Lawn Cut', extraCost: 0 },
-  { value: 'Regular Lawn Cut + Cleanup', label: 'Regular Lawn Cut + Cleanup (+$500)', extraCost: 500 },
+  { value: 'Regular Lawn Cut + Cleanup', label: 'Regular Lawn Cut + Cleanup', extraCost: 0 },
   { value: 'Lawn Cut (Overgrown Grass)', label: 'Lawn Cut (Overgrown Grass) (+$1,000)', extraCost: 1000 },
   { value: 'Lawn Cut (Overgrown Grass) + Cleanup', label: 'Lawn Cut (Overgrown Grass) + Cleanup (+$1,500)', extraCost: 1500 },
 ] as const;
