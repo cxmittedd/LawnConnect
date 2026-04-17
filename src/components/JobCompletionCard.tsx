@@ -830,7 +830,8 @@ export function JobCompletionCard({
                         key={photo.id}
                         src={photo.photo_url}
                         alt="Before photo"
-                        className="w-full h-20 object-cover rounded-md"
+                        className="w-full h-20 object-cover rounded-md cursor-pointer hover:opacity-90 transition-opacity"
+                        onClick={() => window.open(photo.photo_url, "_blank")}
                       />
                     ))}
                   </div>
@@ -847,7 +848,8 @@ export function JobCompletionCard({
                         key={photo.id}
                         src={photo.photo_url}
                         alt="After photo"
-                        className="w-full h-20 object-cover rounded-md"
+                        className="w-full h-20 object-cover rounded-md cursor-pointer hover:opacity-90 transition-opacity"
+                        onClick={() => window.open(photo.photo_url, "_blank")}
                       />
                     ))}
                   </div>
@@ -884,7 +886,8 @@ export function JobCompletionCard({
                         key={photo.id}
                         src={photo.photo_url}
                         alt="Completion photo"
-                        className="w-full h-20 object-cover rounded-md"
+                        className="w-full h-20 object-cover rounded-md cursor-pointer hover:opacity-90 transition-opacity"
+                        onClick={() => window.open(photo.photo_url, "_blank")}
                       />
                     ))}
                   </div>
