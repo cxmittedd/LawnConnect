@@ -747,7 +747,7 @@ export function JobCompletionCard({
                           src={photo.photo_url}
                           alt="Dispute evidence"
                           className="w-full h-16 object-cover rounded cursor-pointer"
-                          onClick={() => window.open(photo.photo_url, "_blank")}
+                          onClick={() => setLightboxUrl(photo.photo_url)}
                         />
                       ))}
                     </div>
@@ -832,7 +832,7 @@ export function JobCompletionCard({
                         src={photo.photo_url}
                         alt="Before photo"
                         className="w-full h-20 object-cover rounded-md cursor-pointer hover:opacity-90 transition-opacity"
-                        onClick={() => window.open(photo.photo_url, "_blank")}
+                        onClick={() => setLightboxUrl(photo.photo_url)}
                       />
                     ))}
                   </div>
@@ -850,7 +850,7 @@ export function JobCompletionCard({
                         src={photo.photo_url}
                         alt="After photo"
                         className="w-full h-20 object-cover rounded-md cursor-pointer hover:opacity-90 transition-opacity"
-                        onClick={() => window.open(photo.photo_url, "_blank")}
+                        onClick={() => setLightboxUrl(photo.photo_url)}
                       />
                     ))}
                   </div>
@@ -888,7 +888,7 @@ export function JobCompletionCard({
                         src={photo.photo_url}
                         alt="Completion photo"
                         className="w-full h-20 object-cover rounded-md cursor-pointer hover:opacity-90 transition-opacity"
-                        onClick={() => window.open(photo.photo_url, "_blank")}
+                        onClick={() => setLightboxUrl(photo.photo_url)}
                       />
                     ))}
                   </div>
@@ -939,7 +939,7 @@ export function JobCompletionCard({
                         src={photo.photo_url}
                         alt="Before photo"
                         className="w-full h-24 object-cover rounded-md cursor-pointer hover:opacity-90 transition-opacity"
-                        onClick={() => window.open(photo.photo_url, "_blank")}
+                        onClick={() => setLightboxUrl(photo.photo_url)}
                       />
                     ))}
                   </div>
@@ -959,7 +959,7 @@ export function JobCompletionCard({
                         src={photo.photo_url}
                         alt="After photo"
                         className="w-full h-24 object-cover rounded-md cursor-pointer hover:opacity-90 transition-opacity"
-                        onClick={() => window.open(photo.photo_url, "_blank")}
+                        onClick={() => setLightboxUrl(photo.photo_url)}
                       />
                     ))}
                   </div>
@@ -1008,7 +1008,7 @@ export function JobCompletionCard({
                         src={photo.photo_url}
                         alt="Completion photo"
                         className="w-full h-20 object-cover rounded-md cursor-pointer hover:opacity-90"
-                        onClick={() => window.open(photo.photo_url, "_blank")}
+                        onClick={() => setLightboxUrl(photo.photo_url)}
                       />
                     ))}
                   </div>
@@ -1098,7 +1098,7 @@ export function JobCompletionCard({
                         src={photo.photo_url}
                         alt="Completion photo"
                         className="w-full h-20 object-cover rounded-md cursor-pointer hover:opacity-90"
-                        onClick={() => window.open(photo.photo_url, "_blank")}
+                        onClick={() => setLightboxUrl(photo.photo_url)}
                       />
                     ))}
                   </div>
@@ -1141,7 +1141,7 @@ export function JobCompletionCard({
                         src={photo.photo_url}
                         alt="Completion photo"
                         className="w-full h-20 object-cover rounded-md cursor-pointer hover:opacity-90"
-                        onClick={() => window.open(photo.photo_url, "_blank")}
+                        onClick={() => setLightboxUrl(photo.photo_url)}
                       />
                     ))}
                   </div>
