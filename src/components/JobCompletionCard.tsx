@@ -107,6 +107,7 @@ export function JobCompletionCard({
   const [disputeMessages, setDisputeMessages] = useState<{ id: string; sender_type: string; message: string; created_at: string }[]>([]);
   const [customerMessage, setCustomerMessage] = useState("");
   const [sendingMessage, setSendingMessage] = useState(false);
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const [selectedDisputeFiles, setSelectedDisputeFiles] = useState<File[]>([]);
   const [previewDisputeUrls, setPreviewDisputeUrls] = useState<string[]>([]);
   const [selectedResponseFiles, setSelectedResponseFiles] = useState<File[]>([]);
@@ -746,7 +747,7 @@ export function JobCompletionCard({
                           src={photo.photo_url}
                           alt="Dispute evidence"
                           className="w-full h-16 object-cover rounded cursor-pointer"
-                          onClick={() => window.open(photo.photo_url, "_blank")}
+                          onClick={() => setLightboxUrl(photo.photo_url)}
                         />
                       ))}
                     </div>
@@ -831,7 +832,7 @@ export function JobCompletionCard({
                         src={photo.photo_url}
                         alt="Before photo"
                         className="w-full h-20 object-cover rounded-md cursor-pointer hover:opacity-90 transition-opacity"
-                        onClick={() => window.open(photo.photo_url, "_blank")}
+                        onClick={() => setLightboxUrl(photo.photo_url)}
                       />
                     ))}
                   </div>
@@ -849,7 +850,7 @@ export function JobCompletionCard({
                         src={photo.photo_url}
                         alt="After photo"
                         className="w-full h-20 object-cover rounded-md cursor-pointer hover:opacity-90 transition-opacity"
-                        onClick={() => window.open(photo.photo_url, "_blank")}
+                        onClick={() => setLightboxUrl(photo.photo_url)}
                       />
                     ))}
                   </div>
@@ -887,7 +888,7 @@ export function JobCompletionCard({
                         src={photo.photo_url}
                         alt="Completion photo"
                         className="w-full h-20 object-cover rounded-md cursor-pointer hover:opacity-90 transition-opacity"
-                        onClick={() => window.open(photo.photo_url, "_blank")}
+                        onClick={() => setLightboxUrl(photo.photo_url)}
                       />
                     ))}
                   </div>
@@ -938,7 +939,7 @@ export function JobCompletionCard({
                         src={photo.photo_url}
                         alt="Before photo"
                         className="w-full h-24 object-cover rounded-md cursor-pointer hover:opacity-90 transition-opacity"
-                        onClick={() => window.open(photo.photo_url, "_blank")}
+                        onClick={() => setLightboxUrl(photo.photo_url)}
                       />
                     ))}
                   </div>
@@ -958,7 +959,7 @@ export function JobCompletionCard({
                         src={photo.photo_url}
                         alt="After photo"
                         className="w-full h-24 object-cover rounded-md cursor-pointer hover:opacity-90 transition-opacity"
-                        onClick={() => window.open(photo.photo_url, "_blank")}
+                        onClick={() => setLightboxUrl(photo.photo_url)}
                       />
                     ))}
                   </div>
@@ -1007,7 +1008,7 @@ export function JobCompletionCard({
                         src={photo.photo_url}
                         alt="Completion photo"
                         className="w-full h-20 object-cover rounded-md cursor-pointer hover:opacity-90"
-                        onClick={() => window.open(photo.photo_url, "_blank")}
+                        onClick={() => setLightboxUrl(photo.photo_url)}
                       />
                     ))}
                   </div>
@@ -1097,7 +1098,7 @@ export function JobCompletionCard({
                         src={photo.photo_url}
                         alt="Completion photo"
                         className="w-full h-20 object-cover rounded-md cursor-pointer hover:opacity-90"
-                        onClick={() => window.open(photo.photo_url, "_blank")}
+                        onClick={() => setLightboxUrl(photo.photo_url)}
                       />
                     ))}
                   </div>
@@ -1140,7 +1141,7 @@ export function JobCompletionCard({
                         src={photo.photo_url}
                         alt="Completion photo"
                         className="w-full h-20 object-cover rounded-md cursor-pointer hover:opacity-90"
-                        onClick={() => window.open(photo.photo_url, "_blank")}
+                        onClick={() => setLightboxUrl(photo.photo_url)}
                       />
                     ))}
                   </div>
@@ -1511,6 +1512,22 @@ export function JobCompletionCard({
               I Understand
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Photo Lightbox */}
+      <Dialog open={!!lightboxUrl} onOpenChange={(open) => !open && setLightboxUrl(null)}>
+        <DialogContent className="max-w-3xl p-2 sm:p-4 bg-background">
+          <DialogHeader className="sr-only">
+            <DialogTitle>Photo preview</DialogTitle>
+          </DialogHeader>
+          {lightboxUrl && (
+            <img
+              src={lightboxUrl}
+              alt="Photo preview"
+              className="w-full h-auto max-h-[80vh] object-contain rounded-md"
+            />
+          )}
         </DialogContent>
       </Dialog>
     </>
