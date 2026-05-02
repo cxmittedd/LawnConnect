@@ -858,6 +858,101 @@ export type Database = {
         }
         Relationships: []
       }
+      referral_codes: {
+        Row: {
+          code: string
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      referral_credits: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          referral_id: string | null
+          source: string
+          used: boolean
+          used_at: string | null
+          used_on_job_id: string | null
+          user_id: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          id?: string
+          referral_id?: string | null
+          source: string
+          used?: boolean
+          used_at?: string | null
+          used_on_job_id?: string | null
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          referral_id?: string | null
+          source?: string
+          used?: boolean
+          used_at?: string | null
+          used_on_job_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referral_credits_referral_id_fkey"
+            columns: ["referral_id"]
+            isOneToOne: false
+            referencedRelation: "referrals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      referrals: {
+        Row: {
+          created_at: string
+          id: string
+          qualified_at: string | null
+          qualifying_job_id: string | null
+          referred_id: string
+          referrer_id: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          qualified_at?: string | null
+          qualifying_job_id?: string | null
+          referred_id: string
+          referrer_id: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          qualified_at?: string | null
+          qualifying_job_id?: string | null
+          referred_id?: string
+          referrer_id?: string
+          status?: string
+        }
+        Relationships: []
+      }
       refund_requests: {
         Row: {
           admin_notes: string | null
@@ -1094,6 +1189,11 @@ export type Database = {
       }
     }
     Functions: {
+      apply_referral_credits: {
+        Args: { _credit_count: number; _job_id: string }
+        Returns: number
+      }
+      generate_referral_code: { Args: never; Returns: string }
       get_customer_id_by_email: {
         Args: { email_input: string }
         Returns: string
@@ -1165,6 +1265,8 @@ export type Database = {
       }
       has_verified_banking: { Args: { provider_id: string }; Returns: boolean }
       is_provider: { Args: { _user_id: string }; Returns: boolean }
+      refund_referral_credits: { Args: { _job_id: string }; Returns: number }
+      resolve_referral_code: { Args: { _code: string }; Returns: string }
     }
     Enums: {
       account_type: "savings" | "chequing"
