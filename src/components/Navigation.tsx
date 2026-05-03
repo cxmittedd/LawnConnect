@@ -25,6 +25,7 @@ import {
   Landmark,
   MapPin,
   Percent,
+  Gift,
 } from 'lucide-react';
 import lawnConnectLogo from '@/assets/lawnconnect-logo.png';
 import { useState, useEffect } from 'react';
