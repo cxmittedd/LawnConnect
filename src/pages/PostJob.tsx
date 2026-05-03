@@ -981,6 +981,46 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
                   </div>
                 </div>
 
+                {/* Referral credits selector */}
+                {availableReferralCredits > 0 && (() => {
+                  const subtotal = (currentMinOffer - discountAmount) + getJobTypeExtraCost(formData.title);
+                  const maxByOrder = Math.floor(subtotal / 1000);
+                  const maxApplicable = Math.min(3, availableReferralCredits, maxByOrder);
+                  return (
+                    <div className="rounded-lg border border-dashed border-emerald-300 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-950/20 p-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-sm font-medium text-foreground">
+                          🎁 Referral credits ({availableReferralCredits} available)
+                        </span>
+                        <span className="text-xs text-muted-foreground ml-auto">
+                          Up to 3 per job
+                        </span>
+                      </div>
+                      <p className="text-xs text-muted-foreground mb-3">
+                        Apply your earned credits to reduce this job's price.
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {Array.from({ length: maxApplicable + 1 }, (_, i) => i).map(n => (
+                          <Button
+                            key={n}
+                            type="button"
+                            size="sm"
+                            variant={referralCreditsApplied === n ? 'default' : 'outline'}
+                            onClick={() => setReferralCreditsApplied(n)}
+                          >
+                            {n === 0 ? 'None' : `${n}× J$1,000`}
+                          </Button>
+                        ))}
+                      </div>
+                      {referralCreditsApplied > 0 && (
+                        <p className="text-xs text-emerald-700 dark:text-emerald-400 mt-2 font-medium">
+                          You'll save J${referralDiscountAmount.toLocaleString()}
+                        </p>
+                      )}
+                    </div>
+                  );
+                })()}
+
                 <div className="flex items-start space-x-3 p-4 rounded-lg border border-border bg-muted/50">
                   <Checkbox
                     id="terms-agreement"
