@@ -466,6 +466,29 @@ export default function Auth() {
                   </RadioGroup>
                 </div>
 
+                {/* Referral code (optional) */}
+                <div className="space-y-2">
+                  <Label htmlFor="signup-referral">
+                    Referral code <span className="text-muted-foreground font-normal">(optional)</span>
+                  </Label>
+                  <Input
+                    id="signup-referral"
+                    type="text"
+                    placeholder="Enter friend's code"
+                    value={signUpData.referralCode}
+                    onChange={(e) =>
+                      setSignUpData({ ...signUpData, referralCode: e.target.value.toUpperCase() })
+                    }
+                    className="font-mono uppercase"
+                    maxLength={12}
+                  />
+                  {refFromUrl && (
+                    <p className="text-xs text-emerald-600 dark:text-emerald-400">
+                      🎁 You'll get J$1,000 credit after your first completed job!
+                    </p>
+                  )}
+                </div>
+
                 {/* GDPR/JDPA Compliant Consent Checkbox - NOT pre-checked */}
                 <div className="flex items-start space-x-2 pt-2">
                   <Checkbox
