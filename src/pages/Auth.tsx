@@ -249,6 +249,8 @@ export default function Auth() {
     }
 
     setLoading(false);
+    // Clear stored referral code now that it's been consumed
+    try { sessionStorage.removeItem('pending_referral_code'); } catch {}
     // Show verification message instead of navigating
     setVerificationEmail(signUpData.email);
     setShowVerificationMessage(true);
