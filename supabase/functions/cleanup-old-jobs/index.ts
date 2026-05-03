@@ -12,24 +12,42 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Verify authorization
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+
+    // Authorization: only accept the service role key (used by Supabase Cron)
+    // or a JWT belonging to a user with the 'admin' role. The anon key is
+    // public and must NOT be accepted here.
     const authHeader = req.headers.get('Authorization');
-    const expectedServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-    const expectedAnonKey = Deno.env.get('SUPABASE_ANON_KEY');
-    
-    if (!authHeader || 
-        (!authHeader.includes(expectedServiceKey || '') && 
-         !authHeader.includes(expectedAnonKey || ''))) {
-      console.log('Unauthorized access attempt');
+    if (!authHeader) {
       return new Response(
         JSON.stringify({ error: 'Unauthorized' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    
+    const token = authHeader.replace('Bearer ', '').trim();
+    if (token !== supabaseServiceKey) {
+      const adminCheckClient = createClient(supabaseUrl, supabaseServiceKey);
+      const { data: { user }, error: authError } = await adminCheckClient.auth.getUser(token);
+      if (authError || !user) {
+        return new Response(
+          JSON.stringify({ error: 'Unauthorized' }),
+          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      const { data: isAdmin } = await adminCheckClient.rpc('has_role', {
+        _user_id: user.id,
+        _role: 'admin',
+      });
+      if (!isAdmin) {
+        return new Response(
+          JSON.stringify({ error: 'Forbidden' }),
+          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Calculate the cutoff date (14 days ago)
