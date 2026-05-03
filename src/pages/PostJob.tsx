@@ -182,20 +182,63 @@ export default function PostJob() {
 
   // Function to apply autofill from saved preferences
   const applyAutofill = () => {
-    if (preferences) {
-      const lawnSizeValue = LAWN_SIZES.find(s => s.label === preferences.lawn_size)?.value || '';
-      setLawnSizeSelection(lawnSizeValue);
-      setFormData(prev => ({
-        ...prev,
-        location: preferences.location || prev.location,
-        parish: preferences.parish || prev.parish,
-        lawn_size: preferences.lawn_size || prev.lawn_size,
-        title: preferences.job_type || prev.title,
-        additional_requirements: preferences.additional_requirements || prev.additional_requirements,
-      }));
-      setShowAutofillPreview(false);
-      toast.success('Previous job details loaded');
+    if (!preferences) return;
+
+    // Restore lawn size selection (the dropdown is keyed by value, formData stores label)
+    const lawnSizeValue = LAWN_SIZES.find(s => s.label === preferences.lawn_size)?.value || '';
+    setLawnSizeSelection(lawnSizeValue);
+
+    // Detect community-formatted location: "<Community Label>, <Phase>, Lot <number>"
+    const communityLabelToValue: Record<string, string> = {
+      'Coral Springs Village': 'coral_spring',
+      'Florence Hall': 'florence_hall',
+      'Stonebrook Vista': 'stonebrook_vista',
+      'Stonebrook Manor': 'stonebrook_manor',
+      'Paradisiac Beach Club': 'paradisiac_beach_club',
+      'Camelot Village': 'camelot_village',
+      'Treasure Bay Estates': 'treasure_bay_estates',
+      'Phoenix Park Village': 'phoenix_park_village',
+      'Drax Hall Manor': 'drax_hall_manor',
+      'Richmond Estate': 'richmond_estate',
+    };
+
+    let resolvedLocation = preferences.location || '';
+    let resolvedParish = preferences.parish || '';
+    let matchedCommunity = '';
+    let matchedPhase = '';
+    let matchedLot = '';
+
+    const communityMatch = (preferences.location || '').match(
+      /^(.+?),\s*(Phase\s*[123]),\s*Lot\s*(\d+)\s*$/i
+    );
+    if (communityMatch) {
+      const [, label, phaseStr, lot] = communityMatch;
+      const commValue = communityLabelToValue[label.trim()];
+      if (commValue) {
+        matchedCommunity = commValue;
+        // Normalize phase casing to match SelectItem values ("Phase 1/2/3")
+        const phaseNum = phaseStr.replace(/\s+/g, ' ').trim().slice(-1);
+        matchedPhase = `Phase ${phaseNum}`;
+        matchedLot = lot;
+        resolvedLocation = '';
+        resolvedParish = 'Trelawny';
+      }
     }
+
+    setCommunity(matchedCommunity);
+    setPhase(matchedPhase);
+    setLotNumber(matchedLot);
+
+    setFormData(prev => ({
+      ...prev,
+      location: resolvedLocation || prev.location,
+      parish: resolvedParish || prev.parish,
+      lawn_size: preferences.lawn_size || prev.lawn_size,
+      title: preferences.job_type || prev.title,
+      additional_requirements: preferences.additional_requirements || prev.additional_requirements,
+    }));
+    setShowAutofillPreview(false);
+    toast.success('Previous job details loaded');
   };
 
   const hasPreferences = preferences && (preferences.location || preferences.parish || preferences.lawn_size || preferences.job_type);
