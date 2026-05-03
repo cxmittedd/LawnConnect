@@ -678,8 +678,27 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
               onRemoveCoupon={() => setAppliedCoupon(null)}
               smallLotOnly={true}
               isSmallLot={isSmallLot}
+              availableReferralCredits={availableReferralCredits}
               referralCreditsApplied={referralCreditsApplied}
               referralDiscountAmount={referralDiscountAmount}
+              onChangeReferralCredits={async (n) => {
+                // First refund any previously applied credits for this pending job
+                if (pendingJobId) {
+                  await supabase.rpc('refund_referral_credits', { _job_id: pendingJobId });
+                }
+                if (n > 0 && pendingJobId) {
+                  const { data: applied } = await supabase.rpc('apply_referral_credits', {
+                    _job_id: pendingJobId,
+                    _credit_count: n,
+                  });
+                  const appliedAmount = Number(applied || 0);
+                  const appliedCount = Math.floor(appliedAmount / 1000);
+                  setReferralCreditsApplied(appliedCount);
+                } else {
+                  setReferralCreditsApplied(0);
+                }
+                await refreshReferralCredits();
+              }}
             />
           ) : step === 'payment' ? (
             <div className="flex items-center justify-center p-8">
