@@ -97,7 +97,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const signUp = async (email: string, password: string, fullName: string, userRole: string = 'customer', phoneNumber?: string, firstName?: string, lastName?: string) => {
+  const signUp = async (email: string, password: string, fullName: string, userRole: string = 'customer', phoneNumber?: string, firstName?: string, lastName?: string, referralCode?: string) => {
     try {
       // Use production URL for email verification redirect
       const redirectUrl = import.meta.env.PROD 
@@ -114,6 +114,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             phone_number: phoneNumber,
             first_name: firstName,
             last_name: lastName,
+            referral_code: referralCode ? referralCode.trim().toUpperCase() : undefined,
           },
         },
       });
