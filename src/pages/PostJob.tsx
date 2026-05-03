@@ -387,6 +387,26 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
 
       if (jobError) throw jobError;
 
+      // Apply referral credits to this job (atomic, server-side)
+      if (referralCreditsApplied > 0) {
+        const { data: applied, error: applyErr } = await supabase.rpc('apply_referral_credits', {
+          _job_id: job.id,
+          _credit_count: referralCreditsApplied,
+        });
+        if (applyErr) {
+          console.error('Failed to apply referral credits:', applyErr);
+          toast.error('Could not apply referral credits — proceeding without them');
+          setReferralCreditsApplied(0);
+        } else {
+          await refreshReferralCredits();
+          // If fewer credits were available than expected, recompute
+          const appliedCount = Math.round((Number(applied) || 0) / 1000);
+          if (appliedCount !== referralCreditsApplied) {
+            setReferralCreditsApplied(appliedCount);
+          }
+        }
+      }
+
       setPendingJobId(job.id);
       setStep('payment');
     } catch (error) {
