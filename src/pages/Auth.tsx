@@ -128,6 +128,8 @@ function PasswordStrengthField({ value, onChange }: { value: string; onChange: (
 export default function Auth() {
   const { user, signIn, signUp } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const refFromUrl = searchParams.get('ref') || '';
   const [loading, setLoading] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [forgotEmail, setForgotEmail] = useState('');
@@ -141,7 +143,21 @@ export default function Auth() {
     confirmPassword: '',
     userRole: '' as '' | 'customer' | 'provider',
     acceptedTerms: false,
+    referralCode: refFromUrl,
   });
+
+  useEffect(() => {
+    if (refFromUrl) {
+      setSignUpData(prev => ({ ...prev, referralCode: refFromUrl }));
+      // Persist so it survives email verification round-trip
+      try { sessionStorage.setItem('pending_referral_code', refFromUrl); } catch {}
+    } else {
+      try {
+        const stored = sessionStorage.getItem('pending_referral_code');
+        if (stored) setSignUpData(prev => ({ ...prev, referralCode: stored }));
+      } catch {}
+    }
+  }, [refFromUrl]);
 
   useEffect(() => {
     if (user) {
