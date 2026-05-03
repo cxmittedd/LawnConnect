@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
-import { Lock, CheckCircle, CreditCard, Loader2, Tag, X } from 'lucide-react';
+import { Lock, CheckCircle, CreditCard, Loader2, Tag, X, Gift } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { safeToast } from '@/lib/errorHandler';
 import { toast } from 'sonner';
