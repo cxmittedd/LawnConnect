@@ -25,7 +25,7 @@ const COMMUNITY_LABELS: Record<string, string> = {
   stonebrook_vista: 'Stonebrook Vista',
   stonebrook_manor: 'Stonebrook Manor',
   paradisiac_beach_club: 'Paradisiac Beach Club',
-  coral_springs_estates: 'Coral Springs Estates',
+  
   camelot_village: 'Camelot Village',
   treasure_bay_estates: 'Treasure Bay Estates',
   phoenix_park_village: 'Phoenix Park Village',

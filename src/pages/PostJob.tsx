@@ -755,7 +755,7 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
                       <SelectItem value="stonebrook_vista">Stonebrook Vista</SelectItem>
                       <SelectItem value="stonebrook_manor">Stonebrook Manor</SelectItem>
                       <SelectItem value="paradisiac_beach_club">Paradisiac Beach Club</SelectItem>
-                      <SelectItem value="coral_springs_estates">Coral Springs Estates</SelectItem>
+                      
                       <SelectItem value="camelot_village">Camelot Village</SelectItem>
                       <SelectItem value="treasure_bay_estates">Treasure Bay Estates</SelectItem>
                       <SelectItem value="phoenix_park_village">Phoenix Park Village</SelectItem>
