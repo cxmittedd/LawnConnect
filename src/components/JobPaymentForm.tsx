@@ -74,6 +74,10 @@ export function JobPaymentForm({
   onRemoveCoupon,
   smallLotOnly,
   isSmallLot,
+  availableReferralCredits = 0,
+  referralCreditsApplied = 0,
+  referralDiscountAmount = 0,
+  onChangeReferralCredits,
 }: JobPaymentFormProps) {
   const { user } = useAuth();
   const [processing, setProcessing] = useState(false);
