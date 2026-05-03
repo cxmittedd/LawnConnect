@@ -144,11 +144,30 @@ export default function PostJob() {
     }
   }, []);
 
+  const refreshReferralCredits = async () => {
+    if (!user) return;
+    const { count } = await supabase
+      .from('referral_credits')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .eq('used', false);
+    setAvailableReferralCredits(count || 0);
+  };
+
   const handlePaymentCancelled = async (jobId: string) => {
     toast.error('Payment was cancelled');
     setStep('failed');
     setFailedJobId(jobId);
     
+    // Refund any referral credits that were applied to this job
+    try {
+      await supabase.rpc('refund_referral_credits', { _job_id: jobId });
+      await refreshReferralCredits();
+      setReferralCreditsApplied(0);
+    } catch (error) {
+      console.error('Error refunding referral credits:', error);
+    }
+
     // Delete the cancelled job from the database
     try {
       await supabase
