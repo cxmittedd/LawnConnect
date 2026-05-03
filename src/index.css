@@ -200,4 +200,31 @@ All colors MUST be HSL.
       radial-gradient(circle at 80% 20%, hsl(43 96% 56% / 0.03) 0%, transparent 50%),
       radial-gradient(circle at 40% 40%, hsl(192 82% 41% / 0.03) 0%, transparent 30%);
   }
+
+  /* Interactive micro-animations */
+  .hover-scale {
+    @apply transition-transform duration-200 hover:scale-[1.03] active:scale-[0.98];
+  }
+
+  .hover-lift {
+    @apply transition-all duration-300 hover:-translate-y-1 hover:shadow-md;
+  }
+
+  .story-link {
+    @apply relative inline-block after:content-[''] after:absolute after:w-full after:scale-x-0 after:h-0.5 after:-bottom-0.5 after:left-0 after:bg-primary after:origin-bottom-right after:transition-transform after:duration-300 hover:after:scale-x-100 hover:after:origin-bottom-left;
+  }
+
+  /* Page entry — apply to <main> for smooth route transitions */
+  main {
+    animation: fade-in 0.4s ease-out;
+  }
+
+  /* Respect reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
 }
