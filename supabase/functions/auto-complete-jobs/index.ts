@@ -15,10 +15,11 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-    // Verify authorization - allow service role, anon key, or valid JWT
+    // Authorization: only accept the service role key (used by Supabase Cron)
+    // or a JWT belonging to a user with the 'admin' role. The anon key is
+    // public and must NOT be accepted here.
     const authHeader = req.headers.get("authorization");
     if (!authHeader) {
-      console.error("Missing authorization header");
       return new Response(
         JSON.stringify({ error: "Unauthorized" }),
         { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
@@ -26,25 +27,30 @@ serve(async (req) => {
     }
 
     const token = authHeader.replace("Bearer ", "");
-    const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
-    
-    // Allow service role key, anon key, or any valid JWT (for testing)
+
     if (token === supabaseServiceKey) {
-      console.log("Authorized via service role key");
-    } else if (token === anonKey) {
-      console.log("Authorized via anon key (cron job)");
+      console.log("Authorized via service role key (cron)");
     } else {
-      // Try to validate as a user JWT for manual testing
-      const testClient = createClient(supabaseUrl, supabaseServiceKey);
-      const { data: { user }, error: authError } = await testClient.auth.getUser(token);
+      // Validate as a user JWT and require admin role
+      const adminCheckClient = createClient(supabaseUrl, supabaseServiceKey);
+      const { data: { user }, error: authError } = await adminCheckClient.auth.getUser(token);
       if (authError || !user) {
-        console.error("Invalid authorization token");
         return new Response(
           JSON.stringify({ error: "Unauthorized" }),
           { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
         );
       }
-      console.log("Authorized via user JWT for testing");
+      const { data: isAdmin } = await adminCheckClient.rpc("has_role", {
+        _user_id: user.id,
+        _role: "admin",
+      });
+      if (!isAdmin) {
+        return new Response(
+          JSON.stringify({ error: "Forbidden" }),
+          { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        );
+      }
+      console.log("Authorized via admin user JWT");
     }
     
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
