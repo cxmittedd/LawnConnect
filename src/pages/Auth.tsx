@@ -208,7 +208,8 @@ export default function Auth() {
       signUpData.userRole,
       signUpData.phoneNumber,
       signUpData.firstName,
-      signUpData.lastName
+      signUpData.lastName,
+      signUpData.referralCode || undefined
     );
     
     if (error) {
