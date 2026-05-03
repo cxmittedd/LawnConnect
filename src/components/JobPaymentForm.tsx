@@ -267,7 +267,7 @@ export function JobPaymentForm({
                   {jobTypeCost && jobTypeCost > 0 ? `+J$${jobTypeCost.toLocaleString()}` : 'Included'}
                 </span>
               </div>
-              {discountAmount && discountAmount > 0 && (
+              {!!discountAmount && discountAmount > 0 && (
                 <div className="flex justify-between text-emerald-600 dark:text-emerald-400 font-medium">
                   <span>🎉 {discountLabel || 'Discount'}</span>
                   <span>-J${discountAmount.toLocaleString()}</span>
