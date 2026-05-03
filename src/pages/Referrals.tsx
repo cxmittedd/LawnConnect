@@ -37,7 +37,7 @@ export default function Referrals() {
   const [referrals, setReferrals] = useState<ReferralRow[]>([]);
   const [credits, setCredits] = useState<CreditRow[]>([]);
 
-  const shareLink = code ? `${window.location.origin}/auth?ref=${code}` : '';
+  const shareLink = code ? `https://connectlawn.com/auth?ref=${code}` : '';
   const unusedCredits = credits.filter(c => !c.used);
   const totalUnused = unusedCredits.reduce((sum, c) => sum + Number(c.amount), 0);
   const totalEarned = credits.reduce((sum, c) => sum + Number(c.amount), 0);
