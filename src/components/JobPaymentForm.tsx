@@ -36,6 +36,11 @@ interface JobPaymentFormProps {
   onRemoveCoupon?: () => void;
   smallLotOnly?: boolean;
   isSmallLot?: boolean;
+  // Referral credits
+  availableReferralCredits?: number; // count of unused $1000 credits
+  referralCreditsApplied?: number;   // count currently applied (0..min(3,available))
+  referralDiscountAmount?: number;   // total $ off from referral credits
+  onChangeReferralCredits?: (count: number) => void;
 }
 
 interface EzeePaymentData {
