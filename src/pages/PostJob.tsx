@@ -244,12 +244,28 @@ const handleLawnSizeChange = (value: string) => {
 
   const [appliedCoupon, setAppliedCoupon] = useState<{ id: string; discount_percentage: number; label: string; code: string } | null>(null);
 
+  // Referral credits
+  const [availableReferralCredits, setAvailableReferralCredits] = useState(0);
+  const [referralCreditsApplied, setReferralCreditsApplied] = useState(0);
+  const referralDiscountAmount = referralCreditsApplied * 1000;
+
+  useEffect(() => {
+    if (!user) return;
+    supabase
+      .from('referral_credits')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .eq('used', false)
+      .then(({ count }) => setAvailableReferralCredits(count || 0));
+  }, [user]);
+
   const isSmallLot = lawnSizeSelection === 'small';
   const discountAmount = (appliedCoupon && isSmallLot) ? Math.round(currentMinOffer * (appliedCoupon.discount_percentage / 100)) : 0;
 
   const getPaymentAmount = () => {
     const jobTypeExtra = getJobTypeExtraCost(formData.title);
-    return currentMinOffer - discountAmount + jobTypeExtra;
+    const subtotal = currentMinOffer - discountAmount + jobTypeExtra;
+    return Math.max(0, subtotal - referralDiscountAmount);
   };
 
 const handleProceedToPayment = async (e: React.FormEvent) => {
