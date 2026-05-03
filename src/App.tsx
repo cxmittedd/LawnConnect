@@ -140,6 +140,14 @@ const App = () => (
                 }
               />
               <Route
+                path="/referrals"
+                element={
+                  <ProtectedRoute>
+                    <Referrals />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
                 path="/provider/:id"
                 element={
                   <ProtectedRoute>
