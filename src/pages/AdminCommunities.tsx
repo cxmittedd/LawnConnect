@@ -21,7 +21,7 @@ const COMMUNITIES = [
   { value: 'stonebrook_vista', label: 'Stonebrook Vista' },
   { value: 'stonebrook_manor', label: 'Stonebrook Manor' },
   { value: 'paradisiac_beach_club', label: 'Paradisiac Beach Club' },
-  { value: 'coral_springs_estates', label: 'Coral Springs Estates' },
+  
   { value: 'camelot_village', label: 'Camelot Village' },
   { value: 'treasure_bay_estates', label: 'Treasure Bay Estates' },
   { value: 'phoenix_park_village', label: 'Phoenix Park Village' },
