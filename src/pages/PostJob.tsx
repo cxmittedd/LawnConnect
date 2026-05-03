@@ -144,11 +144,30 @@ export default function PostJob() {
     }
   }, []);
 
+  const refreshReferralCredits = async () => {
+    if (!user) return;
+    const { count } = await supabase
+      .from('referral_credits')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .eq('used', false);
+    setAvailableReferralCredits(count || 0);
+  };
+
   const handlePaymentCancelled = async (jobId: string) => {
     toast.error('Payment was cancelled');
     setStep('failed');
     setFailedJobId(jobId);
     
+    // Refund any referral credits that were applied to this job
+    try {
+      await supabase.rpc('refund_referral_credits', { _job_id: jobId });
+      await refreshReferralCredits();
+      setReferralCreditsApplied(0);
+    } catch (error) {
+      console.error('Error refunding referral credits:', error);
+    }
+
     // Delete the cancelled job from the database
     try {
       await supabase
@@ -244,12 +263,28 @@ const handleLawnSizeChange = (value: string) => {
 
   const [appliedCoupon, setAppliedCoupon] = useState<{ id: string; discount_percentage: number; label: string; code: string } | null>(null);
 
+  // Referral credits
+  const [availableReferralCredits, setAvailableReferralCredits] = useState(0);
+  const [referralCreditsApplied, setReferralCreditsApplied] = useState(0);
+  const referralDiscountAmount = referralCreditsApplied * 1000;
+
+  useEffect(() => {
+    if (!user) return;
+    supabase
+      .from('referral_credits')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .eq('used', false)
+      .then(({ count }) => setAvailableReferralCredits(count || 0));
+  }, [user]);
+
   const isSmallLot = lawnSizeSelection === 'small';
   const discountAmount = (appliedCoupon && isSmallLot) ? Math.round(currentMinOffer * (appliedCoupon.discount_percentage / 100)) : 0;
 
   const getPaymentAmount = () => {
     const jobTypeExtra = getJobTypeExtraCost(formData.title);
-    return currentMinOffer - discountAmount + jobTypeExtra;
+    const subtotal = currentMinOffer - discountAmount + jobTypeExtra;
+    return Math.max(0, subtotal - referralDiscountAmount);
   };
 
 const handleProceedToPayment = async (e: React.FormEvent) => {
@@ -351,6 +386,26 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
         .single();
 
       if (jobError) throw jobError;
+
+      // Apply referral credits to this job (atomic, server-side)
+      if (referralCreditsApplied > 0) {
+        const { data: applied, error: applyErr } = await supabase.rpc('apply_referral_credits', {
+          _job_id: job.id,
+          _credit_count: referralCreditsApplied,
+        });
+        if (applyErr) {
+          console.error('Failed to apply referral credits:', applyErr);
+          toast.error('Could not apply referral credits — proceeding without them');
+          setReferralCreditsApplied(0);
+        } else {
+          await refreshReferralCredits();
+          // If fewer credits were available than expected, recompute
+          const appliedCount = Math.round((Number(applied) || 0) / 1000);
+          if (appliedCount !== referralCreditsApplied) {
+            setReferralCreditsApplied(appliedCount);
+          }
+        }
+      }
 
       setPendingJobId(job.id);
       setStep('payment');
@@ -568,13 +623,22 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
               customerName={user?.user_metadata?.first_name || ''}
               onPaymentSuccess={(paymentReference, cardInfo) => handlePaymentSuccess(paymentReference, cardInfo)}
               onPaymentFailed={handlePaymentFailed}
-              onCancel={() => setStep('details')}
+              onCancel={async () => {
+                if (pendingJobId && referralCreditsApplied > 0) {
+                  await supabase.rpc('refund_referral_credits', { _job_id: pendingJobId });
+                  await refreshReferralCredits();
+                  setReferralCreditsApplied(0);
+                }
+                setStep('details');
+              }}
               loading={loading}
               appliedCoupon={appliedCoupon}
               onApplyCoupon={setAppliedCoupon}
               onRemoveCoupon={() => setAppliedCoupon(null)}
               smallLotOnly={true}
               isSmallLot={isSmallLot}
+              referralCreditsApplied={referralCreditsApplied}
+              referralDiscountAmount={referralDiscountAmount}
             />
           ) : step === 'payment' ? (
             <div className="flex items-center justify-center p-8">
@@ -916,6 +980,46 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
                     </div>
                   </div>
                 </div>
+
+                {/* Referral credits selector */}
+                {availableReferralCredits > 0 && (() => {
+                  const subtotal = (currentMinOffer - discountAmount) + getJobTypeExtraCost(formData.title);
+                  const maxByOrder = Math.floor(subtotal / 1000);
+                  const maxApplicable = Math.min(3, availableReferralCredits, maxByOrder);
+                  return (
+                    <div className="rounded-lg border border-dashed border-emerald-300 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-950/20 p-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-sm font-medium text-foreground">
+                          🎁 Referral credits ({availableReferralCredits} available)
+                        </span>
+                        <span className="text-xs text-muted-foreground ml-auto">
+                          Up to 3 per job
+                        </span>
+                      </div>
+                      <p className="text-xs text-muted-foreground mb-3">
+                        Apply your earned credits to reduce this job's price.
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {Array.from({ length: maxApplicable + 1 }, (_, i) => i).map(n => (
+                          <Button
+                            key={n}
+                            type="button"
+                            size="sm"
+                            variant={referralCreditsApplied === n ? 'default' : 'outline'}
+                            onClick={() => setReferralCreditsApplied(n)}
+                          >
+                            {n === 0 ? 'None' : `${n}× J$1,000`}
+                          </Button>
+                        ))}
+                      </div>
+                      {referralCreditsApplied > 0 && (
+                        <p className="text-xs text-emerald-700 dark:text-emerald-400 mt-2 font-medium">
+                          You'll save J${referralDiscountAmount.toLocaleString()}
+                        </p>
+                      )}
+                    </div>
+                  );
+                })()}
 
                 <div className="flex items-start space-x-3 p-4 rounded-lg border border-border bg-muted/50">
                   <Checkbox

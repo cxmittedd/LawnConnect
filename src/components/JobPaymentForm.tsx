@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
-import { Lock, CheckCircle, CreditCard, Loader2, Tag, X } from 'lucide-react';
+import { Lock, CheckCircle, CreditCard, Loader2, Tag, X, Gift } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { safeToast } from '@/lib/errorHandler';
 import { toast } from 'sonner';
@@ -36,6 +36,11 @@ interface JobPaymentFormProps {
   onRemoveCoupon?: () => void;
   smallLotOnly?: boolean;
   isSmallLot?: boolean;
+  // Referral credits
+  availableReferralCredits?: number; // count of unused $1000 credits
+  referralCreditsApplied?: number;   // count currently applied (0..min(3,available))
+  referralDiscountAmount?: number;   // total $ off from referral credits
+  onChangeReferralCredits?: (count: number) => void;
 }
 
 interface EzeePaymentData {
@@ -69,6 +74,10 @@ export function JobPaymentForm({
   onRemoveCoupon,
   smallLotOnly,
   isSmallLot,
+  availableReferralCredits = 0,
+  referralCreditsApplied = 0,
+  referralDiscountAmount = 0,
+  onChangeReferralCredits,
 }: JobPaymentFormProps) {
   const { user } = useAuth();
   const [processing, setProcessing] = useState(false);
@@ -264,6 +273,12 @@ export function JobPaymentForm({
                   <span>-J${discountAmount.toLocaleString()}</span>
                 </div>
               )}
+              {referralDiscountAmount > 0 && (
+                <div className="flex justify-between text-emerald-600 dark:text-emerald-400 font-medium">
+                  <span>🎁 Referral credit ({referralCreditsApplied}× J$1,000)</span>
+                  <span>-J${referralDiscountAmount.toLocaleString()}</span>
+                </div>
+              )}
               <Separator />
               <div className="flex justify-between font-medium">
                 <span className="text-foreground">Total</span>
@@ -327,6 +342,46 @@ export function JobPaymentForm({
               )}
             </div>
           )}
+
+          {/* Referral credits */}
+          {availableReferralCredits > 0 && onChangeReferralCredits && (() => {
+            const maxApplicable = Math.min(3, availableReferralCredits);
+            const baseTotal = amount + referralDiscountAmount; // total before referral
+            const maxByOrder = Math.floor(baseTotal / 1000);
+            const allowed = Math.min(maxApplicable, maxByOrder);
+            return (
+              <div className="border border-dashed border-emerald-300 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-950/20 rounded-lg p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <Gift className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                  <span className="text-sm font-medium text-foreground">
+                    Use referral credit
+                  </span>
+                  <span className="text-xs text-muted-foreground ml-auto">
+                    {availableReferralCredits} available · max 3 per job
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {Array.from({ length: allowed + 1 }, (_, i) => i).map(n => (
+                    <Button
+                      key={n}
+                      type="button"
+                      size="sm"
+                      variant={referralCreditsApplied === n ? 'default' : 'outline'}
+                      onClick={() => onChangeReferralCredits(n)}
+                      disabled={processing}
+                    >
+                      {n === 0 ? 'None' : `${n}× J$1,000`}
+                    </Button>
+                  ))}
+                </div>
+                {allowed < maxApplicable && (
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Limited to J${(allowed * 1000).toLocaleString()} based on order total.
+                  </p>
+                )}
+              </div>
+            );
+          })()}
 
           {/* Hidden form for EzeePay redirect */}
           {paymentUrl && paymentData && (

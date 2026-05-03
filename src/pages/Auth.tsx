@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -128,6 +128,8 @@ function PasswordStrengthField({ value, onChange }: { value: string; onChange: (
 export default function Auth() {
   const { user, signIn, signUp } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const refFromUrl = searchParams.get('ref') || '';
   const [loading, setLoading] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [forgotEmail, setForgotEmail] = useState('');
@@ -141,7 +143,21 @@ export default function Auth() {
     confirmPassword: '',
     userRole: '' as '' | 'customer' | 'provider',
     acceptedTerms: false,
+    referralCode: refFromUrl,
   });
+
+  useEffect(() => {
+    if (refFromUrl) {
+      setSignUpData(prev => ({ ...prev, referralCode: refFromUrl }));
+      // Persist so it survives email verification round-trip
+      try { sessionStorage.setItem('pending_referral_code', refFromUrl); } catch {}
+    } else {
+      try {
+        const stored = sessionStorage.getItem('pending_referral_code');
+        if (stored) setSignUpData(prev => ({ ...prev, referralCode: stored }));
+      } catch {}
+    }
+  }, [refFromUrl]);
 
   useEffect(() => {
     if (user) {
@@ -192,7 +208,8 @@ export default function Auth() {
       signUpData.userRole,
       signUpData.phoneNumber,
       signUpData.firstName,
-      signUpData.lastName
+      signUpData.lastName,
+      signUpData.referralCode || undefined
     );
     
     if (error) {
@@ -232,6 +249,8 @@ export default function Auth() {
     }
 
     setLoading(false);
+    // Clear stored referral code now that it's been consumed
+    try { sessionStorage.removeItem('pending_referral_code'); } catch {}
     // Show verification message instead of navigating
     setVerificationEmail(signUpData.email);
     setShowVerificationMessage(true);
@@ -271,6 +290,7 @@ export default function Auth() {
               className="w-full"
               onClick={() => {
                 setShowVerificationMessage(false);
+                try { sessionStorage.removeItem('pending_referral_code'); } catch {}
                 setSignUpData({
                   firstName: '',
                   lastName: '',
@@ -280,6 +300,7 @@ export default function Auth() {
                   confirmPassword: '',
                   userRole: '' as '' | 'customer' | 'provider',
                   acceptedTerms: false,
+                  referralCode: '',
                 });
               }}
             >
@@ -445,6 +466,29 @@ export default function Auth() {
                       </Label>
                     </div>
                   </RadioGroup>
+                </div>
+
+                {/* Referral code (optional) */}
+                <div className="space-y-2">
+                  <Label htmlFor="signup-referral">
+                    Referral code <span className="text-muted-foreground font-normal">(optional)</span>
+                  </Label>
+                  <Input
+                    id="signup-referral"
+                    type="text"
+                    placeholder="Enter friend's code"
+                    value={signUpData.referralCode}
+                    onChange={(e) =>
+                      setSignUpData({ ...signUpData, referralCode: e.target.value.toUpperCase() })
+                    }
+                    className="font-mono uppercase"
+                    maxLength={12}
+                  />
+                  {refFromUrl && (
+                    <p className="text-xs text-emerald-600 dark:text-emerald-400">
+                      🎁 You'll get J$1,000 credit after your first completed job!
+                    </p>
+                  )}
                 </div>
 
                 {/* GDPR/JDPA Compliant Consent Checkbox - NOT pre-checked */}
