@@ -273,6 +273,12 @@ export function JobPaymentForm({
                   <span>-J${discountAmount.toLocaleString()}</span>
                 </div>
               )}
+              {referralDiscountAmount > 0 && (
+                <div className="flex justify-between text-emerald-600 dark:text-emerald-400 font-medium">
+                  <span>🎁 Referral credit ({referralCreditsApplied}× J$1,000)</span>
+                  <span>-J${referralDiscountAmount.toLocaleString()}</span>
+                </div>
+              )}
               <Separator />
               <div className="flex justify-between font-medium">
                 <span className="text-foreground">Total</span>
