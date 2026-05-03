@@ -288,6 +288,7 @@ export default function Auth() {
               className="w-full"
               onClick={() => {
                 setShowVerificationMessage(false);
+                try { sessionStorage.removeItem('pending_referral_code'); } catch {}
                 setSignUpData({
                   firstName: '',
                   lastName: '',
@@ -297,6 +298,7 @@ export default function Auth() {
                   confirmPassword: '',
                   userRole: '' as '' | 'customer' | 'provider',
                   acceptedTerms: false,
+                  referralCode: '',
                 });
               }}
             >
