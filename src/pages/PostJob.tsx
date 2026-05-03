@@ -623,13 +623,22 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
               customerName={user?.user_metadata?.first_name || ''}
               onPaymentSuccess={(paymentReference, cardInfo) => handlePaymentSuccess(paymentReference, cardInfo)}
               onPaymentFailed={handlePaymentFailed}
-              onCancel={() => setStep('details')}
+              onCancel={async () => {
+                if (pendingJobId && referralCreditsApplied > 0) {
+                  await supabase.rpc('refund_referral_credits', { _job_id: pendingJobId });
+                  await refreshReferralCredits();
+                  setReferralCreditsApplied(0);
+                }
+                setStep('details');
+              }}
               loading={loading}
               appliedCoupon={appliedCoupon}
               onApplyCoupon={setAppliedCoupon}
               onRemoveCoupon={() => setAppliedCoupon(null)}
               smallLotOnly={true}
               isSmallLot={isSmallLot}
+              referralCreditsApplied={referralCreditsApplied}
+              referralDiscountAmount={referralDiscountAmount}
             />
           ) : step === 'payment' ? (
             <div className="flex items-center justify-center p-8">
