@@ -102,7 +102,7 @@ const AdminDashboard = () => {
     // Fetch latest 50 completed jobs
     const { data: jobs } = await supabase
       .from("job_requests")
-      .select("id, title, completed_at, base_price, final_price, platform_fee, provider_payout")
+      .select("id, title, completed_at, base_price, final_price, platform_fee, provider_payout, parish, community, customer_id, accepted_provider_id")
       .eq("status", "completed")
       .order("completed_at", { ascending: false })
       .limit(50);
@@ -113,18 +113,28 @@ const AdminDashboard = () => {
     }
 
     const jobIds = jobs.map(j => j.id);
+    const userIds = Array.from(
+      new Set(
+        jobs.flatMap(j => [j.customer_id, j.accepted_provider_id]).filter(Boolean) as string[]
+      )
+    );
 
-    // Pull coupon discounts applied to these jobs
-    const { data: coupons } = await supabase
-      .from("customer_discounts")
-      .select("used_on_job_id, discount_percentage, label, code")
-      .in("used_on_job_id", jobIds);
-
-    // Pull referral credits applied to these jobs
-    const { data: credits } = await supabase
-      .from("referral_credits")
-      .select("used_on_job_id, amount")
-      .in("used_on_job_id", jobIds);
+    const [{ data: coupons }, { data: credits }, { data: profiles }] = await Promise.all([
+      supabase
+        .from("customer_discounts")
+        .select("used_on_job_id, discount_percentage, label, code")
+        .in("used_on_job_id", jobIds),
+      supabase
+        .from("referral_credits")
+        .select("used_on_job_id, amount")
+        .in("used_on_job_id", jobIds),
+      userIds.length
+        ? supabase
+            .from("profiles")
+            .select("id, first_name, last_name, company_name")
+            .in("id", userIds)
+        : Promise.resolve({ data: [] as any[] }),
+    ]);
 
     const couponMap = new Map<string, { label: string }>();
     (coupons || []).forEach(c => {
@@ -145,10 +155,17 @@ const AdminDashboard = () => {
       }
     });
 
+    const profileMap = new Map<string, string>();
+    (profiles || []).forEach((p: any) => {
+      const name = [p.first_name, p.last_name].filter(Boolean).join(" ").trim()
+        || p.company_name
+        || "Unknown";
+      profileMap.set(p.id, name);
+    });
+
     const transactions: RecentTransaction[] = jobs.map(job => {
       const basePrice = Number(job.base_price) || 0;
       const finalPrice = Number(job.final_price) || 0;
-      // Discount = what customer would have paid (base_price) minus what they did pay (final_price)
       const discount_amount = Math.max(0, basePrice - finalPrice);
       const couponLabel = couponMap.get(job.id)?.label || null;
       const referralAmt = referralTotalMap.get(job.id) || 0;
@@ -172,6 +189,10 @@ const AdminDashboard = () => {
         provider_payout: Number(job.provider_payout) || 0,
         discount_amount,
         discount_label,
+        parish: job.parish || null,
+        community: job.community || null,
+        customer_name: job.customer_id ? (profileMap.get(job.customer_id) || "Unknown") : "Unknown",
+        provider_name: job.accepted_provider_id ? (profileMap.get(job.accepted_provider_id) || "Unknown") : "Unassigned",
       };
     });
 
