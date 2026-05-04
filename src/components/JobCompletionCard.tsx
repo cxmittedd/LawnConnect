@@ -510,18 +510,15 @@ export function JobCompletionCard({
         provider_id: providerId,
       });
 
-      // Calculate payout percentage (70% to provider, 30% platform fee)
-      const payoutPercentage = 0.70;
-      const providerPayout = finalPrice ? finalPrice * payoutPercentage : null;
-      const platformFee = finalPrice ? finalPrice * (1 - payoutPercentage) : null;
-
+      // IMPORTANT: Do NOT overwrite provider_payout/platform_fee here.
+      // These are set at job creation based on the full UNDISCOUNTED price (70/30 split)
+      // so providers always earn 70% of the original price, regardless of any
+      // coupon/referral discounts the customer applied.
       const { error } = await supabase
         .from("job_requests")
         .update({
           completed_at: new Date().toISOString(),
           status: "completed",
-          provider_payout: providerPayout,
-          platform_fee: platformFee,
         })
         .eq("id", jobId);
 
