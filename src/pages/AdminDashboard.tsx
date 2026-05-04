@@ -68,6 +68,7 @@ const AdminDashboard = () => {
     customersThisMonth: 0,
     providersThisMonth: 0,
   });
+  const [recentTransactions, setRecentTransactions] = useState<RecentTransaction[]>([]);
 
   useEffect(() => {
     if (!user) {
