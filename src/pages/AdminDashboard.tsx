@@ -740,6 +740,73 @@ const AdminDashboard = () => {
             )}
           </CardContent>
         </Card>
+
+        {/* Recent Transactions with Discount Breakdown */}
+        <Card className="mt-8">
+          <CardHeader>
+            <CardTitle>Recent Transactions</CardTitle>
+            <CardDescription>
+              Latest 50 completed jobs — showing what the customer actually paid and any discounts applied
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {loading ? (
+              <div className="space-y-3">
+                {[1, 2, 3, 4].map((i) => (
+                  <Skeleton key={i} className="h-16 w-full" />
+                ))}
+              </div>
+            ) : recentTransactions.length === 0 ? (
+              <p className="text-center text-muted-foreground py-8">No completed transactions yet</p>
+            ) : (
+              <div className="space-y-2">
+                {recentTransactions.map((tx) => (
+                  <div
+                    key={tx.id}
+                    className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded-lg border bg-card"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium text-foreground truncate">{tx.title}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {format(new Date(tx.completed_at), "MMM d, yyyy")}
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-x-6 gap-y-1 text-right">
+                      <div>
+                        <p className="text-xs text-muted-foreground">Customer Paid</p>
+                        <p className="font-semibold text-foreground">{formatCurrency(tx.final_price)}</p>
+                      </div>
+                      {tx.discount_amount > 0 ? (
+                        <div>
+                          <p className="text-xs text-muted-foreground">Discount</p>
+                          <p className="font-semibold text-green-600">
+                            -{formatCurrency(tx.discount_amount)}
+                          </p>
+                          {tx.discount_label && (
+                            <p className="text-[10px] text-muted-foreground">{tx.discount_label}</p>
+                          )}
+                        </div>
+                      ) : (
+                        <div>
+                          <p className="text-xs text-muted-foreground">Discount</p>
+                          <p className="text-sm text-muted-foreground">—</p>
+                        </div>
+                      )}
+                      <div>
+                        <p className="text-xs text-muted-foreground">Original Price</p>
+                        <p className="font-semibold text-foreground">{formatCurrency(tx.base_price)}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">Provider Payout</p>
+                        <p className="font-semibold text-primary">{formatCurrency(tx.provider_payout)}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
