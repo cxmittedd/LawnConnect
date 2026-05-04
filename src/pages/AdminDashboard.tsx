@@ -32,6 +32,18 @@ interface SignupStats {
   providersThisMonth: number;
 }
 
+interface RecentTransaction {
+  id: string;
+  title: string;
+  completed_at: string;
+  base_price: number;
+  final_price: number;
+  platform_fee: number;
+  provider_payout: number;
+  discount_amount: number;
+  discount_label: string | null;
+}
+
 const AdminDashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
