@@ -1014,9 +1014,5 @@ const RecentTransactionsSection = ({
     </Card>
   );
 };
-      </div>
-    </div>
-  );
-};
 
 export default AdminDashboard;
