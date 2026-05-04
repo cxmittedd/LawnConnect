@@ -198,7 +198,7 @@ serve(async (req) => {
     // Get all completed jobs with accepted providers
     const { data: completedJobs, error: jobsError } = await supabase
       .from('job_requests')
-      .select('id, accepted_provider_id, final_price, provider_payout, completed_at')
+      .select('id, accepted_provider_id, final_price, base_price, provider_payout, completed_at')
       .eq('status', 'completed')
       .not('accepted_provider_id', 'is', null)
       .not('completed_at', 'is', null);
