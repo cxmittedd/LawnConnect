@@ -5,8 +5,21 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+/**
+ * Cleanup function — DOES NOT delete completed jobs.
+ *
+ * Completed jobs (and their photos, reviews, messages, disputes, invoices)
+ * are PERMANENT records required for:
+ *  - Admin analytics (revenue, completed counts, monthly trends)
+ *  - Provider earnings history
+ *  - Customer invoices
+ *  - Dispute history
+ *
+ * This function only purges abandoned UNPAID job drafts older than 14 days
+ * (status='open' AND payment_status='pending'), which represent customers
+ * who started posting a job but never paid.
+ */
 Deno.serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -15,9 +28,6 @@ Deno.serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
-    // Authorization: only accept the service role key (used by Supabase Cron)
-    // or a JWT belonging to a user with the 'admin' role. The anon key is
-    // public and must NOT be accepted here.
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       return new Response(
@@ -50,155 +60,47 @@ Deno.serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Calculate the cutoff date (14 days ago)
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - 14);
     const cutoffDateISO = cutoffDate.toISOString();
 
-    console.log(`Cleaning up completed jobs older than: ${cutoffDateISO}`);
+    console.log(`Cleaning up abandoned UNPAID job drafts older than: ${cutoffDateISO}`);
 
-    // First, get the jobs that will be deleted for logging
+    // Only target abandoned unpaid drafts.
+    // Completed jobs are PRESERVED forever for financial records.
     const { data: jobsToDelete, error: fetchError } = await supabase
       .from('job_requests')
-      .select('id, title, completed_at')
-      .eq('status', 'completed')
-      .lt('completed_at', cutoffDateISO);
+      .select('id, title, created_at, status, payment_status')
+      .eq('status', 'open')
+      .eq('payment_status', 'pending')
+      .is('accepted_provider_id', null)
+      .lt('created_at', cutoffDateISO);
 
     if (fetchError) {
       console.error('Error fetching jobs to delete:', fetchError);
       throw fetchError;
     }
 
-    console.log(`Found ${jobsToDelete?.length || 0} completed jobs older than 14 days`);
+    console.log(`Found ${jobsToDelete?.length || 0} abandoned unpaid drafts older than 14 days`);
 
     if (!jobsToDelete || jobsToDelete.length === 0) {
       return new Response(
-        JSON.stringify({ 
-          success: true, 
-          message: 'No old completed jobs to delete',
-          deletedCount: 0 
+        JSON.stringify({
+          success: true,
+          message: 'No abandoned unpaid drafts to delete',
+          deletedCount: 0,
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    const jobIds = jobsToDelete.map(job => job.id);
+    const jobIds = jobsToDelete.map((job) => job.id);
 
-    // Delete related records first (due to foreign key constraints)
-    // Delete job_completion_photos
-    const { error: photosError } = await supabase
-      .from('job_completion_photos')
-      .delete()
-      .in('job_id', jobIds);
+    // Abandoned drafts shouldn't have these, but clean up defensively.
+    await supabase.from('job_photos').delete().in('job_id', jobIds);
+    await supabase.from('messages').delete().in('job_id', jobIds);
 
-    if (photosError) {
-      console.error('Error deleting completion photos:', photosError);
-    }
-
-    // Delete job_photos
-    const { error: jobPhotosError } = await supabase
-      .from('job_photos')
-      .delete()
-      .in('job_id', jobIds);
-
-    if (jobPhotosError) {
-      console.error('Error deleting job photos:', jobPhotosError);
-    }
-
-    // Delete messages
-    const { error: messagesError } = await supabase
-      .from('messages')
-      .delete()
-      .in('job_id', jobIds);
-
-    if (messagesError) {
-      console.error('Error deleting messages:', messagesError);
-    }
-
-    // Delete job_proposals
-    const { error: proposalsError } = await supabase
-      .from('job_proposals')
-      .delete()
-      .in('job_id', jobIds);
-
-    if (proposalsError) {
-      console.error('Error deleting proposals:', proposalsError);
-    }
-
-    // Delete reviews
-    const { error: reviewsError } = await supabase
-      .from('reviews')
-      .delete()
-      .in('job_id', jobIds);
-
-    if (reviewsError) {
-      console.error('Error deleting reviews:', reviewsError);
-    }
-
-    // Get dispute IDs first for deleting dispute-related records
-    const { data: disputes } = await supabase
-      .from('job_disputes')
-      .select('id')
-      .in('job_id', jobIds);
-
-    if (disputes && disputes.length > 0) {
-      const disputeIds = disputes.map(d => d.id);
-
-      // Delete dispute_photos
-      const { error: disputePhotosError } = await supabase
-        .from('dispute_photos')
-        .delete()
-        .in('dispute_id', disputeIds);
-
-      if (disputePhotosError) {
-        console.error('Error deleting dispute photos:', disputePhotosError);
-      }
-
-      // Get dispute_responses for deleting response photos
-      const { data: responses } = await supabase
-        .from('dispute_responses')
-        .select('id')
-        .in('dispute_id', disputeIds);
-
-      if (responses && responses.length > 0) {
-        const responseIds = responses.map(r => r.id);
-
-        // Delete dispute_response_photos
-        const { error: responsePhotosError } = await supabase
-          .from('dispute_response_photos')
-          .delete()
-          .in('response_id', responseIds);
-
-        if (responsePhotosError) {
-          console.error('Error deleting dispute response photos:', responsePhotosError);
-        }
-      }
-
-      // Delete dispute_responses
-      const { error: responsesError } = await supabase
-        .from('dispute_responses')
-        .delete()
-        .in('dispute_id', disputeIds);
-
-      if (responsesError) {
-        console.error('Error deleting dispute responses:', responsesError);
-      }
-
-      // Delete job_disputes
-      const { error: disputesError } = await supabase
-        .from('job_disputes')
-        .delete()
-        .in('job_id', jobIds);
-
-      if (disputesError) {
-        console.error('Error deleting disputes:', disputesError);
-      }
-    }
-
-    // Note: We're NOT deleting invoices as they should be kept for financial records
-
-    // Finally, delete the job requests
-    const { error: deleteError, count } = await supabase
+    const { error: deleteError } = await supabase
       .from('job_requests')
       .delete()
       .in('id', jobIds);
@@ -208,18 +110,17 @@ Deno.serve(async (req) => {
       throw deleteError;
     }
 
-    console.log(`Successfully deleted ${jobsToDelete.length} old completed jobs and related records`);
+    console.log(`Deleted ${jobsToDelete.length} abandoned unpaid drafts`);
 
     return new Response(
-      JSON.stringify({ 
-        success: true, 
-        message: `Deleted ${jobsToDelete.length} completed jobs older than 14 days`,
+      JSON.stringify({
+        success: true,
+        message: `Deleted ${jobsToDelete.length} abandoned unpaid drafts older than 14 days`,
         deletedCount: jobsToDelete.length,
-        deletedJobIds: jobIds
+        deletedJobIds: jobIds,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
-
   } catch (error) {
     console.error('Error in cleanup-old-jobs function:', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
