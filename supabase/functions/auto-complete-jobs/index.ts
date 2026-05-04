@@ -97,7 +97,8 @@ serve(async (req) => {
           continue;
         }
 
-        console.log(`Auto-completed job ${job.id} - Provider payout: ${providerPayout} (${payoutPercentage * 100}%)`);
+        const providerPayout = job.provider_payout ?? 0;
+        console.log(`Auto-completed job ${job.id} - Provider payout: ${providerPayout}`);
 
         // Send notification to customer about auto-completion
         try {
