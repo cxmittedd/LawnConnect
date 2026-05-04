@@ -62,7 +62,7 @@ serve(async (req) => {
 
     const { data: pendingJobs, error: fetchError } = await supabase
       .from("job_requests")
-      .select("id, title, customer_id, accepted_provider_id, final_price")
+      .select("id, title, customer_id, accepted_provider_id, final_price, provider_payout")
       .eq("status", "pending_completion")
       .lt("provider_completed_at", thirtyHoursAgo);
 
