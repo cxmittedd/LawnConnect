@@ -95,6 +95,7 @@ export function Navigation() {
 
   const adminItems = [
     { path: '/admin/dashboard', label: 'Dashboard', icon: BarChart3 },
+    { path: '/admin/transactions', label: 'Transactions', icon: Receipt },
     { path: '/admin/disputes', label: 'Disputes', icon: AlertTriangle },
     { path: '/admin/verifications', label: 'ID Verifications', icon: UserCheck },
     { path: '/admin/banking', label: 'Banking', icon: Landmark },
