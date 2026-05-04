@@ -28,6 +28,7 @@ import AdminRefunds from "./pages/AdminRefunds";
 import AdminBanking from "./pages/AdminBanking";
 import AdminCommunities from "./pages/AdminCommunities";
 import AdminDiscounts from "./pages/AdminDiscounts";
+import AdminTransactions from "./pages/AdminTransactions";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
 import Install from "./pages/Install";
@@ -208,6 +209,14 @@ const App = () => (
                 element={
                   <AdminRoute>
                     <AdminDiscounts />
+                  </AdminRoute>
+                }
+              />
+              <Route
+                path="/admin/transactions"
+                element={
+                  <AdminRoute>
+                    <AdminTransactions />
                   </AdminRoute>
                 }
               />
