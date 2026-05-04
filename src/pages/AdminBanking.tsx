@@ -182,7 +182,7 @@ export default function AdminBanking() {
       const providerMap = new Map<string, { amount: number; count: number }>();
       unpaidJobs.forEach(job => {
         if (!job.accepted_provider_id) return;
-        const payout = job.provider_payout || (job.final_price || job.base_price) * 0.7;
+        const payout = job.provider_payout || job.base_price * 0.7;
         const current = providerMap.get(job.accepted_provider_id) || { amount: 0, count: 0 };
         providerMap.set(job.accepted_provider_id, {
           amount: current.amount + payout,

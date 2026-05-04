@@ -166,7 +166,7 @@ export function PayPeriodEarnings() {
       provider_id: providerId,
       provider_name: profileMap.get(providerId) || 'Unknown',
       jobs,
-      total_earnings: jobs.reduce((sum, j) => sum + Number(j.provider_payout || (j.final_price || j.base_price) * 0.70), 0),
+      total_earnings: jobs.reduce((sum, j) => sum + Number(j.provider_payout || j.base_price * 0.70), 0),
       jobs_count: jobs.length,
     }));
 
@@ -363,7 +363,7 @@ export function PayPeriodEarnings() {
                             {format(new Date(job.completed_at), 'MMM d, yyyy')}
                           </TableCell>
                           <TableCell className="text-right text-sm font-semibold">
-                            J${Number(job.provider_payout || (job.final_price || job.base_price) * 0.70).toLocaleString('en-JM', { minimumFractionDigits: 2 })}
+                            J${Number(job.provider_payout || job.base_price * 0.70).toLocaleString('en-JM', { minimumFractionDigits: 2 })}
                           </TableCell>
                         </TableRow>
                       ))}

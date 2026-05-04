@@ -32,6 +32,18 @@ interface SignupStats {
   providersThisMonth: number;
 }
 
+interface RecentTransaction {
+  id: string;
+  title: string;
+  completed_at: string;
+  base_price: number;
+  final_price: number;
+  platform_fee: number;
+  provider_payout: number;
+  discount_amount: number;
+  discount_label: string | null;
+}
+
 const AdminDashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -56,6 +68,7 @@ const AdminDashboard = () => {
     customersThisMonth: 0,
     providersThisMonth: 0,
   });
+  const [recentTransactions, setRecentTransactions] = useState<RecentTransaction[]>([]);
 
   useEffect(() => {
     if (!user) {
@@ -70,8 +83,89 @@ const AdminDashboard = () => {
       loadStats();
       loadJobCounts();
       loadSignupStats();
+      loadRecentTransactions();
     }
   }, [isAdmin, selectedMonths]);
+
+  const loadRecentTransactions = async () => {
+    // Fetch latest 50 completed jobs
+    const { data: jobs } = await supabase
+      .from("job_requests")
+      .select("id, title, completed_at, base_price, final_price, platform_fee, provider_payout")
+      .eq("status", "completed")
+      .order("completed_at", { ascending: false })
+      .limit(50);
+
+    if (!jobs || jobs.length === 0) {
+      setRecentTransactions([]);
+      return;
+    }
+
+    const jobIds = jobs.map(j => j.id);
+
+    // Pull coupon discounts applied to these jobs
+    const { data: coupons } = await supabase
+      .from("customer_discounts")
+      .select("used_on_job_id, discount_percentage, label, code")
+      .in("used_on_job_id", jobIds);
+
+    // Pull referral credits applied to these jobs
+    const { data: credits } = await supabase
+      .from("referral_credits")
+      .select("used_on_job_id, amount")
+      .in("used_on_job_id", jobIds);
+
+    const couponMap = new Map<string, { label: string }>();
+    (coupons || []).forEach(c => {
+      if (c.used_on_job_id) {
+        couponMap.set(c.used_on_job_id, {
+          label: `${c.label || 'Coupon'} (${c.code || ''} ${c.discount_percentage}% off)`.trim(),
+        });
+      }
+    });
+
+    const referralTotalMap = new Map<string, number>();
+    (credits || []).forEach(c => {
+      if (c.used_on_job_id) {
+        referralTotalMap.set(
+          c.used_on_job_id,
+          (referralTotalMap.get(c.used_on_job_id) || 0) + Number(c.amount || 0)
+        );
+      }
+    });
+
+    const transactions: RecentTransaction[] = jobs.map(job => {
+      const basePrice = Number(job.base_price) || 0;
+      const finalPrice = Number(job.final_price) || 0;
+      // Discount = what customer would have paid (base_price) minus what they did pay (final_price)
+      const discount_amount = Math.max(0, basePrice - finalPrice);
+      const couponLabel = couponMap.get(job.id)?.label || null;
+      const referralAmt = referralTotalMap.get(job.id) || 0;
+      let discount_label: string | null = null;
+      if (couponLabel && referralAmt > 0) {
+        discount_label = `${couponLabel} + Referral credits`;
+      } else if (couponLabel) {
+        discount_label = couponLabel;
+      } else if (referralAmt > 0) {
+        discount_label = `Referral credits`;
+      } else if (discount_amount > 0) {
+        discount_label = `Discount applied`;
+      }
+      return {
+        id: job.id,
+        title: job.title,
+        completed_at: job.completed_at!,
+        base_price: basePrice,
+        final_price: finalPrice,
+        platform_fee: Number(job.platform_fee) || 0,
+        provider_payout: Number(job.provider_payout) || 0,
+        discount_amount,
+        discount_label,
+      };
+    });
+
+    setRecentTransactions(transactions);
+  };
 
   const loadJobCounts = async () => {
     const now = new Date();
@@ -642,6 +736,73 @@ const AdminDashboard = () => {
                 {stats.length === 0 && (
                   <p className="text-center text-muted-foreground py-8">No data available for the selected period</p>
                 )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Recent Transactions with Discount Breakdown */}
+        <Card className="mt-8">
+          <CardHeader>
+            <CardTitle>Recent Transactions</CardTitle>
+            <CardDescription>
+              Latest 50 completed jobs — showing what the customer actually paid and any discounts applied
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {loading ? (
+              <div className="space-y-3">
+                {[1, 2, 3, 4].map((i) => (
+                  <Skeleton key={i} className="h-16 w-full" />
+                ))}
+              </div>
+            ) : recentTransactions.length === 0 ? (
+              <p className="text-center text-muted-foreground py-8">No completed transactions yet</p>
+            ) : (
+              <div className="space-y-2">
+                {recentTransactions.map((tx) => (
+                  <div
+                    key={tx.id}
+                    className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded-lg border bg-card"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium text-foreground truncate">{tx.title}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {format(new Date(tx.completed_at), "MMM d, yyyy")}
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-x-6 gap-y-1 text-right">
+                      <div>
+                        <p className="text-xs text-muted-foreground">Customer Paid</p>
+                        <p className="font-semibold text-foreground">{formatCurrency(tx.final_price)}</p>
+                      </div>
+                      {tx.discount_amount > 0 ? (
+                        <div>
+                          <p className="text-xs text-muted-foreground">Discount</p>
+                          <p className="font-semibold text-green-600">
+                            -{formatCurrency(tx.discount_amount)}
+                          </p>
+                          {tx.discount_label && (
+                            <p className="text-[10px] text-muted-foreground">{tx.discount_label}</p>
+                          )}
+                        </div>
+                      ) : (
+                        <div>
+                          <p className="text-xs text-muted-foreground">Discount</p>
+                          <p className="text-sm text-muted-foreground">—</p>
+                        </div>
+                      )}
+                      <div>
+                        <p className="text-xs text-muted-foreground">Original Price</p>
+                        <p className="font-semibold text-foreground">{formatCurrency(tx.base_price)}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">Provider Payout</p>
+                        <p className="font-semibold text-primary">{formatCurrency(tx.provider_payout)}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </CardContent>

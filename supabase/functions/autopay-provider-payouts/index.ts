@@ -198,7 +198,7 @@ serve(async (req) => {
     // Get all completed jobs with accepted providers
     const { data: completedJobs, error: jobsError } = await supabase
       .from('job_requests')
-      .select('id, accepted_provider_id, final_price, provider_payout, completed_at')
+      .select('id, accepted_provider_id, final_price, base_price, provider_payout, completed_at')
       .eq('status', 'completed')
       .not('accepted_provider_id', 'is', null)
       .not('completed_at', 'is', null);
@@ -220,7 +220,8 @@ serve(async (req) => {
       }
 
       const providerId = job.accepted_provider_id;
-      const payout = job.provider_payout || (job.final_price ? job.final_price * NORMAL_PAYOUT_PERCENTAGE : 0);
+      // Provider payout is based on the full UNDISCOUNTED price (base_price), not final_price.
+      const payout = job.provider_payout || (job.base_price ? job.base_price * NORMAL_PAYOUT_PERCENTAGE : 0);
 
       if (!providerJobsMap.has(providerId)) {
         providerJobsMap.set(providerId, { jobs: [], totalPayout: 0 });
