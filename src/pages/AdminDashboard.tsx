@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
@@ -6,7 +6,9 @@ import { Navigation } from "@/components/Navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { DollarSign, TrendingUp, CreditCard, Users, Calendar, CalendarDays, CalendarRange, UserPlus } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { DollarSign, TrendingUp, CreditCard, Users, Calendar, CalendarDays, CalendarRange, UserPlus, Search, X } from "lucide-react";
 import { format, startOfMonth, endOfMonth, subMonths, startOfDay, endOfDay, startOfYear, endOfYear } from "date-fns";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, Legend } from "recharts";
 
@@ -42,6 +44,10 @@ interface RecentTransaction {
   provider_payout: number;
   discount_amount: number;
   discount_label: string | null;
+  parish: string | null;
+  community: string | null;
+  customer_name: string;
+  provider_name: string;
 }
 
 const AdminDashboard = () => {
@@ -69,6 +75,11 @@ const AdminDashboard = () => {
     providersThisMonth: 0,
   });
   const [recentTransactions, setRecentTransactions] = useState<RecentTransaction[]>([]);
+  const [txSearch, setTxSearch] = useState("");
+  const [txParish, setTxParish] = useState("all");
+  const [txCommunity, setTxCommunity] = useState("all");
+  const [txDateFrom, setTxDateFrom] = useState("");
+  const [txDateTo, setTxDateTo] = useState("");
 
   useEffect(() => {
     if (!user) {
@@ -91,7 +102,7 @@ const AdminDashboard = () => {
     // Fetch latest 50 completed jobs
     const { data: jobs } = await supabase
       .from("job_requests")
-      .select("id, title, completed_at, base_price, final_price, platform_fee, provider_payout")
+      .select("id, title, completed_at, base_price, final_price, platform_fee, provider_payout, parish, community, customer_id, accepted_provider_id")
       .eq("status", "completed")
       .order("completed_at", { ascending: false })
       .limit(50);
@@ -102,18 +113,28 @@ const AdminDashboard = () => {
     }
 
     const jobIds = jobs.map(j => j.id);
+    const userIds = Array.from(
+      new Set(
+        jobs.flatMap(j => [j.customer_id, j.accepted_provider_id]).filter(Boolean) as string[]
+      )
+    );
 
-    // Pull coupon discounts applied to these jobs
-    const { data: coupons } = await supabase
-      .from("customer_discounts")
-      .select("used_on_job_id, discount_percentage, label, code")
-      .in("used_on_job_id", jobIds);
-
-    // Pull referral credits applied to these jobs
-    const { data: credits } = await supabase
-      .from("referral_credits")
-      .select("used_on_job_id, amount")
-      .in("used_on_job_id", jobIds);
+    const [{ data: coupons }, { data: credits }, { data: profiles }] = await Promise.all([
+      supabase
+        .from("customer_discounts")
+        .select("used_on_job_id, discount_percentage, label, code")
+        .in("used_on_job_id", jobIds),
+      supabase
+        .from("referral_credits")
+        .select("used_on_job_id, amount")
+        .in("used_on_job_id", jobIds),
+      userIds.length
+        ? supabase
+            .from("profiles")
+            .select("id, first_name, last_name, company_name")
+            .in("id", userIds)
+        : Promise.resolve({ data: [] as any[] }),
+    ]);
 
     const couponMap = new Map<string, { label: string }>();
     (coupons || []).forEach(c => {
@@ -134,10 +155,17 @@ const AdminDashboard = () => {
       }
     });
 
+    const profileMap = new Map<string, string>();
+    (profiles || []).forEach((p: any) => {
+      const name = [p.first_name, p.last_name].filter(Boolean).join(" ").trim()
+        || p.company_name
+        || "Unknown";
+      profileMap.set(p.id, name);
+    });
+
     const transactions: RecentTransaction[] = jobs.map(job => {
       const basePrice = Number(job.base_price) || 0;
       const finalPrice = Number(job.final_price) || 0;
-      // Discount = what customer would have paid (base_price) minus what they did pay (final_price)
       const discount_amount = Math.max(0, basePrice - finalPrice);
       const couponLabel = couponMap.get(job.id)?.label || null;
       const referralAmt = referralTotalMap.get(job.id) || 0;
@@ -161,6 +189,10 @@ const AdminDashboard = () => {
         provider_payout: Number(job.provider_payout) || 0,
         discount_amount,
         discount_label,
+        parish: job.parish || null,
+        community: job.community || null,
+        customer_name: job.customer_id ? (profileMap.get(job.customer_id) || "Unknown") : "Unknown",
+        provider_name: job.accepted_provider_id ? (profileMap.get(job.accepted_provider_id) || "Unknown") : "Unassigned",
       };
     });
 
@@ -742,73 +774,244 @@ const AdminDashboard = () => {
         </Card>
 
         {/* Recent Transactions with Discount Breakdown */}
-        <Card className="mt-8">
-          <CardHeader>
-            <CardTitle>Recent Transactions</CardTitle>
-            <CardDescription>
-              Latest 50 completed jobs — showing what the customer actually paid and any discounts applied
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <div className="space-y-3">
-                {[1, 2, 3, 4].map((i) => (
-                  <Skeleton key={i} className="h-16 w-full" />
-                ))}
-              </div>
-            ) : recentTransactions.length === 0 ? (
-              <p className="text-center text-muted-foreground py-8">No completed transactions yet</p>
-            ) : (
-              <div className="space-y-2">
-                {recentTransactions.map((tx) => (
-                  <div
-                    key={tx.id}
-                    className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded-lg border bg-card"
-                  >
-                    <div className="min-w-0 flex-1">
-                      <p className="font-medium text-foreground truncate">{tx.title}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {format(new Date(tx.completed_at), "MMM d, yyyy")}
-                      </p>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-x-6 gap-y-1 text-right">
-                      <div>
-                        <p className="text-xs text-muted-foreground">Customer Paid</p>
-                        <p className="font-semibold text-foreground">{formatCurrency(tx.final_price)}</p>
-                      </div>
-                      {tx.discount_amount > 0 ? (
-                        <div>
-                          <p className="text-xs text-muted-foreground">Discount</p>
-                          <p className="font-semibold text-green-600">
-                            -{formatCurrency(tx.discount_amount)}
-                          </p>
-                          {tx.discount_label && (
-                            <p className="text-[10px] text-muted-foreground">{tx.discount_label}</p>
-                          )}
-                        </div>
-                      ) : (
-                        <div>
-                          <p className="text-xs text-muted-foreground">Discount</p>
-                          <p className="text-sm text-muted-foreground">—</p>
-                        </div>
-                      )}
-                      <div>
-                        <p className="text-xs text-muted-foreground">Original Price</p>
-                        <p className="font-semibold text-foreground">{formatCurrency(tx.base_price)}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground">Provider Payout</p>
-                        <p className="font-semibold text-primary">{formatCurrency(tx.provider_payout)}</p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        <RecentTransactionsSection
+          loading={loading}
+          transactions={recentTransactions}
+          search={txSearch}
+          setSearch={setTxSearch}
+          parishFilter={txParish}
+          setParishFilter={setTxParish}
+          communityFilter={txCommunity}
+          setCommunityFilter={setTxCommunity}
+          dateFrom={txDateFrom}
+          setDateFrom={setTxDateFrom}
+          dateTo={txDateTo}
+          setDateTo={setTxDateTo}
+          formatCurrency={formatCurrency}
+        />
       </div>
     </div>
+  );
+};
+
+interface RecentTransactionsSectionProps {
+  loading: boolean;
+  transactions: RecentTransaction[];
+  search: string;
+  setSearch: (v: string) => void;
+  parishFilter: string;
+  setParishFilter: (v: string) => void;
+  communityFilter: string;
+  setCommunityFilter: (v: string) => void;
+  dateFrom: string;
+  setDateFrom: (v: string) => void;
+  dateTo: string;
+  setDateTo: (v: string) => void;
+  formatCurrency: (n: number) => string;
+}
+
+const RecentTransactionsSection = ({
+  loading,
+  transactions,
+  search,
+  setSearch,
+  parishFilter,
+  setParishFilter,
+  communityFilter,
+  setCommunityFilter,
+  dateFrom,
+  setDateFrom,
+  dateTo,
+  setDateTo,
+  formatCurrency,
+}: RecentTransactionsSectionProps) => {
+  const parishOptions = useMemo(
+    () => Array.from(new Set(transactions.map(t => t.parish).filter(Boolean) as string[])).sort(),
+    [transactions]
+  );
+  const communityOptions = useMemo(
+    () => Array.from(new Set(transactions.map(t => t.community).filter(Boolean) as string[])).sort(),
+    [transactions]
+  );
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    const fromTs = dateFrom ? new Date(dateFrom).getTime() : null;
+    const toTs = dateTo ? new Date(dateTo).getTime() + 24 * 60 * 60 * 1000 - 1 : null;
+    return transactions.filter(tx => {
+      if (parishFilter !== "all" && tx.parish !== parishFilter) return false;
+      if (communityFilter !== "all" && tx.community !== communityFilter) return false;
+      if (fromTs || toTs) {
+        const ts = new Date(tx.completed_at).getTime();
+        if (fromTs && ts < fromTs) return false;
+        if (toTs && ts > toTs) return false;
+      }
+      if (q) {
+        const haystack = [
+          tx.title,
+          tx.id,
+          tx.customer_name,
+          tx.provider_name,
+          tx.discount_label || "",
+          tx.parish || "",
+          tx.community || "",
+        ]
+          .join(" ")
+          .toLowerCase();
+        if (!haystack.includes(q)) return false;
+      }
+      return true;
+    });
+  }, [transactions, search, parishFilter, communityFilter, dateFrom, dateTo]);
+
+  const hasActiveFilters =
+    !!search || parishFilter !== "all" || communityFilter !== "all" || !!dateFrom || !!dateTo;
+
+  const clearFilters = () => {
+    setSearch("");
+    setParishFilter("all");
+    setCommunityFilter("all");
+    setDateFrom("");
+    setDateTo("");
+  };
+
+  return (
+    <Card className="mt-8">
+      <CardHeader>
+        <CardTitle>Recent Transactions</CardTitle>
+        <CardDescription>
+          Latest 50 completed jobs — search by job title, ID, customer, provider, or coupon/referral
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+          <div className="relative lg:col-span-2">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search by title, job ID, customer, provider, coupon…"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+          <Select value={parishFilter} onValueChange={setParishFilter}>
+            <SelectTrigger>
+              <SelectValue placeholder="All parishes" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All parishes</SelectItem>
+              {parishOptions.map(p => (
+                <SelectItem key={p} value={p}>{p}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={communityFilter} onValueChange={setCommunityFilter}>
+            <SelectTrigger>
+              <SelectValue placeholder="All communities" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All communities</SelectItem>
+              {communityOptions.map(c => (
+                <SelectItem key={c} value={c}>{c}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <div className="flex items-center gap-2">
+            <Input
+              type="date"
+              value={dateFrom}
+              onChange={e => setDateFrom(e.target.value)}
+              className="flex-1"
+              aria-label="From date"
+            />
+            <span className="text-xs text-muted-foreground">to</span>
+            <Input
+              type="date"
+              value={dateTo}
+              onChange={e => setDateTo(e.target.value)}
+              className="flex-1"
+              aria-label="To date"
+            />
+          </div>
+          {hasActiveFilters && (
+            <Button variant="ghost" size="sm" onClick={clearFilters} className="justify-start">
+              <X className="h-4 w-4 mr-1" /> Clear filters
+            </Button>
+          )}
+        </div>
+
+        {loading ? (
+          <div className="space-y-3">
+            {[1, 2, 3, 4].map((i) => (
+              <Skeleton key={i} className="h-16 w-full" />
+            ))}
+          </div>
+        ) : filtered.length === 0 ? (
+          <p className="text-center text-muted-foreground py-8">
+            {transactions.length === 0 ? "No completed transactions yet" : "No transactions match your filters"}
+          </p>
+        ) : (
+          <>
+            <p className="text-xs text-muted-foreground mb-2">
+              Showing {filtered.length} of {transactions.length}
+            </p>
+            <div className="space-y-2">
+              {filtered.map((tx) => (
+                <div
+                  key={tx.id}
+                  className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 p-3 rounded-lg border bg-card"
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium text-foreground truncate">{tx.title}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {format(new Date(tx.completed_at), "MMM d, yyyy")}
+                      {tx.parish && <> • {tx.parish}</>}
+                      {tx.community && <> • {tx.community}</>}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      <span className="font-medium text-foreground">Customer:</span> {tx.customer_name}
+                      {" · "}
+                      <span className="font-medium text-foreground">Provider:</span> {tx.provider_name}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground font-mono mt-0.5">ID: {tx.id}</p>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-x-6 gap-y-1 text-right">
+                    <div>
+                      <p className="text-xs text-muted-foreground">Customer Paid</p>
+                      <p className="font-semibold text-foreground">{formatCurrency(tx.final_price)}</p>
+                    </div>
+                    {tx.discount_amount > 0 ? (
+                      <div>
+                        <p className="text-xs text-muted-foreground">Discount</p>
+                        <p className="font-semibold text-green-600">
+                          -{formatCurrency(tx.discount_amount)}
+                        </p>
+                        {tx.discount_label && (
+                          <p className="text-[10px] text-muted-foreground">{tx.discount_label}</p>
+                        )}
+                      </div>
+                    ) : (
+                      <div>
+                        <p className="text-xs text-muted-foreground">Discount</p>
+                        <p className="text-sm text-muted-foreground">—</p>
+                      </div>
+                    )}
+                    <div>
+                      <p className="text-xs text-muted-foreground">Original Price</p>
+                      <p className="font-semibold text-foreground">{formatCurrency(tx.base_price)}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Provider Payout</p>
+                      <p className="font-semibold text-primary">{formatCurrency(tx.provider_payout)}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+      </CardContent>
+    </Card>
   );
 };
 
