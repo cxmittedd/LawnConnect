@@ -488,7 +488,7 @@ export default function BrowseJobs() {
                 <div>
                   <span className="font-medium">Your Earnings:</span>{' '}
                   <span className="text-primary font-bold">
-                    J${(selectedJob.provider_payout || ((selectedJob.final_price || selectedJob.base_price) * 0.70)).toFixed(2)}
+                    J${(selectedJob.provider_payout || (selectedJob.base_price * 0.70)).toFixed(2)}
                   </span>
                 </div>
                 
