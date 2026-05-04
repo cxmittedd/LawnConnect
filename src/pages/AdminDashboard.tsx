@@ -75,6 +75,11 @@ const AdminDashboard = () => {
     providersThisMonth: 0,
   });
   const [recentTransactions, setRecentTransactions] = useState<RecentTransaction[]>([]);
+  const [txSearch, setTxSearch] = useState("");
+  const [txParish, setTxParish] = useState("all");
+  const [txCommunity, setTxCommunity] = useState("all");
+  const [txDateFrom, setTxDateFrom] = useState("");
+  const [txDateTo, setTxDateTo] = useState("");
 
   useEffect(() => {
     if (!user) {
