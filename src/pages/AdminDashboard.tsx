@@ -44,6 +44,10 @@ interface RecentTransaction {
   provider_payout: number;
   discount_amount: number;
   discount_label: string | null;
+  parish: string | null;
+  community: string | null;
+  customer_name: string;
+  provider_name: string;
 }
 
 const AdminDashboard = () => {
