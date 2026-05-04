@@ -166,7 +166,7 @@ export function PayPeriodEarnings() {
       provider_id: providerId,
       provider_name: profileMap.get(providerId) || 'Unknown',
       jobs,
-      total_earnings: jobs.reduce((sum, j) => sum + Number(j.provider_payout || (j.final_price || j.base_price) * 0.70), 0),
+      total_earnings: jobs.reduce((sum, j) => sum + Number(j.provider_payout || j.base_price * 0.70), 0),
       jobs_count: jobs.length,
     }));
 
