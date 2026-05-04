@@ -396,11 +396,13 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
     // Create a pending job first so we have a job ID for payment
     setLoading(true);
     try {
-      const basePrice = currentMinOffer;
       const paymentAmount = getPaymentAmount();
-      // Provider payout is always based on the full (undiscounted) price at 70%
+      // Provider payout is always based on the full (undiscounted) price at 70%.
+      // Store base_price as the full undiscounted total (including job-type extras)
+      // so fallbacks and the admin can derive the discount as base_price - final_price.
       const jobTypeExtra = getJobTypeExtraCost(formData.title);
       const fullPrice = currentMinOffer + jobTypeExtra;
+      const basePrice = fullPrice;
       const providerPayout = fullPrice * 0.70;
       const platformFee = fullPrice * 0.30;
       
