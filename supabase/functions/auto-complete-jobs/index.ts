@@ -77,13 +77,10 @@ serve(async (req) => {
 
     for (const job of pendingJobs || []) {
       try {
-        // Get provider's dispute count this month to determine payout percentage
-        const { data: disputeCount } = await supabase
-          .rpc("get_provider_disputes_this_month", { provider_id: job.accepted_provider_id });
-
-        const payoutPercentage = 0.70;
-        const platformFee = job.final_price * (1 - payoutPercentage);
-        const providerPayout = job.final_price * payoutPercentage;
+        // IMPORTANT: Do NOT overwrite provider_payout/platform_fee here.
+        // These are set at job creation based on the full UNDISCOUNTED price (70/30 split)
+        // so providers always earn 70% of the original price, regardless of any
+        // coupon/referral discounts the customer applied.
 
         // Auto-complete the job
         const { error: updateError } = await supabase
@@ -91,8 +88,6 @@ serve(async (req) => {
           .update({
             status: "completed",
             completed_at: new Date().toISOString(),
-            platform_fee: platformFee,
-            provider_payout: providerPayout,
           })
           .eq("id", job.id);
 
