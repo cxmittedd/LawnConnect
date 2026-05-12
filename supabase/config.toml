@@ -56,3 +56,6 @@ verify_jwt = false
 
 [functions.ezeepay-webhook]
 verify_jwt = false
+
+[functions.send-rebook-reminders]
+verify_jwt = false
