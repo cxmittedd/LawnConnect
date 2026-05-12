@@ -125,6 +125,30 @@ export type Database = {
         }
         Relationships: []
       }
+      customer_rebook_reminders: {
+        Row: {
+          created_at: string
+          customer_id: string
+          id: string
+          last_completed_job_id: string | null
+          last_reminder_sent_at: string
+        }
+        Insert: {
+          created_at?: string
+          customer_id: string
+          id?: string
+          last_completed_job_id?: string | null
+          last_reminder_sent_at?: string
+        }
+        Update: {
+          created_at?: string
+          customer_id?: string
+          id?: string
+          last_completed_job_id?: string | null
+          last_reminder_sent_at?: string
+        }
+        Relationships: []
+      }
       dispute_messages: {
         Row: {
           created_at: string
