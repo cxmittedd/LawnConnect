@@ -9,6 +9,7 @@ import { Mail, Send } from 'lucide-react';
 import { toast } from 'sonner';
 import { z } from 'zod';
 import { supabase } from '@/integrations/supabase/client';
+import { SEO } from '@/components/SEO';
 
 const contactSchema = z.object({
   name: z.string().trim().min(1, 'Name is required').max(100, 'Name too long'),
@@ -56,6 +57,11 @@ export default function Contact() {
 
   return (
     <>
+      <SEO
+        title="Contact LawnConnect — Get in Touch"
+        description="Questions about LawnConnect? Reach our Jamaica lawn care marketplace team for support, partnerships, or feedback."
+        path="/contact"
+      />
       <Navigation />
       <main className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">

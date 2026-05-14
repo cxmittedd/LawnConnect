@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
+import { SEO } from '@/components/SEO';
 
 export const TERMS_VERSION = '2.0.0';
 export const TERMS_LAST_UPDATED = '2026-01-05';
@@ -19,6 +20,11 @@ export default function TermsOfService() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 py-8 px-4">
+      <SEO
+        title="Terms of Service — LawnConnect"
+        description="The terms governing your use of LawnConnect, Jamaica's lawn care marketplace."
+        path="/terms"
+      />
       <div className="max-w-4xl mx-auto">
         <Button 
           variant="ghost" 

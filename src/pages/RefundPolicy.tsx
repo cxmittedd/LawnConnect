@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
+import { SEO } from '@/components/SEO';
 
 export const REFUND_POLICY_VERSION = '1.0.0';
 export const REFUND_POLICY_LAST_UPDATED = '2026-01-05';
@@ -19,6 +20,11 @@ export default function RefundPolicy() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 py-8 px-4">
+      <SEO
+        title="Refund & Cancellation Policy — LawnConnect"
+        description="Refund and cancellation rules for jobs booked on LawnConnect, Jamaica's lawn care marketplace."
+        path="/refund-policy"
+      />
       <div className="max-w-4xl mx-auto">
         <Button 
           variant="ghost" 
