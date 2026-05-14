@@ -33,13 +33,36 @@
     <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image" />
 
-    <!-- Schema.org LocalBusiness Markup -->
+    <!-- Schema.org Organization -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "LawnConnect",
+      "url": "https://connectlawn.com",
+      "logo": "https://connectlawn.com/pwa-512x512.png",
+      "email": "officiallawnconnect@gmail.com",
+      "sameAs": []
+    }
+    </script>
+
+    <!-- Schema.org WebSite -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "LawnConnect",
+      "url": "https://connectlawn.com"
+    }
+    </script>
+
+    <!-- Schema.org LocalBusiness -->
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
       "@type": "LocalBusiness",
       "name": "LawnConnect",
-      "description": "Jamaica's Premier Lawn Care Marketplace connecting customers with verified lawn care professionals across all 14 parishes.",
+      "description": "Jamaica's lawn care marketplace connecting customers with verified providers across all 14 parishes.",
       "url": "https://connectlawn.com",
       "logo": "https://connectlawn.com/pwa-512x512.png",
       "image": "https://connectlawn.com/pwa-512x512.png",
@@ -54,66 +77,12 @@
         "latitude": "18.0179",
         "longitude": "-76.8099"
       },
-      "areaServed": {
-        "@type": "Country",
-        "name": "Jamaica"
-      },
+      "areaServed": { "@type": "Country", "name": "Jamaica" },
       "priceRange": "$$",
       "openingHours": "Mo-Su 00:00-23:59",
       "sameAs": []
     }
     </script>
-
-    <!-- FAQ Schema -->
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "FAQPage",
-      "mainEntity": [
-        {
-          "@type": "Question",
-          "name": "How much does lawn care cost in Jamaica?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "Lawn care prices in Jamaica are based on your lawn size and service type. Basic lawn mowing starts from JMD 2,000 for small lawns, with add-ons available for cleanup (+$500) or overgrown grass (+$1,000). You'll see the exact price upfront before posting your job."
-          }
-        },
-        {
-          "@type": "Question",
-          "name": "How do I find reliable lawn care providers in Jamaica?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "LawnConnect makes it easy to find verified lawn care professionals across Jamaica. Simply post your job with upfront pricing, and verified providers in your area will accept jobs based on their availability."
-          }
-        },
-        {
-          "@type": "Question",
-          "name": "What areas of Jamaica do you cover?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "LawnConnect connects you with lawn care providers across all 14 parishes including Kingston, St. Andrew, Montego Bay, Ocho Rios, Portmore, Spanish Town, Mandeville, and every parish island-wide."
-          }
-        },
-        {
-          "@type": "Question",
-          "name": "What services can I book through LawnConnect?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "You can book lawn mowing, landscaping design, garden maintenance, tree cutting, weed control, irrigation installation, land clearing, and all professional lawn care services in Jamaica."
-          }
-        },
-        {
-          "@type": "Question",
-          "name": "Are the lawn care providers verified?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "Yes, all providers on LawnConnect are verified and reviewed by real customers. You can see ratings, reviews, and work history before making your hiring decision."
-          }
-        }
-      ]
-    }
-    </script>
-  </head>
 
   <body>
     <div id="root">
