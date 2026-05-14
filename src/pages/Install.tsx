@@ -3,6 +3,7 @@ import { Navigation } from '@/components/Navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Download, Smartphone, CheckCircle } from 'lucide-react';
+import { SEO } from '@/components/SEO';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -51,6 +52,11 @@ export default function Install() {
 
   return (
     <>
+      <SEO
+        title="Install LawnConnect — Add to Home Screen"
+        description="Install LawnConnect on your phone for fast access to Jamaica's lawn care marketplace. Works on iOS and Android."
+        path="/install"
+      />
       <Navigation />
       <main className="container mx-auto px-4 py-8">
         <div className="max-w-md mx-auto">
