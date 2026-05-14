@@ -1,0 +1,13 @@
+# LawnConnect
+
+> Jamaica's lawn care marketplace connecting homeowners with verified providers across all 14 parishes. Upfront pricing, secure payments, direct job assignment.
+
+## Pages
+
+- [Home](/): Book trusted lawn care providers across Jamaica with upfront pricing.
+- [About](/about): How LawnConnect works and our mission.
+- [Contact](/contact): Get in touch with the LawnConnect team.
+- [Install](/install): Install the LawnConnect web app.
+- [Terms of Service](/terms): Terms governing use of LawnConnect.
+- [Privacy Policy](/privacy): How we collect and protect user data.
+- [Refund Policy](/refund-policy): Refund and cancellation rules.
