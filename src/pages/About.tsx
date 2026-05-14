@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { SEO } from '@/components/SEO';
 import { Navigation } from '@/components/Navigation';
 import { Card, CardContent } from '@/components/ui/card';
 import { Scissors, DollarSign, Users, Shield, MapPin, Star, Clock, CheckCircle } from 'lucide-react';
@@ -40,6 +41,11 @@ export default function About() {
 
   return (
     <>
+      <SEO
+        title="About LawnConnect — Jamaica's Lawn Care Marketplace"
+        description="Learn how LawnConnect connects Jamaican homeowners with verified lawn care professionals across all 14 parishes."
+        path="/about"
+      />
       <Navigation />
       <main className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
