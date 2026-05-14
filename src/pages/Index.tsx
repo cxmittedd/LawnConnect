@@ -24,6 +24,20 @@ import {
 import InstallBanner from "@/components/InstallBanner";
 import lawnConnectLogo from "@/assets/lawnconnect-logo.png";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Helmet } from "react-helmet-async";
+import { SEO } from "@/components/SEO";
+
+const FAQ_JSONLD = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: [
+    { "@type": "Question", name: "How much does lawn care cost in Jamaica?", acceptedAnswer: { "@type": "Answer", text: "Lawn care prices in Jamaica are based on your lawn size and service type. Basic lawn mowing starts from JMD 2,000 for small lawns, with add-ons available for cleanup (+$500) or overgrown grass (+$1,000). You'll see the exact price upfront before posting your job." } },
+    { "@type": "Question", name: "How do I find reliable lawn care providers in Jamaica?", acceptedAnswer: { "@type": "Answer", text: "LawnConnect makes it easy to find verified lawn care professionals across Jamaica. Simply post your job with upfront pricing, and verified providers in your area will accept jobs based on their availability." } },
+    { "@type": "Question", name: "What areas of Jamaica do you cover?", acceptedAnswer: { "@type": "Answer", text: "LawnConnect connects you with lawn care providers across all 14 parishes including Kingston, St. Andrew, Montego Bay, Ocho Rios, Portmore, Spanish Town, Mandeville, and every parish island-wide." } },
+    { "@type": "Question", name: "What services can I book through LawnConnect?", acceptedAnswer: { "@type": "Answer", text: "You can book lawn mowing, landscaping design, garden maintenance, tree cutting, weed control, irrigation installation, land clearing, and all professional lawn care services in Jamaica." } },
+    { "@type": "Question", name: "Are the lawn care providers verified?", acceptedAnswer: { "@type": "Answer", text: "Yes, all providers on LawnConnect are verified and reviewed by real customers. You can see ratings, reviews, and work history before making your hiring decision." } },
+  ],
+};
 
 const Index = () => {
   const { user } = useAuth();
@@ -165,6 +179,14 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-page-pattern">
+      <SEO
+        title="LawnConnect — Jamaica's Lawn Care Marketplace"
+        description="Book verified lawn care providers across Jamaica with upfront pricing. Mowing, landscaping & garden maintenance, secure payments."
+        path="/"
+      />
+      <Helmet>
+        <script type="application/ld+json">{JSON.stringify(FAQ_JSONLD)}</script>
+      </Helmet>
       {/* Navigation */}
       <nav className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
         <div className="container mx-auto px-4">
