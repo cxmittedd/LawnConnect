@@ -5,6 +5,7 @@
 ## Pages
 
 - [Home](/): Book trusted lawn care providers across Jamaica with upfront pricing.
+- [$50,000 Giveaway](/giveaway): Win JMD $50,000 by booking lawn care in Coral Springs Village in September 2026.
 - [About](/about): How LawnConnect works and our mission.
 - [Contact](/contact): Get in touch with the LawnConnect team.
 - [Install](/install): Install the LawnConnect web app.

@@ -9,7 +9,9 @@ import { ThemeProvider } from "./hooks/useTheme";
 import { CookieConsent } from "./components/CookieConsent";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { AcceptedJobPopup } from "./components/AcceptedJobPopup";
+import { GiveawayBanner } from "./components/GiveawayBanner";
 import Index from "./pages/Index";
+import Giveaway from "./pages/Giveaway";
 import Auth from "./pages/Auth";
 import ResetPassword from "./pages/ResetPassword";
 import Dashboard from "./pages/Dashboard";
@@ -50,8 +52,10 @@ const App = () => (
           <Sonner />
           <BrowserRouter>
           <AuthProvider>
+            <GiveawayBanner />
             <Routes>
               <Route path="/" element={<Index />} />
+              <Route path="/giveaway" element={<Giveaway />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/about" element={<About />} />

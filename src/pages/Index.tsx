@@ -20,6 +20,7 @@ import {
   MapPin,
   Clock,
   Award,
+  Gift,
 } from "lucide-react";
 import InstallBanner from "@/components/InstallBanner";
 import lawnConnectLogo from "@/assets/lawnconnect-logo.png";
@@ -242,6 +243,28 @@ const Index = () => {
                 Join as Provider
               </Button>
             </div>
+
+            {/* Giveaway promo */}
+            <Link to="/giveaway" className="mt-10 block max-w-3xl mx-auto group">
+              <Card className="border-primary/40 bg-primary/5 transition-shadow hover:shadow-lg">
+                <CardContent className="flex flex-col items-center gap-4 p-6 text-center sm:flex-row sm:text-left">
+                  <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-primary/15">
+                    <Gift className="h-7 w-7 text-primary" />
+                  </div>
+                  <div className="flex-1">
+                    <h2 className="text-xl font-bold text-foreground">Win JMD $50,000</h2>
+                    <p className="text-sm text-muted-foreground">
+                      Book lawn care in Coral Springs Village between September 1–30, 2026 to enter. Winner drawn
+                      October 1, 2026.
+                    </p>
+                  </div>
+                  <span className="inline-flex items-center gap-1 font-semibold text-primary">
+                    See details
+                    <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                  </span>
+                </CardContent>
+              </Card>
+            </Link>
           </div>
 
           {/* Stats */}
