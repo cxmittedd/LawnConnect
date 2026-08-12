@@ -499,6 +499,49 @@ serve(async (req) => {
         console.error(`[${webhookId}] ERROR: Email sending failed:`, emailError);
       }
 
+      // Notify admin of the new paid booking (server-side, so it always fires
+      // even if the customer never returns to the app after paying)
+      try {
+        const { data: adminCustomerProfile } = await supabase
+          .from('profiles')
+          .select('full_name, first_name, last_name, phone_number')
+          .eq('id', existingJob.customer_id)
+          .single();
+
+        const adminCustomerName =
+          adminCustomerProfile?.full_name ||
+          `${adminCustomerProfile?.first_name || ''} ${adminCustomerProfile?.last_name || ''}`.trim() ||
+          'Customer';
+        const bookingAmount = existingJob.final_price || existingJob.base_price;
+
+        const resendAdmin = new Resend(Deno.env.get("RESEND_API_KEY"));
+        const adminEmailResponse = await resendAdmin.emails.send({
+          from: "LawnConnect <noreply@connectlawn.com>",
+          to: ["officiallawnconnect@gmail.com"],
+          subject: `New Booking: ${existingJob.title} - ${existingJob.parish}`,
+          html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+              <h2 style="color: #16a34a;">New paid booking</h2>
+              <table style="width: 100%; border-collapse: collapse;">
+                <tr><td style="padding: 6px 0;"><strong>Job</strong></td><td style="padding: 6px 0;">${existingJob.title}</td></tr>
+                <tr><td style="padding: 6px 0;"><strong>Job ID</strong></td><td style="padding: 6px 0;">${existingJob.id}</td></tr>
+                <tr><td style="padding: 6px 0;"><strong>Customer</strong></td><td style="padding: 6px 0;">${adminCustomerName}${adminCustomerProfile?.phone_number ? ` (${adminCustomerProfile.phone_number})` : ''}</td></tr>
+                <tr><td style="padding: 6px 0;"><strong>Location</strong></td><td style="padding: 6px 0;">${existingJob.location || ''}, ${existingJob.parish || ''}</td></tr>
+                <tr><td style="padding: 6px 0;"><strong>Lawn size</strong></td><td style="padding: 6px 0;">${existingJob.lawn_size || 'N/A'}</td></tr>
+                <tr><td style="padding: 6px 0;"><strong>Preferred date</strong></td><td style="padding: 6px 0;">${existingJob.preferred_date || 'Not specified'}</td></tr>
+                <tr><td style="padding: 6px 0;"><strong>Amount paid</strong></td><td style="padding: 6px 0;">J$${Number(bookingAmount || 0).toLocaleString()}</td></tr>
+                <tr><td style="padding: 6px 0;"><strong>Transaction</strong></td><td style="padding: 6px 0;">${TransactionNumber}</td></tr>
+              </table>
+            </div>
+          `,
+        });
+        console.log(`[${webhookId}] Admin booking alert sent:`, JSON.stringify(adminEmailResponse));
+      } catch (adminAlertError) {
+        console.error(`[${webhookId}] ERROR: Admin booking alert failed:`, adminAlertError);
+      }
+
+
+
       // Clean up old processed webhooks to prevent memory issues (keep last 1000)
       if (processedWebhooks.size > 1000) {
         const entries = Array.from(processedWebhooks);
