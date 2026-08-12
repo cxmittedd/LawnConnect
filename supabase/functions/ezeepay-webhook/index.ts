@@ -326,7 +326,7 @@ serve(async (req) => {
     console.log(`[${webhookId}] Fetching job details from database...`);
     const { data: existingJob, error: fetchError } = await supabase
       .from('job_requests')
-      .select('id, title, location, parish, lawn_size, base_price, final_price, platform_fee, payment_status, customer_id')
+      .select('id, title, location, parish, lawn_size, base_price, final_price, platform_fee, payment_status, customer_id, preferred_date, preferred_time')
       .eq('id', orderId)
       .single();
 
