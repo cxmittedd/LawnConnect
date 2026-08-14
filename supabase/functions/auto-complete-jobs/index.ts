@@ -3,7 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-cron-secret",
 };
 
 serve(async (req) => {
@@ -14,21 +14,28 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const cronSecret = Deno.env.get("CRON_AUTH_TOKEN") ?? Deno.env.get("CRON_SECRET");
 
-    // Authorization: only accept the service role key (used by Supabase Cron)
-    // or a JWT belonging to a user with the 'admin' role. The anon key is
-    // public and must NOT be accepted here.
+    // Authorization: accept the service role key or the cron shared secret
+    // (used by Supabase Cron), or a JWT belonging to an admin user.
+    // The anon key is public and must NOT be accepted here.
+    const providedCronSecret = req.headers.get("x-cron-secret");
+    const isCron = !!cronSecret && providedCronSecret === cronSecret;
+
     const authHeader = req.headers.get("authorization");
-    if (!authHeader) {
+    if (!isCron && !authHeader) {
       return new Response(
         JSON.stringify({ error: "Unauthorized" }),
         { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
 
-    const token = authHeader.replace("Bearer ", "");
+    const token = (authHeader ?? "").replace("Bearer ", "");
 
-    if (token === supabaseServiceKey) {
+    if (isCron) {
+      console.log("Authorized via cron secret");
+    } else if (token === supabaseServiceKey) {
+
       console.log("Authorized via service role key (cron)");
     } else {
       // Validate as a user JWT and require admin role
