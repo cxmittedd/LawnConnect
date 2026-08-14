@@ -14,7 +14,7 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const cronSecret = Deno.env.get("CRON_SECRET");
+    const cronSecret = Deno.env.get("CRON_AUTH_TOKEN") ?? Deno.env.get("CRON_SECRET");
 
     // Authorization: accept the service role key or the cron shared secret
     // (used by Supabase Cron), or a JWT belonging to an admin user.
