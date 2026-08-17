@@ -12,6 +12,7 @@ import { RequiredReviewDialog } from '@/components/RequiredReviewDialog';
 import { ProviderWalkthrough } from '@/components/ProviderWalkthrough';
 import { useProviderVerification } from '@/hooks/useProviderVerification';
 import { useProviderBanking } from '@/hooks/useProviderBanking';
+import { DashboardGiveawayCard } from '@/components/DashboardGiveawayCard';
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -282,6 +283,7 @@ export default function Dashboard() {
             </Card>
           </>
         )}
+        <DashboardGiveawayCard isCustomer={isCustomer} />
       </main>
       <InstallBanner />
       
