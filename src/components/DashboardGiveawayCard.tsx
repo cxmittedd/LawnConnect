@@ -91,7 +91,8 @@ export function DashboardGiveawayCard({ isCustomer }: { isCustomer: boolean }) {
           </Badge>
         </div>
         <CardDescription>
-          Book any lawn care job in {GIVEAWAY.community} during September 2026 for a chance to win.
+          Book any lawn care job in {GIVEAWAY.community} during September 2026 for a chance to win. Select{' '}
+          <strong>Coral Springs</strong> under Communities when posting the job.
         </CardDescription>
       </CardHeader>
 
@@ -135,8 +136,8 @@ export function DashboardGiveawayCard({ isCustomer }: { isCustomer: boolean }) {
               </div>
               <p className="text-xs text-muted-foreground">
                 {entries && entries > 0
-                  ? 'You’re in the draw. Every extra booking adds another entry.'
-                  : 'Each paid booking in Coral Springs Village earns one entry.'}
+                  ? 'You’re in the draw. Every extra booking in Coral Springs adds another entry.'
+                  : 'Select Coral Springs under Communities when posting. Each paid booking there earns one entry.'}
               </p>
             </div>
             {entries !== null && entries > 0 && <Sparkles className="h-5 w-5 animate-pulse text-primary" />}
@@ -158,7 +159,8 @@ export function DashboardGiveawayCard({ isCustomer }: { isCustomer: boolean }) {
           <ol className="animate-fade-in space-y-2 pl-1 text-sm text-muted-foreground">
             <li className="flex gap-2">
               <span className="font-semibold text-foreground">1.</span> Book and pay for a lawn care job in{' '}
-              {GIVEAWAY.community} between September 1 and 30, 2026.
+              {GIVEAWAY.community} between September 1 and 30, 2026. Select <strong>Coral Springs</strong> under
+              Communities when posting.
             </li>
             <li className="flex gap-2">
               <span className="font-semibold text-foreground">2.</span> Each paid booking counts as one entry — more

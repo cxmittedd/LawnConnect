@@ -13,7 +13,7 @@ const JSONLD = {
   '@type': 'Event',
   name: 'LawnConnect JMD $50,000 Giveaway',
   description:
-    'Book a lawn care job in Coral Springs Village between September 1 and September 30, 2026 for a chance to win JMD $50,000. Winner drawn October 1, 2026.',
+    'Book a lawn care job in Coral Springs Village between September 1 and September 30, 2026 for a chance to win JMD $50,000. Make sure to select Coral Springs under Communities when posting the job. Winner drawn October 1, 2026.',
   startDate: '2026-09-01',
   endDate: '2026-09-30',
   eventAttendanceMode: 'https://schema.org/OnlineEventAttendanceMode',
@@ -33,7 +33,7 @@ export default function Giveaway() {
     {
       icon: MapPin,
       title: 'Be a Coral Springs resident',
-      description: `The giveaway is open to ${GIVEAWAY.community} residents only.`,
+      description: `The giveaway is open to ${GIVEAWAY.community} residents only. When posting your job, select Coral Springs under Communities.`,
     },
     {
       icon: CalendarDays,
@@ -54,6 +54,7 @@ export default function Giveaway() {
 
   const rules = [
     'Open to residents of Coral Springs Village only.',
+    'When posting the job, you must select Coral Springs under the Communities field.',
     'Entry requires a paid lawn care booking made through LawnConnect between September 1 and September 30, 2026.',
     'Each paid booking counts as one entry — more bookings means more chances to win.',
     'Cancelled or refunded bookings are not eligible.',
@@ -66,7 +67,7 @@ export default function Giveaway() {
     <>
       <SEO
         title="Win JMD $50,000 — LawnConnect September Giveaway"
-        description="Book lawn care in Coral Springs Village between September 1–30, 2026 for a chance to win JMD $50,000. Winner drawn October 1, 2026."
+        description="Book lawn care in Coral Springs Village between September 1–30, 2026 for a chance to win JMD $50,000. Select Coral Springs under Communities when posting. Winner drawn October 1, 2026."
         path="/giveaway"
       />
       <Helmet>
@@ -85,7 +86,8 @@ export default function Giveaway() {
             </h1>
             <p className="mx-auto mb-8 max-w-2xl text-lg text-muted-foreground">
               Book any lawn care job in {GIVEAWAY.community} between <strong>September 1</strong> and{' '}
-              <strong>September 30, 2026</strong> and you're automatically entered. One lucky resident is drawn on{' '}
+              <strong>September 30, 2026</strong> and you're automatically entered. Be sure to select{' '}
+              <strong>Coral Springs</strong> under Communities when posting. One lucky resident is drawn on{' '}
               <strong>October 1, 2026</strong>.
             </p>
             <Button size="lg" className="text-lg px-8" onClick={() => navigate('/post-job')}>
