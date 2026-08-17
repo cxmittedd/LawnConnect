@@ -28,9 +28,9 @@ export function GiveawayBanner() {
         <p className="flex-1 leading-snug">
           <span className="font-semibold">{GIVEAWAY.prize} Giveaway</span>
           <span className="hidden sm:inline">
-            {' '}— book any lawn care job in {GIVEAWAY.community} during September 2026 for a chance to win.
+            {' '}— book any lawn care job in {GIVEAWAY.community} during September 2026 for a chance to win. Select Coral Springs under Communities.
           </span>
-          <span className="sm:hidden"> — book in September 2026 to enter.</span>
+          <span className="sm:hidden"> — book in September 2026 and select Coral Springs under Communities.</span>
         </p>
         <Link
           to="/giveaway"
