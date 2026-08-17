@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.86.0";
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 
@@ -31,6 +32,23 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
+    // Optional auth: the auto-reply is only sent to a verified signed-in caller,
+    // so anonymous submissions cannot be used to mail arbitrary third parties.
+    let callerEmail: string | null = null;
+    const token = (req.headers.get("Authorization") ?? "").replace("Bearer ", "").trim();
+    if (token) {
+      try {
+        const authClient = createClient(
+          Deno.env.get("SUPABASE_URL")!,
+          Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+        );
+        const { data: authUser } = await authClient.auth.getUser(token);
+        callerEmail = authUser?.user?.email ?? null;
+      } catch (_err) {
+        callerEmail = null;
+      }
+    }
+
     const { name, email, subject, message }: ContactEmailRequest = await req.json();
 
     console.log("Received contact email request:", { name: name?.substring(0, 20), email: email?.substring(0, 20) });
@@ -85,8 +103,16 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log("Contact email sent to admin successfully");
 
-    // Send auto-reply confirmation to user
-    console.log("Sending auto-reply to user:", email);
+    // Send auto-reply confirmation only to the authenticated caller's own address
+    if (!callerEmail || callerEmail.toLowerCase() !== email.toLowerCase()) {
+      console.log("Skipping auto-reply for unverified sender address");
+      return new Response(JSON.stringify({ success: true }), {
+        status: 200,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
+
+    console.log("Sending auto-reply to verified user");
     const autoReplyResponse = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {

@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { verifyTwilioSignature, forbidden } from "../_shared/twilio-signature.ts";
 
 /**
  * Twilio status callback for the initial outbound call (To = caller).
@@ -8,6 +9,11 @@ serve(async (req) => {
   // Twilio sends application/x-www-form-urlencoded
   if (req.method !== "POST") {
     return new Response(null, { status: 200 });
+  }
+
+  // Reject forged webhooks: Twilio signs every request
+  if (!(await verifyTwilioSignature(req))) {
+    return forbidden();
   }
 
   try {

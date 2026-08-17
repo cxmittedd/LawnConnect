@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
+import { verifyTwilioSignature, forbidden } from "../_shared/twilio-signature.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -17,6 +18,11 @@ function normalizePhoneNumber(phone: string): string {
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
+  }
+
+  // Reject forged webhooks: Twilio signs every request
+  if (!(await verifyTwilioSignature(req))) {
+    return forbidden();
   }
 
   try {

@@ -15,7 +15,23 @@ interface PasswordResetRequest {
   redirectTo: string;
 }
 
+// Always answer identically and after a fixed minimum duration so callers cannot
+// distinguish registered from unregistered email addresses.
+const MIN_RESPONSE_MS = 900;
+
+const genericSuccess = async (startedAt: number): Promise<Response> => {
+  const elapsed = Date.now() - startedAt;
+  if (elapsed < MIN_RESPONSE_MS) {
+    await new Promise((r) => setTimeout(r, MIN_RESPONSE_MS - elapsed));
+  }
+  return new Response(JSON.stringify({ success: true }), {
+    status: 200,
+    headers: { "Content-Type": "application/json", ...corsHeaders },
+  });
+};
+
 const handler = async (req: Request): Promise<Response> => {
+  const startedAt = Date.now();
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -24,27 +40,10 @@ const handler = async (req: Request): Promise<Response> => {
   try {
     const { email, redirectTo }: PasswordResetRequest = await req.json();
 
-    if (!email) {
-      return new Response(
-        JSON.stringify({ error: "Email is required" }),
-        {
-          status: 400,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
-        }
-      );
-    }
-
-    // Validate email format
+    // Malformed or missing addresses get the same generic response as valid ones
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email) || email.length > 255) {
-      console.error("Invalid email format:", email);
-      return new Response(
-        JSON.stringify({ error: "Invalid email format" }),
-        {
-          status: 400,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
-        }
-      );
+    if (!email || !emailRegex.test(email) || email.length > 255) {
+      return await genericSuccess(startedAt);
     }
 
     // Validate redirectTo is from our domain
@@ -91,21 +90,14 @@ const handler = async (req: Request): Promise<Response> => {
     });
 
     if (linkError) {
-      // Don't reveal if email exists or not for security
-      console.log("Link generation failed (could be non-existent email):", linkError.message);
-      // Return success anyway to not reveal email existence
-      return new Response(JSON.stringify({ success: true }), {
-        status: 200,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      });
+      // Never reveal whether the address exists
+      console.log("Password reset link generation did not complete");
+      return await genericSuccess(startedAt);
     }
 
     if (!linkData?.properties?.action_link) {
       console.error("No action link generated");
-      return new Response(JSON.stringify({ success: true }), {
-        status: 200,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      });
+      return await genericSuccess(startedAt);
     }
 
     // Extract tokens from the Supabase action link and construct our own URL
@@ -123,18 +115,14 @@ const handler = async (req: Request): Promise<Response> => {
 
     if (!tokenHash) {
       console.error("No token found in action link");
-      return new Response(JSON.stringify({ success: true }), {
-        status: 200,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      });
+      return await genericSuccess(startedAt);
     }
 
     const productionDomain = "https://connectlawn.com";
     // Don't URL-encode the token - use it directly to avoid double-encoding issues in email clients
     const resetLink = `${productionDomain}/reset-password?token_hash=${tokenHash}&type=${linkType}`;
 
-    console.log("Sending password reset email to:", email);
-    console.log("Reset link constructed:", resetLink);
+    console.log("Sending password reset email");
 
     const emailResponse = await resend.emails.send({
       from: "LawnConnect <noreply@connectlawn.com>",
@@ -243,21 +231,12 @@ const handler = async (req: Request): Promise<Response> => {
       `,
     });
 
-    console.log("Password reset email sent successfully:", emailResponse);
+    console.log("Password reset email dispatched:", emailResponse?.data?.id ?? "queued");
 
-    return new Response(JSON.stringify({ success: true }), {
-      status: 200,
-      headers: { "Content-Type": "application/json", ...corsHeaders },
-    });
+    return await genericSuccess(startedAt);
   } catch (error: any) {
-    console.error("Error sending password reset email:", error);
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      }
-    );
+    console.error("Error sending password reset email:", error?.message ?? error);
+    return await genericSuccess(startedAt);
   }
 };
 
