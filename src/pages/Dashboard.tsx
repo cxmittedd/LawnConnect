@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Navigation } from '@/components/Navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/integrations/supabase/client';
-import { Scissors, Briefcase, DollarSign, CheckCircle, ArrowRight, Plus, HelpCircle, BookOpen } from 'lucide-react';
+import { Scissors, Briefcase, DollarSign, CheckCircle, ArrowRight, Plus, HelpCircle, BookOpen, Users, Gift } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import InstallBanner from '@/components/InstallBanner';
 import { usePendingReviews } from '@/hooks/usePendingReviews';
@@ -189,6 +190,43 @@ export default function Dashboard() {
               </CardContent>
             </Card>
 
+            <Card className="mt-6 border-primary/20 bg-gradient-to-br from-primary/5 to-accent/5">
+              <CardHeader>
+                <div className="flex items-center gap-2">
+                  <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/15 text-primary">
+                    <Gift className="h-4 w-4" />
+                  </span>
+                  <CardTitle>Refer & Earn</CardTitle>
+                  <Badge variant="secondary" className="ml-auto text-xs">Customers only</Badge>
+                </div>
+                <CardDescription>
+                  Invite friends to LawnConnect and you both get J$1,000 credit when they complete their first job.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="grid gap-3 sm:grid-cols-3 text-sm">
+                  <div className="rounded-lg bg-card/70 p-3 text-center">
+                    <Users className="h-4 w-4 mx-auto mb-1 text-primary" />
+                    <p className="font-medium">Share your link</p>
+                    <p className="text-xs text-muted-foreground">Send to friends</p>
+                  </div>
+                  <div className="rounded-lg bg-card/70 p-3 text-center">
+                    <CheckCircle className="h-4 w-4 mx-auto mb-1 text-primary" />
+                    <p className="font-medium">They book</p>
+                    <p className="text-xs text-muted-foreground">First job completed</p>
+                  </div>
+                  <div className="rounded-lg bg-card/70 p-3 text-center">
+                    <Gift className="h-4 w-4 mx-auto mb-1 text-primary" />
+                    <p className="font-medium">You both earn</p>
+                    <p className="text-xs text-muted-foreground">J$1,000 each</p>
+                  </div>
+                </div>
+                <Button onClick={() => navigate('/referrals')} className="w-full" size="sm">
+                  Go to Refer & Earn
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </CardContent>
+            </Card>
           </>
         )}
 
