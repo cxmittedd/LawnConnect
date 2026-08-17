@@ -190,6 +190,8 @@ export default function Dashboard() {
               </CardContent>
             </Card>
 
+            {isCustomer && <DashboardGiveawayCard isCustomer />}
+
             <Card className="mt-6 border-primary/20 bg-gradient-to-br from-primary/5 to-accent/5">
               <CardHeader>
                 <div className="flex items-center gap-2">
@@ -321,7 +323,6 @@ export default function Dashboard() {
             </Card>
           </>
         )}
-        {isCustomer && <DashboardGiveawayCard isCustomer />}
       </main>
       <InstallBanner />
       
