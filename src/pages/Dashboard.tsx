@@ -283,7 +283,7 @@ export default function Dashboard() {
             </Card>
           </>
         )}
-        <DashboardGiveawayCard isCustomer={isCustomer} />
+        {isCustomer && <DashboardGiveawayCard isCustomer />}
       </main>
       <InstallBanner />
       
