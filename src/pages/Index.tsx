@@ -192,27 +192,27 @@ const Index = () => {
       <nav className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
         <div className="container mx-auto px-4">
           <div className="flex h-16 items-center justify-between">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
               <img
                 src={lawnConnectLogo}
                 alt="LawnConnect Jamaica Lawn Care Marketplace Logo"
-                className="h-24 w-24 object-contain"
+                className="h-12 w-12 object-contain"
               />
-              <span className="text-xl font-bold text-foreground">LawnConnect</span>
+              <span className="text-lg font-bold text-foreground tracking-tight">LawnConnect</span>
             </div>
-            <div className="flex gap-3 items-center">
+            <div className="flex gap-2 items-center">
               <button
                 onClick={toggleTheme}
-                className="p-2 rounded-md hover:bg-muted transition-colors"
+                className="p-2.5 rounded-full border border-border bg-background/80 hover:bg-accent transition-colors focus:outline-none focus:ring-2 focus:ring-primary/50"
                 aria-label="Toggle theme"
               >
                 {theme === "light" ? (
-                  <Moon className="h-5 w-5 text-muted-foreground" />
+                  <Moon className="h-5 w-5 text-foreground" />
                 ) : (
-                  <Sun className="h-5 w-5 text-muted-foreground" />
+                  <Sun className="h-5 w-5 text-foreground" />
                 )}
               </button>
-              <Button variant="outline" onClick={() => navigate("/about")}>
+              <Button variant="outline" onClick={() => navigate("/about")} className="hidden sm:inline-flex">
                 About
               </Button>
               <Button onClick={() => navigate("/auth")}>Get Started</Button>
