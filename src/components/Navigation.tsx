@@ -277,12 +277,12 @@ export function Navigation() {
             >
               {theme === 'light' ? (
                 <>
-                  <Moon className="h-4 w-4" />
+                  <Moon className="h-4 w-4 text-foreground" />
                   Dark Mode
                 </>
               ) : (
                 <>
-                  <Sun className="h-4 w-4" />
+                  <Sun className="h-4 w-4 text-foreground" />
                   Light Mode
                 </>
               )}
