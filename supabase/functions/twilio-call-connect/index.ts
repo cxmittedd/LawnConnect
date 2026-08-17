@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { verifyTwilioSignature, forbidden } from "../_shared/twilio-signature.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -8,6 +9,11 @@ const corsHeaders = {
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
+  }
+
+  // Reject forged webhooks: Twilio signs every request
+  if (!(await verifyTwilioSignature(req))) {
+    return forbidden();
   }
 
   try {
