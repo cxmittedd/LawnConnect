@@ -183,13 +183,13 @@ export function Navigation() {
             
             <button
               onClick={toggleTheme}
-              className="p-2 rounded-md hover:bg-muted transition-colors shrink-0"
+              className="p-2.5 rounded-full border border-border bg-background/80 hover:bg-accent transition-colors shrink-0 focus:outline-none focus:ring-2 focus:ring-primary/50"
               aria-label="Toggle theme"
             >
               {theme === 'light' ? (
-                <Moon className="h-5 w-5 text-muted-foreground" />
+                <Moon className="h-5 w-5 text-foreground" />
               ) : (
-                <Sun className="h-5 w-5 text-muted-foreground" />
+                <Sun className="h-5 w-5 text-foreground" />
               )}
             </button>
             {user ? (
@@ -277,12 +277,12 @@ export function Navigation() {
             >
               {theme === 'light' ? (
                 <>
-                  <Moon className="h-4 w-4" />
+                  <Moon className="h-4 w-4 text-foreground" />
                   Dark Mode
                 </>
               ) : (
                 <>
-                  <Sun className="h-4 w-4" />
+                  <Sun className="h-4 w-4 text-foreground" />
                   Light Mode
                 </>
               )}
