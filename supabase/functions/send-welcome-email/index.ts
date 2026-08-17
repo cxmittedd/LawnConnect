@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "https://esm.sh/resend@2.0.0";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.86.0";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
@@ -135,12 +136,35 @@ const createWelcomeEmail = (data: WelcomeEmailRequest): string => {
   `;
 };
 
+const unauthorized = () =>
+  new Response(JSON.stringify({ error: "Unauthorized" }), {
+    status: 401,
+    headers: { "Content-Type": "application/json", ...corsHeaders },
+  });
+
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    // Require authentication: either the service role key (server-side callers)
+    // or a signed-in user whose own email is the recipient.
+    const authHeader = req.headers.get("Authorization") ?? "";
+    const token = authHeader.replace("Bearer ", "").trim();
+    if (!token) return unauthorized();
+
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const isServiceRole = token === serviceKey;
+    let callerEmail: string | null = null;
+
+    if (!isServiceRole) {
+      const supabase = createClient(Deno.env.get("SUPABASE_URL")!, serviceKey);
+      const { data: userData, error: userError } = await supabase.auth.getUser(token);
+      if (userError || !userData?.user) return unauthorized();
+      callerEmail = userData.user.email ?? null;
+    }
+
     const data: WelcomeEmailRequest = await req.json();
     
     // Validate required fields
@@ -173,6 +197,11 @@ const handler = async (req: Request): Promise<Response> => {
     // Sanitize firstName (basic XSS prevention)
     const sanitizedFirstName = data.firstName.replace(/[<>]/g, '').substring(0, 50);
     
+    if (!isServiceRole && callerEmail?.toLowerCase() !== data.email.toLowerCase()) {
+      console.warn("Caller tried to send a welcome email to another address");
+      return unauthorized();
+    }
+
     console.log("Sending welcome email to:", data.email);
 
     const htmlContent = createWelcomeEmail({

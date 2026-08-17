@@ -135,6 +135,22 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Only the scheduler (service role key or cron secret) may trigger payout runs
+  const token = (req.headers.get("Authorization") ?? "").replace("Bearer ", "").trim();
+  const cronSecret = req.headers.get("x-cron-secret") ?? "";
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+  const expectedCronSecret = Deno.env.get("CRON_AUTH_TOKEN") ?? "";
+  const authorized =
+    (serviceKey && token === serviceKey) ||
+    (expectedCronSecret && cronSecret === expectedCronSecret);
+  if (!authorized) {
+    console.warn("Unauthorized payout run attempt");
+    return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      status: 401,
+      headers: { "Content-Type": "application/json", ...corsHeaders },
+    });
+  }
+
   try {
     console.log("Starting biweekly provider autopay process...");
 
