@@ -966,24 +966,15 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="description">Description</Label>
+                  <Label htmlFor="description">
+                    Description <span className="text-muted-foreground font-normal">(optional)</span>
+                  </Label>
                   <Textarea
                     id="description"
                     placeholder="Additional details about the job..."
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                     rows={3}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="additional_requirements">Additional Requirements</Label>
-                  <Textarea
-                    id="additional_requirements"
-                    placeholder="Any extra work needed? (hedge trimming, debris removal, etc.)"
-                    value={formData.additional_requirements}
-                    onChange={(e) => setFormData({ ...formData, additional_requirements: e.target.value })}
-                    rows={2}
                   />
                 </div>
 
