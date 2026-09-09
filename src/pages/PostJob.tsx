@@ -1015,23 +1015,6 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
                       Upload photos of your lawn to help providers understand the job
                     </p>
                   </div>
-
-                  <div className="space-y-2">
-                    <Label className="text-muted-foreground text-sm">Lawn Size Reference Guide</Label>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                      {LAWN_SIZE_IMAGES.map((img) => (
-                        <div key={img.label} className="text-center space-y-1">
-                          <img
-                            src={img.src}
-                            alt={`${img.label} lawn example`}
-                            className="w-full aspect-square object-cover rounded-lg border border-border"
-                          />
-                          <p className="text-xs font-medium text-foreground">{img.label}</p>
-                          <p className="text-xs text-muted-foreground">{img.size}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
                 </div>
 
                 {/* Referral credits selector */}
