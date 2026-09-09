@@ -31,10 +31,6 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 
-import lawnSmall from '@/assets/lawn-size-small.jpg';
-import lawnMedium from '@/assets/lawn-size-medium.jpg';
-import lawnLarge from '@/assets/lawn-size-large.jpg';
-import lawnXLarge from '@/assets/lawn-size-xlarge.jpg';
 
 const JAMAICA_PARISHES = [
   'Kingston',
@@ -69,13 +65,6 @@ const LAWN_SIZES = [
   { value: 'large', label: 'Large (1/4 - 1/2 acre)', description: 'Spacious property', minOffer: 18500 },
   { value: 'xlarge', label: 'Extra Large (1/2 - 1 acre)', description: 'Estate-sized lawn', minOffer: 35000 },
 ] as const;
-
-const LAWN_SIZE_IMAGES = [
-  { src: lawnSmall, label: 'Small', size: 'Up to 1/8 acre' },
-  { src: lawnMedium, label: 'Medium', size: '1/8 - 1/4 acre' },
-  { src: lawnLarge, label: 'Large', size: '1/4 - 1/2 acre' },
-  { src: lawnXLarge, label: 'Extra Large', size: '1/2 - 1 acre' },
-];
 
 const getMinOffer = (lawnSize: string): number => {
   const size = LAWN_SIZES.find(s => s.value === lawnSize);
@@ -966,24 +955,15 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="description">Description</Label>
+                  <Label htmlFor="description">
+                    Description <span className="text-muted-foreground font-normal">(optional)</span>
+                  </Label>
                   <Textarea
                     id="description"
                     placeholder="Additional details about the job..."
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                     rows={3}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="additional_requirements">Additional Requirements</Label>
-                  <Textarea
-                    id="additional_requirements"
-                    placeholder="Any extra work needed? (hedge trimming, debris removal, etc.)"
-                    value={formData.additional_requirements}
-                    onChange={(e) => setFormData({ ...formData, additional_requirements: e.target.value })}
-                    rows={2}
                   />
                 </div>
 
@@ -1023,23 +1003,6 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
                     <p className="text-xs text-muted-foreground">
                       Upload photos of your lawn to help providers understand the job
                     </p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label className="text-muted-foreground text-sm">Lawn Size Reference Guide</Label>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                      {LAWN_SIZE_IMAGES.map((img) => (
-                        <div key={img.label} className="text-center space-y-1">
-                          <img
-                            src={img.src}
-                            alt={`${img.label} lawn example`}
-                            className="w-full aspect-square object-cover rounded-lg border border-border"
-                          />
-                          <p className="text-xs font-medium text-foreground">{img.label}</p>
-                          <p className="text-xs text-muted-foreground">{img.size}</p>
-                        </div>
-                      ))}
-                    </div>
                   </div>
                 </div>
 
