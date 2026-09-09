@@ -301,12 +301,6 @@ export default function JobDetails() {
                   )}
                 </div>
 
-                {job.additional_requirements && (
-                  <div>
-                    <h3 className="font-semibold mb-2">Additional Requirements</h3>
-                    <p className="text-muted-foreground">{job.additional_requirements}</p>
-                  </div>
-                )}
 
                 {!isProvider && (
                   <div className="pt-4 border-t">
