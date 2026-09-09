@@ -31,10 +31,6 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 
-import lawnSmall from '@/assets/lawn-size-small.jpg';
-import lawnMedium from '@/assets/lawn-size-medium.jpg';
-import lawnLarge from '@/assets/lawn-size-large.jpg';
-import lawnXLarge from '@/assets/lawn-size-xlarge.jpg';
 
 const JAMAICA_PARISHES = [
   'Kingston',
@@ -69,13 +65,6 @@ const LAWN_SIZES = [
   { value: 'large', label: 'Large (1/4 - 1/2 acre)', description: 'Spacious property', minOffer: 18500 },
   { value: 'xlarge', label: 'Extra Large (1/2 - 1 acre)', description: 'Estate-sized lawn', minOffer: 35000 },
 ] as const;
-
-const LAWN_SIZE_IMAGES = [
-  { src: lawnSmall, label: 'Small', size: 'Up to 1/8 acre' },
-  { src: lawnMedium, label: 'Medium', size: '1/8 - 1/4 acre' },
-  { src: lawnLarge, label: 'Large', size: '1/4 - 1/2 acre' },
-  { src: lawnXLarge, label: 'Extra Large', size: '1/2 - 1 acre' },
-];
 
 const getMinOffer = (lawnSize: string): number => {
   const size = LAWN_SIZES.find(s => s.value === lawnSize);
