@@ -39,6 +39,7 @@ import PrivacyPolicy from "./pages/PrivacyPolicy";
 import RefundPolicy from "./pages/RefundPolicy";
 import Invoices from "./pages/Invoices";
 import Referrals from "./pages/Referrals";
+import Autopay from "./pages/Autopay";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -149,6 +150,14 @@ const App = () => (
                 element={
                   <ProtectedRoute>
                     <Referrals />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/autopay"
+                element={
+                  <ProtectedRoute>
+                    <Autopay />
                   </ProtectedRoute>
                 }
               />

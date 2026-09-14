@@ -113,6 +113,7 @@ export function Navigation() {
         { path: '/my-jobs', label: 'My Jobs', icon: Briefcase, badge: unreadCount },
         ...(isCustomer ? [{ path: '/invoices', label: 'Invoices', icon: Receipt, badge: 0 }] : []),
         ...(isCustomer ? [{ path: '/referrals', label: 'Refer & Earn', icon: Gift, badge: 0 }] : []),
+        ...(isCustomer ? [{ path: '/autopay', label: 'Autopay', icon: RefreshCw, badge: 0 }] : []),
         { path: '/settings', label: 'Settings', icon: SettingsIcon, badge: 0 },
         { path: '/contact', label: 'Contact', icon: Mail, badge: 0 },
       ]
