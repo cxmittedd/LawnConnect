@@ -44,6 +44,128 @@ export type Database = {
         }
         Relationships: []
       }
+      autopay_payment_methods: {
+        Row: {
+          card_brand: string | null
+          created_at: string
+          customer_id: string
+          exp_month: number | null
+          exp_year: number | null
+          id: string
+          is_default: boolean
+          last_four: string | null
+          provider: string
+          provider_token: string | null
+          updated_at: string
+        }
+        Insert: {
+          card_brand?: string | null
+          created_at?: string
+          customer_id: string
+          exp_month?: number | null
+          exp_year?: number | null
+          id?: string
+          is_default?: boolean
+          last_four?: string | null
+          provider?: string
+          provider_token?: string | null
+          updated_at?: string
+        }
+        Update: {
+          card_brand?: string | null
+          created_at?: string
+          customer_id?: string
+          exp_month?: number | null
+          exp_year?: number | null
+          id?: string
+          is_default?: boolean
+          last_four?: string | null
+          provider?: string
+          provider_token?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      autopay_schedules: {
+        Row: {
+          active: boolean
+          community: string | null
+          consented_at: string
+          created_at: string
+          customer_id: string
+          day_of_month: number
+          description: string | null
+          failure_count: number
+          frequency: string
+          id: string
+          last_error: string | null
+          last_job_id: string | null
+          last_run_date: string | null
+          lawn_size: string | null
+          location: string
+          next_run_date: string
+          parish: string
+          payment_method_id: string | null
+          preferred_time: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          community?: string | null
+          consented_at?: string
+          created_at?: string
+          customer_id: string
+          day_of_month?: number
+          description?: string | null
+          failure_count?: number
+          frequency?: string
+          id?: string
+          last_error?: string | null
+          last_job_id?: string | null
+          last_run_date?: string | null
+          lawn_size?: string | null
+          location: string
+          next_run_date: string
+          parish: string
+          payment_method_id?: string | null
+          preferred_time?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          community?: string | null
+          consented_at?: string
+          created_at?: string
+          customer_id?: string
+          day_of_month?: number
+          description?: string | null
+          failure_count?: number
+          frequency?: string
+          id?: string
+          last_error?: string | null
+          last_job_id?: string | null
+          last_run_date?: string | null
+          lawn_size?: string | null
+          location?: string
+          next_run_date?: string
+          parish?: string
+          payment_method_id?: string | null
+          preferred_time?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "autopay_schedules_payment_method_id_fkey"
+            columns: ["payment_method_id"]
+            isOneToOne: false
+            referencedRelation: "autopay_payment_methods"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       customer_discounts: {
         Row: {
           active: boolean
