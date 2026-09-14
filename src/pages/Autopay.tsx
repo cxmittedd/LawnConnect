@@ -470,7 +470,7 @@ export default function Autopay() {
                       </SelectContent>
                     </Select>
                     <p className="text-xs text-muted-foreground">
-                      We create your booking on this day every month. Providers have until the day after to complete it.
+                      We create your booking on this day every month. Providers have 3 days to complete it.
                     </p>
                   </div>
                   <div className="space-y-2">

@@ -978,7 +978,7 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
                       </PopoverContent>
                     </Popover>
                     <p className="text-xs text-muted-foreground">
-                      Note: This is your preferred date, not a guarantee. Providers have until the day after this date to complete the job.
+                      Note: This is your preferred date, not a guarantee. Providers have 3 days after this date to complete the job.
                     </p>
                   </div>
                   <div className="space-y-2">
