@@ -596,6 +596,40 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
     }
   };
 
+  const setUpAutopayFromBooking = async () => {
+    setAutopaySaving(true);
+    try {
+      const day = formData.preferred_date
+        ? Math.min(Number(formData.preferred_date.split('-')[2]), 28)
+        : 1;
+      const now = new Date();
+      const next = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), day));
+      if (next <= now) next.setUTCMonth(next.getUTCMonth() + 1);
+
+      const { error } = await supabase.from('autopay_schedules').insert({
+        customer_id: user!.id,
+        title: formData.title,
+        description: formData.description || null,
+        parish: formData.parish,
+        community: community && community !== 'none' ? community : null,
+        location: autopayLocation,
+        lawn_size: formData.lawn_size || null,
+        preferred_time: formData.preferred_time || null,
+        day_of_month: day,
+        frequency: 'monthly',
+        next_run_date: next.toISOString().slice(0, 10),
+      });
+      if (error) throw error;
+      toast.success('Autopay is on — we\'ll repeat this booking every month');
+      setShowAutopayOffer(false);
+      navigate('/autopay');
+    } catch (error) {
+      safeToast.error(error);
+    } finally {
+      setAutopaySaving(false);
+    }
+  };
+
   const handleRetryPayment = () => {
     setFailedJobId(null);
     setPendingJobId(null);
