@@ -22,7 +22,7 @@ import { useAuth } from '@/lib/auth';
 import { supabase } from '@/integrations/supabase/client';
 import { useCustomerPreferences } from '@/hooks/useCustomerPreferences';
 import { toast } from 'sonner';
-import { RefreshCw, CalendarClock, Trash2, CreditCard, Wand2, X, ArrowRight } from 'lucide-react';
+import { RefreshCw, CalendarClock, Trash2, CreditCard, Wand2, X, ArrowRight, Loader2 } from 'lucide-react';
 
 const JAMAICA_PARISHES = [
   'Kingston', 'St. Andrew', 'St. Thomas', 'Portland', 'St. Mary', 'St. Ann',
@@ -69,6 +69,8 @@ interface Schedule {
   active: boolean;
   next_run_date: string;
   last_run_date: string | null;
+  ezeepay_status: string | null;
+  ezeepay_subscription_id: string | null;
 }
 
 const emptyForm = {
@@ -98,7 +100,7 @@ export default function Autopay() {
   const load = async () => {
     const { data, error } = await supabase
       .from('autopay_schedules')
-      .select('id, title, description, parish, location, lawn_size, preferred_time, day_of_month, active, next_run_date, last_run_date')
+      .select('id, title, description, parish, location, lawn_size, preferred_time, day_of_month, active, next_run_date, last_run_date, ezeepay_status, ezeepay_subscription_id')
       .order('created_at', { ascending: false });
     if (error) {
       toast.error('Could not load your repeat bookings');
@@ -111,6 +113,21 @@ export default function Autopay() {
   useEffect(() => {
     if (user) load();
   }, [user]);
+
+  // Handle return from EzeePay card-setup checkout
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const setupStatus = params.get('setup');
+    if (setupStatus === 'complete') {
+      toast.success('Card setup submitted! Your subscription is being verified.');
+      window.history.replaceState({}, '', '/autopay');
+      load();
+    } else if (setupStatus === 'cancelled') {
+      toast.error('Card setup was cancelled. Your booking was not activated.');
+      window.history.replaceState({}, '', '/autopay');
+      load();
+    }
+  }, []);
 
   const currentMinOffer = LAWN_SIZES.find(s => s.value === lawnSizeSelection)?.minOffer || 0;
   const extra = JOB_TYPES.find(t => t.value === form.title)?.extraCost || 0;
@@ -212,42 +229,107 @@ export default function Autopay() {
       : form.location.trim();
 
     setSaving(true);
-    const { error } = await supabase.from('autopay_schedules').insert({
-      customer_id: user!.id,
-      title: form.title,
-      description: form.description.trim() || null,
-      parish: form.parish,
-      community: isCommunityJob ? community : null,
-      location: jobLocation,
-      lawn_size: form.lawn_size,
-      preferred_time: form.preferred_time.trim() || null,
-      day_of_month: Number(form.day_of_month),
-      frequency: 'monthly',
-      next_run_date: nextDate(Number(form.day_of_month)),
-    });
-    setSaving(false);
-    if (error) {
+
+    // 1. Create the schedule in the database
+    const { data: schedule, error: insertError } = await supabase
+      .from('autopay_schedules')
+      .insert({
+        customer_id: user!.id,
+        title: form.title,
+        description: form.description.trim() || null,
+        parish: form.parish,
+        community: isCommunityJob ? community : null,
+        location: jobLocation,
+        lawn_size: form.lawn_size,
+        preferred_time: form.preferred_time.trim() || null,
+        day_of_month: Number(form.day_of_month),
+        frequency: 'monthly',
+        next_run_date: nextDate(Number(form.day_of_month)),
+      })
+      .select('id')
+      .single();
+
+    if (insertError || !schedule) {
+      setSaving(false);
       toast.error('Could not save your repeat booking');
       return;
     }
-    toast.success('Monthly booking set up');
-    clearForm();
-    setConsent(false);
-    load();
+
+    // 2. Create EzeePay subscription + get checkout token
+    const { data: subResult, error: subError } = await supabase.functions.invoke('ezeepay-create-subscription', {
+      body: {
+        schedule_id: schedule.id,
+        amount: estimated,
+        customer_email: user!.email,
+        customer_name: '',
+        description: `${form.title} - ${jobLocation}`,
+        origin_url: window.location.origin,
+      },
+    });
+
+    if (subError || !subResult?.success) {
+      // Clean up the schedule if subscription creation failed
+      await supabase.from('autopay_schedules').delete().eq('id', schedule.id);
+      setSaving(false);
+      toast.error(subResult?.error || 'Could not set up recurring payment');
+      return;
+    }
+
+    // 3. Redirect to EzeePay's hosted checkout via a hidden form POST
+    const payForm = document.createElement('form');
+    payForm.method = 'POST';
+    payForm.action = subResult.checkout_url;
+    Object.entries(subResult.payment_data).forEach(([key, value]) => {
+      const input = document.createElement('input');
+      input.type = 'hidden';
+      input.name = key;
+      input.value = String(value);
+      payForm.appendChild(input);
+    });
+    document.body.appendChild(payForm);
+    payForm.submit();
   };
 
   const toggleActive = async (s: Schedule) => {
-    const { error } = await supabase
-      .from('autopay_schedules')
-      .update({ active: !s.active })
-      .eq('id', s.id);
-    if (error) return toast.error('Could not update');
-    toast.success(!s.active ? 'Autopay resumed' : 'Autopay paused');
-    load();
+    if (s.ezeepay_subscription_id && s.ezeepay_status === 'active' && s.active) {
+      // Cancelling an active EzeePay-managed subscription
+      setSaving(true);
+      const { data, error } = await supabase.functions.invoke('ezeepay-cancel-subscription', {
+        body: { schedule_id: s.id },
+      });
+      setSaving(false);
+      if (error || !data?.success) {
+        toast.error('Could not cancel subscription');
+        return;
+      }
+      toast.success('Autopay cancelled — no further charges will be made');
+      load();
+    } else if (!s.active && s.ezeepay_subscription_id) {
+      // Can't resume a cancelled EzeePay subscription
+      toast.info('Please create a new autopay booking to resume service');
+      return;
+    } else {
+      // Non-EzeePay schedule — simple toggle
+      const { error } = await supabase
+        .from('autopay_schedules')
+        .update({ active: !s.active })
+        .eq('id', s.id);
+      if (error) return toast.error('Could not update');
+      toast.success(!s.active ? 'Autopay resumed' : 'Autopay paused');
+      load();
+    }
   };
 
-  const remove = async (id: string) => {
-    const { error } = await supabase.from('autopay_schedules').delete().eq('id', id);
+  const remove = async (s: Schedule) => {
+    setSaving(true);
+    // Cancel EzeePay subscription if active
+    if (s.ezeepay_subscription_id && s.ezeepay_status === 'active') {
+      await supabase.functions.invoke('ezeepay-cancel-subscription', {
+        body: { schedule_id: s.id },
+      });
+    }
+    const { error } = await supabase.from('autopay_schedules').delete().eq('id', s.id);
+    setSaving(false);
     if (error) return toast.error('Could not remove');
     toast.success('Repeat booking removed');
     load();
@@ -502,21 +584,34 @@ export default function Autopay() {
                   <div className="rounded-lg border bg-muted/40 p-4">
                     <p className="text-sm text-muted-foreground">Estimated monthly total</p>
                     <p className="text-2xl font-bold">J${estimated.toLocaleString('en-JM')}</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Your card is charged this amount each month. You'll be redirected to our payment
+                      partner to securely authorize recurring billing.
+                    </p>
                   </div>
                 )}
 
                 <div className="flex items-start space-x-3 p-4 rounded-lg border border-border bg-muted/50">
                   <Checkbox id="consent" checked={consent} onCheckedChange={(v) => setConsent(Boolean(v))} />
                   <Label htmlFor="consent" className="text-sm font-normal leading-relaxed cursor-pointer">
-                    I agree that LawnConnect may create this booking for me every month and charge my saved card
-                    once card payments are active. Until then I'll get a secure payment link by email each month.
-                    I can pause or cancel any time.
+                    I agree to be charged the above amount each month for my lawn service. I authorise
+                    LawnConnect to charge my card via our payment partner until I cancel. I can cancel
+                    any time from this page.
                   </Label>
                 </div>
 
                 <Button type="submit" className="w-full" disabled={saving}>
-                  <span>{saving ? 'Saving...' : 'Turn on monthly autopay'}</span>
-                  <ArrowRight className="ml-2 h-4 w-4" />
+                  {saving ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Setting up...
+                    </>
+                  ) : (
+                    <>
+                      <span>Turn on monthly autopay</span>
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </>
+                  )}
                 </Button>
               </CardContent>
             </Card>
@@ -542,20 +637,33 @@ export default function Autopay() {
                         <p className="text-sm text-muted-foreground">{s.lawn_size} · {s.parish}</p>
                         <p className="text-sm text-muted-foreground">{s.location}</p>
                       </div>
-                      <Badge variant={s.active ? 'default' : 'secondary'}>
-                        {s.active ? 'Active' : 'Paused'}
-                      </Badge>
+                      <div className="flex flex-col items-end gap-1">
+                        <Badge variant={s.active ? 'default' : 'secondary'}>
+                          {s.active ? 'Active' : 'Paused'}
+                        </Badge>
+                        {s.ezeepay_subscription_id && (
+                          <Badge variant="outline" className="text-xs">
+                            {s.ezeepay_status === 'active' ? 'Card on file' : s.ezeepay_status === 'pending' ? 'Verifying card...' : 'No card'}
+                          </Badge>
+                        )}
+                      </div>
                     </div>
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <CalendarClock className="h-4 w-4" />
-                      Next booking: {new Date(s.next_run_date).toLocaleDateString('en-JM', { day: 'numeric', month: 'long', year: 'numeric' })}
+                      {s.ezeepay_status === 'pending' && s.ezeepay_subscription_id
+                        ? 'Card verification in progress'
+                        : `Next booking: ${new Date(s.next_run_date).toLocaleDateString('en-JM', { day: 'numeric', month: 'long', year: 'numeric' })}`}
                     </div>
                     <div className="flex items-center justify-between pt-2 border-t">
                       <div className="flex items-center gap-2">
-                        <Switch checked={s.active} onCheckedChange={() => toggleActive(s)} />
+                        <Switch
+                          checked={s.active}
+                          onCheckedChange={() => toggleActive(s)}
+                          disabled={saving}
+                        />
                         <span className="text-sm">{s.active ? 'Autopay on' : 'Autopay off'}</span>
                       </div>
-                      <Button variant="ghost" size="sm" onClick={() => remove(s.id)}>
+                      <Button variant="ghost" size="sm" onClick={() => remove(s)} disabled={saving}>
                         <Trash2 className="h-4 w-4 mr-1" /> Remove
                       </Button>
                     </div>
@@ -569,8 +677,10 @@ export default function Autopay() {
             <CardContent className="p-5 flex items-start gap-3">
               <CreditCard className="h-5 w-5 text-primary mt-0.5" />
               <p className="text-sm text-muted-foreground">
-                Saved-card charging switches on as soon as recurring card payments are enabled on your
-                payment account. Your monthly bookings keep running in the meantime with an emailed payment link.
+                When you turn on autopay, you'll be redirected to our payment partner's secure page
+                to enter your card and verify it with a small test charge. Your card is then charged
+                automatically each month and a new booking is created for you — no action needed.
+                Cancel any time from this page.
               </p>
             </CardContent>
           </Card>
