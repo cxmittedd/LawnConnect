@@ -95,6 +95,9 @@ export type Database = {
           customer_id: string
           day_of_month: number
           description: string | null
+          ezeepay_status: string | null
+          ezeepay_subscription_id: string | null
+          ezeepay_transaction_number: string | null
           failure_count: number
           frequency: string
           id: string
@@ -118,6 +121,9 @@ export type Database = {
           customer_id: string
           day_of_month?: number
           description?: string | null
+          ezeepay_status?: string | null
+          ezeepay_subscription_id?: string | null
+          ezeepay_transaction_number?: string | null
           failure_count?: number
           frequency?: string
           id?: string
@@ -141,6 +147,9 @@ export type Database = {
           customer_id?: string
           day_of_month?: number
           description?: string | null
+          ezeepay_status?: string | null
+          ezeepay_subscription_id?: string | null
+          ezeepay_transaction_number?: string | null
           failure_count?: number
           frequency?: string
           id?: string

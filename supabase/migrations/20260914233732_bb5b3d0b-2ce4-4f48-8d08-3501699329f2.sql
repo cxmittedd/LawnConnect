@@ -1,0 +1,1 @@
+ALTER TABLE public.autopay_schedules ADD COLUMN IF NOT EXISTS ezeepay_subscription_id TEXT, ADD COLUMN IF NOT EXISTS ezeepay_transaction_number TEXT, ADD COLUMN IF NOT EXISTS ezeepay_status TEXT DEFAULT 'pending';
