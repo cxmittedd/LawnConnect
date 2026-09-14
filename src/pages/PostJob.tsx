@@ -972,7 +972,7 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
                             setFormData({ ...formData, preferred_date: date ? format(date, 'yyyy-MM-dd') : '' });
                             setCalendarOpen(false);
                           }}
-                          disabled={(date) => isBefore(date, addDays(startOfDay(new Date()), 3))}
+                          disabled={(date) => isBefore(date, addDays(startOfDay(new Date()), 1))}
                           initialFocus
                         />
                       </PopoverContent>
