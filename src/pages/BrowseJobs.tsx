@@ -496,7 +496,7 @@ export default function BrowseJobs() {
                   <Alert className="mt-4">
                     <AlertTriangle className="h-4 w-4" />
                     <AlertDescription>
-                      <strong>Important:</strong> You must complete this job by {format(new Date(new Date(selectedJob.preferred_date).setDate(new Date(selectedJob.preferred_date).getDate() + 1)), 'MMMM dd, yyyy')} (1 day after the preferred date). 
+                      <strong>Important:</strong> You must complete this job by {format(new Date(new Date(selectedJob.preferred_date).setDate(new Date(selectedJob.preferred_date).getDate() + 3)), 'MMMM dd, yyyy')} (3 days after the preferred date). 
                       Completing after this deadline will add a dispute to your account for this month, which may affect your earnings.
                     </AlertDescription>
                   </Alert>

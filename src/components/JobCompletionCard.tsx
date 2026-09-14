@@ -392,20 +392,20 @@ export function JobCompletionCard({
     const prefDate = new Date(preferredDate);
     prefDate.setHours(0, 0, 0, 0);
 
-    // If accepted after the preferred date, deadline is 2 days after acceptance
+    // If accepted after the preferred date, deadline is 3 days after acceptance
     if (acceptedAt) {
       const acceptedDate = new Date(acceptedAt);
       acceptedDate.setHours(0, 0, 0, 0);
       if (acceptedDate > prefDate) {
         const deadline = new Date(acceptedDate);
-        deadline.setDate(deadline.getDate() + 2);
+        deadline.setDate(deadline.getDate() + 3);
         return today > deadline;
       }
     }
 
-    // Standard: deadline is 1 day after preferred date
+    // Standard: deadline is 3 days after preferred date
     const dueDate = new Date(prefDate);
-    dueDate.setDate(dueDate.getDate() + 1);
+    dueDate.setDate(dueDate.getDate() + 3);
     return today > dueDate;
   };
 
