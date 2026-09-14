@@ -1113,6 +1113,40 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
         </div>
       </main>
 
+      <Dialog open={showAutopayOffer} onOpenChange={(open) => { if (!open) { setShowAutopayOffer(false); navigate('/my-jobs'); } }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Repeat this every month?</DialogTitle>
+            <DialogDescription>
+              Turn on autopay and we'll book this same job for you every month — no forms to fill out again.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            {[
+              { label: 'Job Type', value: formData.title },
+              { label: 'Parish', value: formData.parish },
+              { label: 'Location', value: autopayLocation },
+              { label: 'Lawn Size', value: formData.lawn_size },
+              ...(formData.preferred_time ? [{ label: 'Preferred Time', value: formData.preferred_time }] : []),
+            ].filter(i => i.value).map((item, index) => (
+              <div key={index} className="flex flex-col gap-1 rounded-lg border p-3">
+                <span className="text-xs font-medium text-muted-foreground">{item.label}</span>
+                <span className="text-sm">{item.value}</span>
+              </div>
+            ))}
+          </div>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => { setShowAutopayOffer(false); navigate('/my-jobs'); }}>
+              No thanks
+            </Button>
+            <Button onClick={setUpAutopayFromBooking} disabled={autopaySaving}>
+              {autopaySaving ? 'Setting up...' : 'Turn on autopay'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+
     </>
   );
 }
