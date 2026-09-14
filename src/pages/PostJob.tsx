@@ -97,6 +97,9 @@ export default function PostJob() {
   const [failedJobId, setFailedJobId] = useState<string | null>(null);
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [community, setCommunity] = useState('');
+  const [showAutopayOffer, setShowAutopayOffer] = useState(false);
+  const [autopaySaving, setAutopaySaving] = useState(false);
+  const [autopayLocation, setAutopayLocation] = useState('');
   const [lotNumber, setLotNumber] = useState('');
   const [phase, setPhase] = useState('');
   const [formData, setFormData] = useState({
