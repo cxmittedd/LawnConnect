@@ -89,11 +89,14 @@ serve(async (req) => {
   const todayStr = today.toISOString().slice(0, 10);
 
   try {
+    // Only process schedules WITHOUT an EzeePay subscription — those are
+    // handled entirely by EzeePay's recurring charge webhook.
     const { data: schedules, error } = await supabase
       .from("autopay_schedules")
       .select("*")
       .eq("active", true)
-      .lte("next_run_date", todayStr);
+      .lte("next_run_date", todayStr)
+      .is("ezeepay_subscription_id", null);
 
     if (error) throw error;
 

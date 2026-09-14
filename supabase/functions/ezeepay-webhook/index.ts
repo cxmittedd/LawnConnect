@@ -289,6 +289,245 @@ serve(async (req) => {
     console.log(`[${webhookId}]   - TransactionNumber: ${TransactionNumber}`);
     console.log(`[${webhookId}]   - Order ID (resolved): ${orderId}`);
 
+    // --- Handle EzeePay subscription cancellation notification ---
+    if (payload.cancellation_date) {
+      console.log(`[${webhookId}] Cancellation notification received`);
+      const txnNum = payload.transaction_number || '';
+      const cancelOrderId = payload.order_id || '';
+
+      // Extract schedule_id from order_id (format: autopay-{schedule_id})
+      if (cancelOrderId.startsWith('autopay-')) {
+        const scheduleId = cancelOrderId.substring(8);
+        const { error: cancelUpdateError } = await supabase
+          .from('autopay_schedules')
+          .update({ active: false, ezeepay_status: 'cancelled' })
+          .eq('id', scheduleId);
+
+        if (cancelUpdateError) {
+          console.error(`[${webhookId}] Error updating cancelled schedule:`, cancelUpdateError);
+        } else {
+          console.log(`[${webhookId}] Schedule ${scheduleId} marked cancelled by EzeePay`);
+        }
+      }
+
+      return new Response(
+        JSON.stringify({ success: true, message: 'Cancellation notification processed' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // --- Handle autopay subscription postbacks (order_id starts with autopay-) ---
+    if (orderId && orderId.startsWith('autopay-')) {
+      const scheduleId = orderId.substring(8);
+      console.log(`[${webhookId}] Autopay postback for schedule: ${scheduleId}`);
+
+      // Look up the schedule
+      const { data: schedule, error: schedError } = await supabase
+        .from('autopay_schedules')
+        .select('id, customer_id, title, description, parish, community, location, lawn_size, preferred_time, ezeepay_status, ezeepay_subscription_id')
+        .eq('id', scheduleId)
+        .single();
+
+      if (schedError || !schedule) {
+        console.error(`[${webhookId}] Autopay schedule not found: ${scheduleId}`);
+        return new Response(
+          JSON.stringify({ success: false, error: 'Autopay schedule not found' }),
+          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      const isSuccess = String(ResponseCode) === '1';
+      const autopayIdempotencyKey = `autopay-${scheduleId}-${TransactionNumber || 'no-txn'}`;
+
+      if (processedWebhooks.has(autopayIdempotencyKey)) {
+        console.log(`[${webhookId}] DUPLICATE: Autopay webhook already processed`);
+        return new Response(
+          JSON.stringify({ success: true, message: 'Already processed' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      processedWebhooks.add(autopayIdempotencyKey);
+
+      if (!isSuccess) {
+        console.log(`[${webhookId}] Autopay charge FAILED: ${ResponseDescription}`);
+        // Increment failure count
+        await supabase
+          .from('autopay_schedules')
+          .update({ failure_count: (schedule as any).failure_count ?? 0 + 1, last_error: String(ResponseDescription || 'Charge failed') })
+          .eq('id', scheduleId);
+        return new Response(
+          JSON.stringify({ success: true, payment_success: false, message: String(ResponseDescription) }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      if (!TransactionNumber) {
+        console.error(`[${webhookId}] Missing TransactionNumber for autopay charge`);
+        return new Response(
+          JSON.stringify({ success: false, error: 'Missing transaction reference' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      if (schedule.ezeepay_status === 'pending') {
+        // Initial card setup charge — mark subscription as active
+        console.log(`[${webhookId}] Initial autopay setup confirmed for schedule ${scheduleId}`);
+        await supabase
+          .from('autopay_schedules')
+          .update({
+            ezeepay_status: 'active',
+            ezeepay_transaction_number: TransactionNumber,
+          })
+          .eq('id', scheduleId);
+
+        // Send activation confirmation email
+        try {
+          const { data: userRes } = await supabase.auth.admin.getUserById(schedule.customer_id);
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('first_name')
+            .eq('id', schedule.customer_id)
+            .maybeSingle();
+
+          if (userRes?.user?.email) {
+            const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
+            await resend.emails.send({
+              from: "LawnConnect <noreply@connectlawn.com>",
+              to: [userRes.user.email],
+              subject: "Autopay activated - your monthly lawn booking is set",
+              html: `<div style="font-family:'Segoe UI',Tahoma,sans-serif;max-width:600px;margin:0 auto;background:#fff;border-radius:8px;overflow:hidden;border:1px solid #e5e7eb">
+                <div style="background:linear-gradient(135deg,#16a34a,#15803d);padding:28px;text-align:center">
+                  <h1 style="color:#fff;margin:0;font-size:22px">Autopay Activated!</h1>
+                </div>
+                <div style="padding:28px;color:#333">
+                  <p>Hi ${profile?.first_name || 'there'},</p>
+                  <p>Your monthly autopay for <strong>${schedule.title}</strong> is now active. Your card will be charged automatically each month, and a new lawn care booking will be created for you automatically.</p>
+                  <p style="color:#666;font-size:13px;margin-top:22px">You can pause or cancel any time from your LawnConnect account.</p>
+                </div>
+              </div>`,
+            });
+          }
+        } catch (e) {
+          console.error(`[${webhookId}] Autopay activation email failed:`, e);
+        }
+
+        return new Response(
+          JSON.stringify({ success: true, message: 'Autopay subscription activated' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      } else {
+        // Recurring monthly charge — create a paid job automatically
+        console.log(`[${webhookId}] Recurring autopay charge for schedule ${scheduleId}`);
+
+        const todayStr = new Date().toISOString().slice(0, 10);
+        const { data: job, error: jobError } = await supabase
+          .from('job_requests')
+          .insert({
+            customer_id: schedule.customer_id,
+            title: schedule.title,
+            description: schedule.description,
+            location: schedule.location,
+            parish: schedule.parish,
+            community: schedule.community,
+            lawn_size: schedule.lawn_size,
+            preferred_date: todayStr,
+            preferred_time: schedule.preferred_time,
+            base_price: 0,
+            payment_status: 'pending',
+            status: 'open',
+          })
+          .select()
+          .single();
+
+        if (jobError) {
+          console.error(`[${webhookId}] Error creating autopay job:`, jobError);
+          return new Response(
+            JSON.stringify({ success: false, error: 'Failed to create job' }),
+            { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        // Mark job as paid (EzeePay already charged the card)
+        const recurringPaymentDate = new Date().toISOString();
+        await supabase
+          .from('job_requests')
+          .update({
+            payment_status: 'paid',
+            payment_reference: TransactionNumber,
+            payment_confirmed_at: recurringPaymentDate,
+            status: 'open',
+          })
+          .eq('id', job.id);
+
+        // Update schedule tracking
+        await supabase
+          .from('autopay_schedules')
+          .update({
+            last_run_date: todayStr,
+            last_job_id: job.id,
+            failure_count: 0,
+            last_error: null,
+          })
+          .eq('id', scheduleId);
+
+        // Send confirmation email to customer
+        try {
+          const { data: userRes } = await supabase.auth.admin.getUserById(schedule.customer_id);
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('first_name')
+            .eq('id', schedule.customer_id)
+            .maybeSingle();
+
+          if (userRes?.user?.email) {
+            const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
+            const amount = job.final_price ?? job.base_price;
+            await resend.emails.send({
+              from: "LawnConnect <noreply@connectlawn.com>",
+              to: [userRes.user.email],
+              subject: `Monthly lawn booking created - J$${Number(amount).toLocaleString("en-JM")}`,
+              html: `<div style="font-family:'Segoe UI',Tahoma,sans-serif;max-width:600px;margin:0 auto;background:#fff;border-radius:8px;overflow:hidden;border:1px solid #e5e7eb">
+                <div style="background:linear-gradient(135deg,#16a34a,#15803d);padding:28px;text-align:center">
+                  <h1 style="color:#fff;margin:0;font-size:22px">Your monthly booking is ready</h1>
+                </div>
+                <div style="padding:28px;color:#333">
+                  <p>Hi ${profile?.first_name || 'there'},</p>
+                  <p>Your monthly autopay just created a new <strong>${schedule.title}</strong> booking. The payment has been processed automatically.</p>
+                  <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:18px;text-align:center;margin:18px 0">
+                    <p style="margin:0;color:#166534;font-size:14px">Amount charged</p>
+                    <p style="margin:4px 0 0;color:#15803d;font-size:28px;font-weight:700">J$${Number(amount).toLocaleString("en-JM")}</p>
+                  </div>
+                  <div style="text-align:center;margin-top:24px">
+                    <a href="https://connectlawn.com/job/${job.id}" style="display:inline-block;background:#16a34a;color:#fff;text-decoration:none;padding:12px 28px;border-radius:6px;font-weight:600">View Your Job</a>
+                  </div>
+                </div>
+              </div>`,
+            });
+          }
+        } catch (e) {
+          console.error(`[${webhookId}] Autopay job email failed:`, e);
+        }
+
+        // Notify admin
+        try {
+          const resendAdmin = new Resend(Deno.env.get("RESEND_API_KEY"));
+          await resendAdmin.emails.send({
+            from: "LawnConnect <noreply@connectlawn.com>",
+            to: ["officiallawnconnect@gmail.com"],
+            subject: `Autopay Booking: ${schedule.title} - ${schedule.parish}`,
+            html: `<p>New autopay booking created and paid automatically.</p><p>Job: ${job.id}<br>Transaction: ${TransactionNumber}</p>`,
+          });
+        } catch (e) {
+          console.error(`[${webhookId}] Admin alert failed:`, e);
+        }
+
+        return new Response(
+          JSON.stringify({ success: true, message: 'Autopay job created and paid', job_id: job.id }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+
     // Validate required fields
     if (!orderId) {
       console.error(`[${webhookId}] ERROR: Missing order_id/CustomOrderId`);
