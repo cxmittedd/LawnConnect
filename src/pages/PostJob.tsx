@@ -18,7 +18,7 @@ import { z } from 'zod';
 import { JobPaymentForm } from '@/components/JobPaymentForm';
 import { sendInvoice } from '@/lib/invoiceService';
 import { useCustomerPreferences } from '@/hooks/useCustomerPreferences';
-import { format, isBefore, startOfDay } from 'date-fns';
+import { format, isBefore, startOfDay, addDays } from 'date-fns';
 import {
   Dialog,
   DialogContent,
@@ -972,7 +972,7 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
                             setFormData({ ...formData, preferred_date: date ? format(date, 'yyyy-MM-dd') : '' });
                             setCalendarOpen(false);
                           }}
-                          disabled={(date) => isBefore(date, startOfDay(new Date()))}
+                          disabled={(date) => isBefore(date, addDays(startOfDay(new Date()), 3))}
                           initialFocus
                         />
                       </PopoverContent>
