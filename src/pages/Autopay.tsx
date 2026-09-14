@@ -342,7 +342,7 @@ export default function Autopay() {
                     <SelectTrigger>
                       <SelectValue placeholder="Select job type" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent position="popper" className="max-h-[260px]">
                       {JOB_TYPES.map((type) => (
                         <SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>
                       ))}
@@ -367,7 +367,7 @@ export default function Autopay() {
                     <SelectTrigger>
                       <SelectValue placeholder="Select community (optional)" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent position="popper" className="max-h-[260px]">
                       <SelectItem value="none">None</SelectItem>
                       {COMMUNITIES.map((c) => (
                         <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
@@ -387,7 +387,7 @@ export default function Autopay() {
                       <SelectTrigger>
                         <SelectValue placeholder="Select parish" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent position="popper" className="max-h-[260px]">
                         {JAMAICA_PARISHES.map((parish) => (
                           <SelectItem key={parish} value={parish}>{parish}</SelectItem>
                         ))}
@@ -426,7 +426,7 @@ export default function Autopay() {
                       <SelectTrigger>
                         <SelectValue placeholder="Select phase" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent position="popper" className="max-h-[260px]">
                         <SelectItem value="Phase 1">Phase 1</SelectItem>
                         <SelectItem value="Phase 2">Phase 2</SelectItem>
                         <SelectItem value="Phase 3">Phase 3</SelectItem>
@@ -442,7 +442,7 @@ export default function Autopay() {
                       <SelectTrigger>
                         <SelectValue placeholder="Select lawn size" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent position="popper" className="max-h-[260px]">
                         {LAWN_SIZES.map((size) => (
                           <SelectItem key={size.value} value={size.value}>
                             <div className="flex flex-col">
@@ -463,7 +463,7 @@ export default function Autopay() {
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent position="popper" className="max-h-[260px]">
                         {Array.from({ length: 28 }, (_, i) => String(i + 1)).map((d) => (
                           <SelectItem key={d} value={d}>{d}</SelectItem>
                         ))}
