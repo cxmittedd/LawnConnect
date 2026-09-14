@@ -97,6 +97,9 @@ export default function PostJob() {
   const [failedJobId, setFailedJobId] = useState<string | null>(null);
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [community, setCommunity] = useState('');
+  const [showAutopayOffer, setShowAutopayOffer] = useState(false);
+  const [autopaySaving, setAutopaySaving] = useState(false);
+  const [autopayLocation, setAutopayLocation] = useState('');
   const [lotNumber, setLotNumber] = useState('');
   const [phase, setPhase] = useState('');
   const [formData, setFormData] = useState({
@@ -571,7 +574,8 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
       }
 
       toast.success('Job posted successfully! Payment received.');
-      navigate('/my-jobs');
+      setAutopayLocation(savedLocation);
+      setShowAutopayOffer(true);
     } catch (error) {
       safeToast.error(error);
     } finally {
@@ -592,6 +596,40 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
         .eq('payment_status', 'failed');
     } catch (error) {
       console.error('Error cleaning up failed job:', error);
+    }
+  };
+
+  const setUpAutopayFromBooking = async () => {
+    setAutopaySaving(true);
+    try {
+      const day = formData.preferred_date
+        ? Math.min(Number(formData.preferred_date.split('-')[2]), 28)
+        : 1;
+      const now = new Date();
+      const next = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), day));
+      if (next <= now) next.setUTCMonth(next.getUTCMonth() + 1);
+
+      const { error } = await supabase.from('autopay_schedules').insert({
+        customer_id: user!.id,
+        title: formData.title,
+        description: formData.description || null,
+        parish: formData.parish,
+        community: community && community !== 'none' ? community : null,
+        location: autopayLocation,
+        lawn_size: formData.lawn_size || null,
+        preferred_time: formData.preferred_time || null,
+        day_of_month: day,
+        frequency: 'monthly',
+        next_run_date: next.toISOString().slice(0, 10),
+      });
+      if (error) throw error;
+      toast.success('Autopay is on — we\'ll repeat this booking every month');
+      setShowAutopayOffer(false);
+      navigate('/autopay');
+    } catch (error) {
+      safeToast.error(error);
+    } finally {
+      setAutopaySaving(false);
     }
   };
 
@@ -1074,6 +1112,40 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
           )}
         </div>
       </main>
+
+      <Dialog open={showAutopayOffer} onOpenChange={(open) => { if (!open) { setShowAutopayOffer(false); navigate('/my-jobs'); } }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Repeat this every month?</DialogTitle>
+            <DialogDescription>
+              Turn on autopay and we'll book this same job for you every month — no forms to fill out again.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            {[
+              { label: 'Job Type', value: formData.title },
+              { label: 'Parish', value: formData.parish },
+              { label: 'Location', value: autopayLocation },
+              { label: 'Lawn Size', value: formData.lawn_size },
+              ...(formData.preferred_time ? [{ label: 'Preferred Time', value: formData.preferred_time }] : []),
+            ].filter(i => i.value).map((item, index) => (
+              <div key={index} className="flex flex-col gap-1 rounded-lg border p-3">
+                <span className="text-xs font-medium text-muted-foreground">{item.label}</span>
+                <span className="text-sm">{item.value}</span>
+              </div>
+            ))}
+          </div>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => { setShowAutopayOffer(false); navigate('/my-jobs'); }}>
+              No thanks
+            </Button>
+            <Button onClick={setUpAutopayFromBooking} disabled={autopaySaving}>
+              {autopaySaving ? 'Setting up...' : 'Turn on autopay'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
 
     </>
   );
