@@ -18,7 +18,7 @@ import { z } from 'zod';
 import { JobPaymentForm } from '@/components/JobPaymentForm';
 import { sendInvoice } from '@/lib/invoiceService';
 import { useCustomerPreferences } from '@/hooks/useCustomerPreferences';
-import { format, isBefore, startOfDay } from 'date-fns';
+import { format, isBefore, startOfDay, addDays } from 'date-fns';
 import {
   Dialog,
   DialogContent,
