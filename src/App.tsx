@@ -153,6 +153,14 @@ const App = () => (
                 }
               />
               <Route
+                path="/autopay"
+                element={
+                  <ProtectedRoute>
+                    <Autopay />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
                 path="/provider/:id"
                 element={
                   <ProtectedRoute>
