@@ -149,6 +149,7 @@ export default function Autopay() {
       <SEO
         title="Autopay Monthly Lawn Care | LawnConnect"
         description="Set up a monthly repeat lawn booking with LawnConnect and never think about your lawn again."
+        path="/autopay"
       />
       <Navigation />
       <main className="container mx-auto px-4 py-8 max-w-3xl animate-fade-in">
