@@ -90,11 +90,13 @@ serve(async (req) => {
     // If the payment is initiated from a preview domain, we must still use the
     // production site domain for redirects, otherwise EzeePay returns
     // "invalid site address".
+    // Use the production site for redirect URL validation even in sandbox mode,
+    // since customers must return to LawnConnect after checkout
     const normalizedSiteHost = (() => {
       try {
-        return site.startsWith('http') ? new URL(site).hostname : site;
+        return productionSite.startsWith('http') ? new URL(productionSite).hostname : productionSite;
       } catch {
-        return site;
+        return productionSite;
       }
     })();
 
