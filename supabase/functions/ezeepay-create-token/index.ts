@@ -68,13 +68,23 @@ serve(async (req) => {
     }
 
     const licenceKey = Deno.env.get('EZEEPAY_LICENCE_KEY');
-    const site = Deno.env.get('EZEEPAY_SITE');
+    const productionSite = Deno.env.get('EZEEPAY_SITE');
 
-    if (!licenceKey || !site) {
+    if (!licenceKey || !productionSite) {
       console.error(`[${requestId}] ERROR: EzeePay credentials not configured`);
       throw new Error('EzeePay credentials not configured');
     }
-    console.log(`[${requestId}] EzeePay config: site=${site}, key=${licenceKey.substring(0, 4)}...`);
+
+    const sandbox = Deno.env.get('EZEEPAY_SANDBOX_MODE') === 'true';
+    // Sandbox environment expects the test site header per EzeePay docs
+    const site = sandbox ? 'https://test.com' : productionSite;
+    const apiBase = sandbox
+      ? 'https://api-test.ezeepayments.com/v1'
+      : 'https://api.ezeepayments.com/v1';
+    const checkoutUrl = sandbox
+      ? 'https://secure-test.ezeepayments.com'
+      : 'https://secure.ezeepayments.com';
+    console.log(`[${requestId}] EzeePay config: mode=${sandbox ? 'SANDBOX' : 'LIVE'}, site=${site}, key=${licenceKey.substring(0, 4)}...`);
 
     // EzeePay validates that return/cancel URLs match the registered `site`.
     // If the payment is initiated from a preview domain, we must still use the
