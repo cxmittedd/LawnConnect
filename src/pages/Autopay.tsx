@@ -230,6 +230,22 @@ export default function Autopay() {
 
     setSaving(true);
 
+    // Block duplicate autopay for the same address
+    const { data: existing } = await supabase
+      .from('autopay_schedules')
+      .select('id, location, parish')
+      .eq('customer_id', user!.id)
+      .eq('active', true);
+    const normalize = (s: string) => s.trim().toLowerCase().replace(/\s+/g, ' ');
+    const duplicate = (existing || []).find(
+      (s) => normalize(s.location) === normalize(jobLocation)
+    );
+    if (duplicate) {
+      setSaving(false);
+      toast.error('You already have autopay set up for this address. Pause or remove the existing one first.');
+      return;
+    }
+
     // 1. Create the schedule in the database
     const { data: schedule, error: insertError } = await supabase
       .from('autopay_schedules')
