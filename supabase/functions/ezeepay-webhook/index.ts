@@ -324,7 +324,7 @@ serve(async (req) => {
       // Look up the schedule
       const { data: schedule, error: schedError } = await supabase
         .from('autopay_schedules')
-        .select('id, customer_id, title, description, parish, community, location, lawn_size, preferred_time, ezeepay_status, ezeepay_subscription_id')
+        .select('id, customer_id, title, description, parish, community, location, lawn_size, preferred_time, ezeepay_status, ezeepay_subscription_id, frequency, day_of_month, next_run_date, failure_count')
         .eq('id', scheduleId)
         .single();
 
@@ -353,7 +353,7 @@ serve(async (req) => {
         // Increment failure count
         await supabase
           .from('autopay_schedules')
-          .update({ failure_count: (schedule as any).failure_count ?? 0 + 1, last_error: String(ResponseDescription || 'Charge failed') })
+          .update({ failure_count: ((schedule as any).failure_count ?? 0) + 1, last_error: String(ResponseDescription || 'Charge failed') })
           .eq('id', scheduleId);
         return new Response(
           JSON.stringify({ success: true, payment_success: false, message: String(ResponseDescription) }),
@@ -394,15 +394,26 @@ serve(async (req) => {
             await resend.emails.send({
               from: "LawnConnect <noreply@connectlawn.com>",
               to: [userRes.user.email],
-              subject: "Autopay activated - your monthly lawn booking is set",
+              subject: "Autopay is set up - your monthly lawn booking is confirmed",
               html: `<div style="font-family:'Segoe UI',Tahoma,sans-serif;max-width:600px;margin:0 auto;background:#fff;border-radius:8px;overflow:hidden;border:1px solid #e5e7eb">
                 <div style="background:linear-gradient(135deg,#16a34a,#15803d);padding:28px;text-align:center">
-                  <h1 style="color:#fff;margin:0;font-size:22px">Autopay Activated!</h1>
+                  <h1 style="color:#fff;margin:0;font-size:22px">Autopay Is Set Up</h1>
                 </div>
                 <div style="padding:28px;color:#333">
                   <p>Hi ${profile?.first_name || 'there'},</p>
-                  <p>Your monthly autopay for <strong>${schedule.title}</strong> is now active. Your card will be charged automatically each month, and a new lawn care booking will be created for you automatically.</p>
-                  <p style="color:#666;font-size:13px;margin-top:22px">You can pause or cancel any time from your LawnConnect account.</p>
+                  <p>Your autopay for <strong>${schedule.title}</strong> is now active. Your card will be charged automatically and a new lawn care booking will be created for you each time — no need to book manually.</p>
+                  <table style="width:100%;border-collapse:collapse;margin:18px 0;font-size:14px">
+                    <tr><td style="padding:8px 0;color:#666">Service</td><td style="padding:8px 0;text-align:right"><strong>${schedule.title}</strong></td></tr>
+                    <tr><td style="padding:8px 0;color:#666">Address</td><td style="padding:8px 0;text-align:right">${schedule.location}${schedule.community ? `, ${schedule.community}` : ''}, ${schedule.parish}</td></tr>
+                    ${schedule.lawn_size ? `<tr><td style="padding:8px 0;color:#666">Lawn size</td><td style="padding:8px 0;text-align:right">${schedule.lawn_size}</td></tr>` : ''}
+                    <tr><td style="padding:8px 0;color:#666">How often</td><td style="padding:8px 0;text-align:right">${schedule.frequency === 'monthly' ? 'Every month' : String(schedule.frequency)}</td></tr>
+                    ${schedule.next_run_date ? `<tr><td style="padding:8px 0;color:#666">Next booking</td><td style="padding:8px 0;text-align:right">${new Date(schedule.next_run_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</td></tr>` : ''}
+                    ${schedule.preferred_time ? `<tr><td style="padding:8px 0;color:#666">Preferred time</td><td style="padding:8px 0;text-align:right">${schedule.preferred_time}</td></tr>` : ''}
+                  </table>
+                  <div style="text-align:center;margin:24px 0">
+                    <a href="https://connectlawn.com/autopay" style="background:#16a34a;color:#fff;text-decoration:none;padding:12px 26px;border-radius:6px;display:inline-block;font-weight:600">Manage Autopay</a>
+                  </div>
+                  <p style="color:#666;font-size:13px;margin-top:22px">You can pause or cancel any time from your LawnConnect account. Your card details are stored securely with our payment provider, never on LawnConnect.</p>
                 </div>
               </div>`,
             });
