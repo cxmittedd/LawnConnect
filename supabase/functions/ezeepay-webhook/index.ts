@@ -324,7 +324,7 @@ serve(async (req) => {
       // Look up the schedule
       const { data: schedule, error: schedError } = await supabase
         .from('autopay_schedules')
-        .select('id, customer_id, title, description, parish, community, location, lawn_size, preferred_time, ezeepay_status, ezeepay_subscription_id')
+        .select('id, customer_id, title, description, parish, community, location, lawn_size, preferred_time, ezeepay_status, ezeepay_subscription_id, frequency, day_of_month, next_run_date, failure_count')
         .eq('id', scheduleId)
         .single();
 
