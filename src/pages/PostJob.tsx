@@ -576,7 +576,11 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
 
       toast.success('Job posted successfully! Payment received.');
       setAutopayLocation(savedLocation);
-      setShowAutopayOffer(true);
+      if (autopayOptIn) {
+        await setUpAutopayFromBooking(savedLocation);
+      } else {
+        setShowAutopayOffer(true);
+      }
     } catch (error) {
       safeToast.error(error);
     } finally {
