@@ -319,24 +319,63 @@ export default function JobDetails() {
               </CardContent>
             </Card>
 
-            {/* Payment Card - shown after job accepted */}
+            {/* Payment status - shown after job accepted */}
             {showPaymentCard && providerInfo && job.final_price && job.accepted_provider_id && (
-              <TestPaymentCard
-                jobId={job.id}
-                jobTitle={job.title}
-                amount={job.final_price}
-                providerId={job.accepted_provider_id}
-                customerId={job.customer_id}
-                providerName={providerInfo.full_name || 'Provider'}
-                paymentStatus={job.payment_status || 'pending'}
-                isCustomer={isCustomer}
-                isProvider={isProvider}
-                jobLocation={job.location}
-                parish={job.parish}
-                lawnSize={job.lawn_size}
-                platformFee={job.platform_fee || undefined}
-                onPaymentUpdate={loadJobDetails}
-              />
+              <Card className="border-primary/20">
+                <CardHeader>
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <CardTitle className="flex items-center gap-2">
+                        <CreditCard className="h-5 w-5 text-primary" />
+                        Payment
+                      </CardTitle>
+                      <CardDescription>
+                        {job.payment_status === 'paid' ? 'Payment completed' : 'Awaiting payment'}
+                      </CardDescription>
+                    </div>
+                    {job.payment_status === 'paid' ? (
+                      <Badge className="bg-success text-success-foreground gap-1">
+                        <CheckCircle className="h-3 w-3" /> Paid
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="gap-1">
+                        <Clock className="h-3 w-3" /> Awaiting Payment
+                      </Badge>
+                    )}
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {isCustomer && (
+                    <div className="bg-muted/50 rounded-lg p-4">
+                      <div className="text-sm text-muted-foreground">Amount</div>
+                      <div className="text-3xl font-bold text-primary flex items-center gap-1">
+                        <DollarSign className="h-6 w-6" />
+                        J${(job.final_price || job.base_price).toFixed(2)}
+                      </div>
+                    </div>
+                  )}
+                  {job.payment_status === 'paid' ? (
+                    <Alert className="border-success/50 bg-success/10">
+                      <CheckCircle className="h-4 w-4 text-success" />
+                      <AlertDescription>
+                        <strong>Payment complete.</strong>
+                        {isProvider
+                          ? ' You can now start working on this job.'
+                          : ` ${providerInfo.full_name || 'Provider'} can now start working on your job.`}
+                      </AlertDescription>
+                    </Alert>
+                  ) : (
+                    <Alert>
+                      <Clock className="h-4 w-4" />
+                      <AlertDescription>
+                        {isCustomer
+                          ? 'Payment is being processed. The job will start once payment is confirmed.'
+                          : 'Waiting for customer payment. The job will start once payment is received.'}
+                      </AlertDescription>
+                    </Alert>
+                  )}
+                </CardContent>
+              </Card>
             )}
 
             {/* Job Completion Card - shown after payment confirmed */}
