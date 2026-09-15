@@ -98,6 +98,7 @@ export default function PostJob() {
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [community, setCommunity] = useState('');
   const [showAutopayOffer, setShowAutopayOffer] = useState(false);
+  const [autopayOptIn, setAutopayOptIn] = useState(false);
   const [autopaySaving, setAutopaySaving] = useState(false);
   const [autopayLocation, setAutopayLocation] = useState('');
   const [lotNumber, setLotNumber] = useState('');

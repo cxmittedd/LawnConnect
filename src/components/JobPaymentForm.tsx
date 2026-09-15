@@ -389,6 +389,29 @@ export function JobPaymentForm({
             );
           })()}
 
+          {/* Autopay opt-in */}
+          {onChangeAutopayOptIn && (
+            <div className="rounded-lg border border-dashed border-primary/40 bg-primary/5 p-4">
+              <div className="flex items-start gap-3">
+                <Checkbox
+                  id="autopay-opt-in"
+                  checked={autopayOptIn}
+                  onCheckedChange={(checked) => onChangeAutopayOptIn(checked === true)}
+                  disabled={processing}
+                />
+                <label htmlFor="autopay-opt-in" className="cursor-pointer">
+                  <span className="flex items-center gap-2 text-sm font-medium text-foreground">
+                    <RefreshCw className="h-4 w-4 text-primary" />
+                    Set up autopay for this booking
+                  </span>
+                  <span className="mt-1 block text-xs text-muted-foreground">
+                    We'll repeat this same job every month using the details above — no forms to fill out again. You can pause or cancel any time.
+                  </span>
+                </label>
+              </div>
+            </div>
+          )}
+
           {/* Hidden form for EzeePay redirect */}
           {paymentUrl && paymentData && (
             <form 
