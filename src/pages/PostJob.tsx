@@ -1146,7 +1146,7 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
             <Button variant="outline" onClick={() => { setShowAutopayOffer(false); navigate('/my-jobs'); }}>
               No thanks
             </Button>
-            <Button onClick={setUpAutopayFromBooking} disabled={autopaySaving}>
+            <Button onClick={() => setUpAutopayFromBooking()} disabled={autopaySaving}>
               {autopaySaving ? 'Setting up...' : 'Turn on autopay'}
             </Button>
           </DialogFooter>
