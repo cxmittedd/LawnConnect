@@ -14,6 +14,7 @@ import { toast } from 'sonner';
 import { safeToast } from '@/lib/errorHandler';
 import { format } from 'date-fns';
 import { TestPaymentCard } from '@/components/TestPaymentCard';
+import { CreditCard, CheckCircle, Clock } from 'lucide-react';
 import { JobCompletionCard } from '@/components/JobCompletionCard';
 import { JobReviewCard } from '@/components/JobReviewCard';
 import { JobChat } from '@/components/JobChat';
