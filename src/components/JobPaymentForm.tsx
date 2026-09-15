@@ -3,7 +3,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
-import { Lock, CheckCircle, CreditCard, Loader2, Tag, X, Gift } from 'lucide-react';
+import { Lock, CheckCircle, CreditCard, Loader2, Tag, X, Gift, RefreshCw } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
 import { supabase } from '@/integrations/supabase/client';
 import { safeToast } from '@/lib/errorHandler';
 import { toast } from 'sonner';
@@ -41,6 +42,9 @@ interface JobPaymentFormProps {
   referralCreditsApplied?: number;   // count currently applied (0..min(3,available))
   referralDiscountAmount?: number;   // total $ off from referral credits
   onChangeReferralCredits?: (count: number) => void;
+  // Autopay opt-in (before paying)
+  autopayOptIn?: boolean;
+  onChangeAutopayOptIn?: (value: boolean) => void;
 }
 
 interface EzeePaymentData {
@@ -78,6 +82,8 @@ export function JobPaymentForm({
   referralCreditsApplied = 0,
   referralDiscountAmount = 0,
   onChangeReferralCredits,
+  autopayOptIn = false,
+  onChangeAutopayOptIn,
 }: JobPaymentFormProps) {
   const { user } = useAuth();
   const [processing, setProcessing] = useState(false);
@@ -382,6 +388,29 @@ export function JobPaymentForm({
               </div>
             );
           })()}
+
+          {/* Autopay opt-in */}
+          {onChangeAutopayOptIn && (
+            <div className="rounded-lg border border-dashed border-primary/40 bg-primary/5 p-4">
+              <div className="flex items-start gap-3">
+                <Checkbox
+                  id="autopay-opt-in"
+                  checked={autopayOptIn}
+                  onCheckedChange={(checked) => onChangeAutopayOptIn(checked === true)}
+                  disabled={processing}
+                />
+                <label htmlFor="autopay-opt-in" className="cursor-pointer">
+                  <span className="flex items-center gap-2 text-sm font-medium text-foreground">
+                    <RefreshCw className="h-4 w-4 text-primary" />
+                    Set up autopay for this booking
+                  </span>
+                  <span className="mt-1 block text-xs text-muted-foreground">
+                    We'll repeat this same job every month using the details above — no forms to fill out again. You can pause or cancel any time.
+                  </span>
+                </label>
+              </div>
+            </div>
+          )}
 
           {/* Hidden form for EzeePay redirect */}
           {paymentUrl && paymentData && (
