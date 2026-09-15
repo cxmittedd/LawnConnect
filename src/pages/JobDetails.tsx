@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/integrations/supabase/client';
-import { MapPin, Calendar, DollarSign, Clock, ArrowLeft, User, Star, XCircle, AlertTriangle } from 'lucide-react';
+import { MapPin, Calendar, DollarSign, Clock, ArrowLeft, User, Star, XCircle, AlertTriangle, CreditCard, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { safeToast } from '@/lib/errorHandler';
 import { format } from 'date-fns';
