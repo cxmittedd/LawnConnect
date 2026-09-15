@@ -604,7 +604,7 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
     }
   };
 
-  const setUpAutopayFromBooking = async () => {
+  const setUpAutopayFromBooking = async (locationOverride?: string) => {
     setAutopaySaving(true);
     try {
       const day = formData.preferred_date
@@ -620,7 +620,7 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
         description: formData.description || null,
         parish: formData.parish,
         community: community && community !== 'none' ? community : null,
-        location: autopayLocation,
+        location: locationOverride || autopayLocation,
         lawn_size: formData.lawn_size || null,
         preferred_time: formData.preferred_time || null,
         day_of_month: day,
