@@ -67,7 +67,9 @@ serve(async (req) => {
       throw new Error('Amount must be greater than zero');
     }
 
-    const licenceKey = Deno.env.get('EZEEPAY_LICENCE_KEY');
+    const sandbox = Deno.env.get('EZEEPAY_SANDBOX_MODE') === 'true';
+    const sandboxLicenceKey = Deno.env.get('EZEEPAY_SANDBOX_LICENCE_KEY');
+    const licenceKey = (sandbox && sandboxLicenceKey) || Deno.env.get('EZEEPAY_LICENCE_KEY');
     const productionSite = Deno.env.get('EZEEPAY_SITE');
 
     if (!licenceKey || !productionSite) {
@@ -75,7 +77,7 @@ serve(async (req) => {
       throw new Error('EzeePay credentials not configured');
     }
 
-    const sandbox = Deno.env.get('EZEEPAY_SANDBOX_MODE') === 'true';
+
     // Sandbox environment expects the test site header per EzeePay docs
     const site = sandbox ? 'https://test.com' : productionSite;
     const apiBase = sandbox
