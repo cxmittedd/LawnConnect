@@ -353,7 +353,7 @@ serve(async (req) => {
         // Increment failure count
         await supabase
           .from('autopay_schedules')
-          .update({ failure_count: (schedule as any).failure_count ?? 0 + 1, last_error: String(ResponseDescription || 'Charge failed') })
+          .update({ failure_count: ((schedule as any).failure_count ?? 0) + 1, last_error: String(ResponseDescription || 'Charge failed') })
           .eq('id', scheduleId);
         return new Response(
           JSON.stringify({ success: true, payment_success: false, message: String(ResponseDescription) }),
