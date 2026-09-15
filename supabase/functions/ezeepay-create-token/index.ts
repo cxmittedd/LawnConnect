@@ -129,10 +129,10 @@ serve(async (req) => {
     formData.append('return_url', `${baseUrl}/post-job?payment_complete=true&order_id=${order_id}`);
     formData.append('cancel_url', `${baseUrl}/post-job?payment_cancelled=true&order_id=${order_id}`);
 
-    console.log(`[${requestId}] Calling EzeePay API: https://api.ezeepayments.com/v1/custom_token/`);
+    console.log(`[${requestId}] Calling EzeePay API: ${apiBase}/custom_token/`);
     const apiStartTime = Date.now();
 
-    const tokenResponse = await fetch('https://api.ezeepayments.com/v1/custom_token/', {
+    const tokenResponse = await fetch(`${apiBase}/custom_token/`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
@@ -157,7 +157,7 @@ serve(async (req) => {
     const totalDuration = Date.now() - startTime;
     console.log(`[${requestId}] SUCCESS: Token generated successfully`);
     console.log(`[${requestId}]   - Token: ${tokenData.result.token.substring(0, 10)}...`);
-    console.log(`[${requestId}]   - Payment URL: https://secure.ezeepayments.com`);
+    console.log(`[${requestId}]   - Payment URL: ${checkoutUrl}`);
     console.log(`[${requestId}] Total processing time: ${totalDuration}ms`);
     console.log(`[${requestId}] ========== EZEEPAY TOKEN REQUEST END ==========`);
 
@@ -166,7 +166,7 @@ serve(async (req) => {
       JSON.stringify({
         success: true,
         token: tokenData.result.token,
-        payment_url: 'https://secure.ezeepayments.com',
+        payment_url: checkoutUrl,
         payment_data: {
           platform: 'custom',
           token: tokenData.result.token,
