@@ -49,6 +49,8 @@ interface CustomerProfile {
   first_name: string | null;
 }
 
+const LAWNCONNECT_LOGO_URL = "https://connectlawn.com/pwa-512x512.png";
+
 const createPaymentConfirmationEmail = (
   job: JobDetails,
   customerName: string,
@@ -57,7 +59,6 @@ const createPaymentConfirmationEmail = (
   invoiceNumber: string,
   paymentDate: string
 ): string => {
-  const logoUrl = "https://connectlawn.com/pwa-512x512.png";
   const appUrl = "https://connectlawn.com";
   const amount = job.final_price || job.base_price;
 
@@ -77,7 +78,7 @@ const createPaymentConfirmationEmail = (
               <!-- Header -->
               <tr>
                 <td style="background: linear-gradient(135deg, #16a34a 0%, #15803d 100%); padding: 32px; text-align: center;">
-                  <img src="${logoUrl}" alt="LawnConnect" width="80" height="80" style="display: block; margin: 0 auto 16px auto; border-radius: 8px;">
+                  <img src="${LAWNCONNECT_LOGO_URL}" alt="LawnConnect" width="80" height="80" style="display: block; margin: 0 auto 16px auto; border: 0; border-radius: 8px;">
                   <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 700;">Payment Confirmed!</h1>
                   <p style="color: #bbf7d0; margin: 8px 0 0 0; font-size: 14px;">Your job is now live</p>
                 </td>
@@ -397,6 +398,7 @@ serve(async (req) => {
               subject: "Autopay is set up - your monthly lawn booking is confirmed",
               html: `<div style="font-family:'Segoe UI',Tahoma,sans-serif;max-width:600px;margin:0 auto;background:#fff;border-radius:8px;overflow:hidden;border:1px solid #e5e7eb">
                 <div style="background:linear-gradient(135deg,#16a34a,#15803d);padding:28px;text-align:center">
+                  <img src="${LAWNCONNECT_LOGO_URL}" alt="LawnConnect" width="72" height="72" style="display:block;margin:0 auto 14px;border:0;border-radius:8px">
                   <h1 style="color:#fff;margin:0;font-size:22px">Autopay Is Set Up</h1>
                 </div>
                 <div style="padding:28px;color:#333">
@@ -499,6 +501,7 @@ serve(async (req) => {
               subject: `Monthly lawn booking created - J$${Number(amount).toLocaleString("en-JM")}`,
               html: `<div style="font-family:'Segoe UI',Tahoma,sans-serif;max-width:600px;margin:0 auto;background:#fff;border-radius:8px;overflow:hidden;border:1px solid #e5e7eb">
                 <div style="background:linear-gradient(135deg,#16a34a,#15803d);padding:28px;text-align:center">
+                  <img src="${LAWNCONNECT_LOGO_URL}" alt="LawnConnect" width="72" height="72" style="display:block;margin:0 auto 14px;border:0;border-radius:8px">
                   <h1 style="color:#fff;margin:0;font-size:22px">Your monthly booking is ready</h1>
                 </div>
                 <div style="padding:28px;color:#333">
@@ -526,7 +529,16 @@ serve(async (req) => {
             from: "LawnConnect <noreply@connectlawn.com>",
             to: ["officiallawnconnect@gmail.com"],
             subject: `Autopay Booking: ${schedule.title} - ${schedule.parish}`,
-            html: `<p>New autopay booking created and paid automatically.</p><p>Job: ${job.id}<br>Transaction: ${TransactionNumber}</p>`,
+            html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto">
+              <div style="background-color:#16a34a;padding:24px;text-align:center">
+                <img src="${LAWNCONNECT_LOGO_URL}" alt="LawnConnect" width="72" height="72" style="display:block;margin:0 auto 12px;border:0;border-radius:8px">
+                <h2 style="color:#fff;margin:0">New autopay booking</h2>
+              </div>
+              <div style="padding:24px;border:1px solid #e5e7eb;border-top:0">
+                <p>New autopay booking created and paid automatically.</p>
+                <p>Job: ${job.id}<br>Transaction: ${TransactionNumber}</p>
+              </div>
+            </div>`,
           });
         } catch (e) {
           console.error(`[${webhookId}] Admin alert failed:`, e);
@@ -771,17 +783,22 @@ serve(async (req) => {
           subject: `New Booking: ${existingJob.title} - ${existingJob.parish}`,
           html: `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-              <h2 style="color: #16a34a;">New paid booking</h2>
-              <table style="width: 100%; border-collapse: collapse;">
-                <tr><td style="padding: 6px 0;"><strong>Job</strong></td><td style="padding: 6px 0;">${existingJob.title}</td></tr>
-                <tr><td style="padding: 6px 0;"><strong>Job ID</strong></td><td style="padding: 6px 0;">${existingJob.id}</td></tr>
-                <tr><td style="padding: 6px 0;"><strong>Customer</strong></td><td style="padding: 6px 0;">${adminCustomerName}${adminCustomerProfile?.phone_number ? ` (${adminCustomerProfile.phone_number})` : ''}</td></tr>
-                <tr><td style="padding: 6px 0;"><strong>Location</strong></td><td style="padding: 6px 0;">${existingJob.location || ''}, ${existingJob.parish || ''}</td></tr>
-                <tr><td style="padding: 6px 0;"><strong>Lawn size</strong></td><td style="padding: 6px 0;">${existingJob.lawn_size || 'N/A'}</td></tr>
-                <tr><td style="padding: 6px 0;"><strong>Preferred date</strong></td><td style="padding: 6px 0;">${existingJob.preferred_date || 'Not specified'}</td></tr>
-                <tr><td style="padding: 6px 0;"><strong>Amount paid</strong></td><td style="padding: 6px 0;">J$${Number(bookingAmount || 0).toLocaleString()}</td></tr>
-                <tr><td style="padding: 6px 0;"><strong>Transaction</strong></td><td style="padding: 6px 0;">${TransactionNumber}</td></tr>
-              </table>
+              <div style="background-color: #16a34a; padding: 24px; text-align: center;">
+                <img src="${LAWNCONNECT_LOGO_URL}" alt="LawnConnect" width="72" height="72" style="display: block; margin: 0 auto 12px; border: 0; border-radius: 8px;">
+                <h2 style="color: #ffffff; margin: 0;">New paid booking</h2>
+              </div>
+              <div style="padding: 24px; border: 1px solid #e5e7eb; border-top: 0;">
+                <table style="width: 100%; border-collapse: collapse;">
+                  <tr><td style="padding: 6px 0;"><strong>Job</strong></td><td style="padding: 6px 0;">${existingJob.title}</td></tr>
+                  <tr><td style="padding: 6px 0;"><strong>Job ID</strong></td><td style="padding: 6px 0;">${existingJob.id}</td></tr>
+                  <tr><td style="padding: 6px 0;"><strong>Customer</strong></td><td style="padding: 6px 0;">${adminCustomerName}${adminCustomerProfile?.phone_number ? ` (${adminCustomerProfile.phone_number})` : ''}</td></tr>
+                  <tr><td style="padding: 6px 0;"><strong>Location</strong></td><td style="padding: 6px 0;">${existingJob.location || ''}, ${existingJob.parish || ''}</td></tr>
+                  <tr><td style="padding: 6px 0;"><strong>Lawn size</strong></td><td style="padding: 6px 0;">${existingJob.lawn_size || 'N/A'}</td></tr>
+                  <tr><td style="padding: 6px 0;"><strong>Preferred date</strong></td><td style="padding: 6px 0;">${existingJob.preferred_date || 'Not specified'}</td></tr>
+                  <tr><td style="padding: 6px 0;"><strong>Amount paid</strong></td><td style="padding: 6px 0;">J$${Number(bookingAmount || 0).toLocaleString()}</td></tr>
+                  <tr><td style="padding: 6px 0;"><strong>Transaction</strong></td><td style="padding: 6px 0;">${TransactionNumber}</td></tr>
+                </table>
+              </div>
             </div>
           `,
         });
