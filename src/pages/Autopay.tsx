@@ -271,9 +271,23 @@ export default function Autopay() {
       // Clean up the schedule if subscription creation failed
       await supabase.from('autopay_schedules').delete().eq('id', schedule.id);
       setSaving(false);
-      toast.error(subResult?.error || 'Could not set up recurring payment');
+      let message = subResult?.error as string | undefined;
+      if (!message && subError) {
+        try {
+          const ctx = (subError as unknown as { context?: Response }).context;
+          if (ctx && typeof ctx.json === 'function') {
+            const body = await ctx.json();
+            message = body?.error;
+          }
+        } catch { /* ignore */ }
+      }
+      if (message && /licence not found/i.test(message)) {
+        message = 'Autopay is not available yet — the payment provider has not activated recurring billing for this account.';
+      }
+      toast.error(message || 'Could not set up recurring payment. Please try again later.');
       return;
     }
+
 
     // 3. Redirect to EzeePay's hosted checkout via a hidden form POST
     const payForm = document.createElement('form');
