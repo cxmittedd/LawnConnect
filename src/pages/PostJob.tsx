@@ -733,6 +733,8 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
                 }
                 await refreshReferralCredits();
               }}
+              autopayOptIn={autopayOptIn}
+              onChangeAutopayOptIn={setAutopayOptIn}
             />
           ) : step === 'payment' ? (
             <div className="flex items-center justify-center p-8">
