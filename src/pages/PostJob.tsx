@@ -614,6 +614,21 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
       const next = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), day));
       if (next <= now) next.setUTCMonth(next.getUTCMonth() + 1);
 
+      const location = locationOverride || autopayLocation;
+
+      // Block duplicate autopay for the same address
+      const normalize = (s: string) => s.trim().toLowerCase().replace(/\s+/g, ' ');
+      const { data: existing } = await supabase
+        .from('autopay_schedules')
+        .select('id, location')
+        .eq('customer_id', user!.id)
+        .eq('active', true);
+      if ((existing || []).some((s) => normalize(s.location) === normalize(location))) {
+        toast.error('You already have autopay set up for this address');
+        setShowAutopayOffer(false);
+        return;
+      }
+
       const { error } = await supabase.from('autopay_schedules').insert({
         customer_id: user!.id,
         title: formData.title,
