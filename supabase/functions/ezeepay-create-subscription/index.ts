@@ -40,10 +40,12 @@ serve(async (req) => {
     if (amount <= 0) throw new Error("Amount must be greater than zero");
 
     const licenceKey = Deno.env.get("EZEEPAY_LICENCE_KEY");
-    const site = Deno.env.get("EZEEPAY_SITE");
-    if (!licenceKey || !site) throw new Error("EzeePay credentials not configured");
+    const productionSite = Deno.env.get("EZEEPAY_SITE");
+    if (!licenceKey || !productionSite) throw new Error("EzeePay credentials not configured");
 
     const sandbox = Deno.env.get("EZEEPAY_SANDBOX_MODE") === "true";
+    // Sandbox environment expects the test site header per EzeePay docs
+    const site = sandbox ? "https://test.com" : productionSite;
     const apiBase = sandbox
       ? "https://api-test.ezeepayments.com/v1.1"
       : "https://api.ezeepayments.com/v1.1";
@@ -54,11 +56,13 @@ serve(async (req) => {
     console.log(`[${requestId}] Mode: ${sandbox ? "SANDBOX" : "LIVE"}, API: ${apiBase}`);
 
     // Resolve return/cancel URLs (same logic as ezeepay-create-token)
+    // For sandbox mode, redirect URLs should still point to the real site
+    // so customers return to LawnConnect after checkout
     const normalizedSiteHost = (() => {
       try {
-        return site.startsWith("http") ? new URL(site).hostname : site;
+        return productionSite.startsWith("http") ? new URL(productionSite).hostname : productionSite;
       } catch {
-        return site;
+        return productionSite;
       }
     })();
     const siteBaseUrl = `https://${normalizedSiteHost}`;

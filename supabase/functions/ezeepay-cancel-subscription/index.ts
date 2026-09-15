@@ -56,10 +56,12 @@ serve(async (req) => {
 
     // Call EzeePay cancel API
     const licenceKey = Deno.env.get("EZEEPAY_LICENCE_KEY");
-    const site = Deno.env.get("EZEEPAY_SITE");
-    if (!licenceKey || !site) throw new Error("EzeePay credentials not configured");
+    const productionSite = Deno.env.get("EZEEPAY_SITE");
+    if (!licenceKey || !productionSite) throw new Error("EzeePay credentials not configured");
 
     const sandbox = Deno.env.get("EZEEPAY_SANDBOX_MODE") === "true";
+    // Sandbox environment expects the test site header per EzeePay docs
+    const site = sandbox ? "https://test.com" : productionSite;
     const apiBase = sandbox
       ? "https://api-test.ezeepayments.com/v1.1"
       : "https://api.ezeepayments.com/v1.1";

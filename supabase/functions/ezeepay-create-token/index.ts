@@ -68,23 +68,35 @@ serve(async (req) => {
     }
 
     const licenceKey = Deno.env.get('EZEEPAY_LICENCE_KEY');
-    const site = Deno.env.get('EZEEPAY_SITE');
+    const productionSite = Deno.env.get('EZEEPAY_SITE');
 
-    if (!licenceKey || !site) {
+    if (!licenceKey || !productionSite) {
       console.error(`[${requestId}] ERROR: EzeePay credentials not configured`);
       throw new Error('EzeePay credentials not configured');
     }
-    console.log(`[${requestId}] EzeePay config: site=${site}, key=${licenceKey.substring(0, 4)}...`);
+
+    const sandbox = Deno.env.get('EZEEPAY_SANDBOX_MODE') === 'true';
+    // Sandbox environment expects the test site header per EzeePay docs
+    const site = sandbox ? 'https://test.com' : productionSite;
+    const apiBase = sandbox
+      ? 'https://api-test.ezeepayments.com/v1'
+      : 'https://api.ezeepayments.com/v1';
+    const checkoutUrl = sandbox
+      ? 'https://secure-test.ezeepayments.com'
+      : 'https://secure.ezeepayments.com';
+    console.log(`[${requestId}] EzeePay config: mode=${sandbox ? 'SANDBOX' : 'LIVE'}, site=${site}, key=${licenceKey.substring(0, 4)}...`);
 
     // EzeePay validates that return/cancel URLs match the registered `site`.
     // If the payment is initiated from a preview domain, we must still use the
     // production site domain for redirects, otherwise EzeePay returns
     // "invalid site address".
+    // Use the production site for redirect URL validation even in sandbox mode,
+    // since customers must return to LawnConnect after checkout
     const normalizedSiteHost = (() => {
       try {
-        return site.startsWith('http') ? new URL(site).hostname : site;
+        return productionSite.startsWith('http') ? new URL(productionSite).hostname : productionSite;
       } catch {
-        return site;
+        return productionSite;
       }
     })();
 
@@ -119,10 +131,10 @@ serve(async (req) => {
     formData.append('return_url', `${baseUrl}/post-job?payment_complete=true&order_id=${order_id}`);
     formData.append('cancel_url', `${baseUrl}/post-job?payment_cancelled=true&order_id=${order_id}`);
 
-    console.log(`[${requestId}] Calling EzeePay API: https://api.ezeepayments.com/v1/custom_token/`);
+    console.log(`[${requestId}] Calling EzeePay API: ${apiBase}/custom_token/`);
     const apiStartTime = Date.now();
 
-    const tokenResponse = await fetch('https://api.ezeepayments.com/v1/custom_token/', {
+    const tokenResponse = await fetch(`${apiBase}/custom_token/`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
@@ -147,7 +159,7 @@ serve(async (req) => {
     const totalDuration = Date.now() - startTime;
     console.log(`[${requestId}] SUCCESS: Token generated successfully`);
     console.log(`[${requestId}]   - Token: ${tokenData.result.token.substring(0, 10)}...`);
-    console.log(`[${requestId}]   - Payment URL: https://secure.ezeepayments.com`);
+    console.log(`[${requestId}]   - Payment URL: ${checkoutUrl}`);
     console.log(`[${requestId}] Total processing time: ${totalDuration}ms`);
     console.log(`[${requestId}] ========== EZEEPAY TOKEN REQUEST END ==========`);
 
@@ -156,7 +168,7 @@ serve(async (req) => {
       JSON.stringify({
         success: true,
         token: tokenData.result.token,
-        payment_url: 'https://secure.ezeepayments.com',
+        payment_url: checkoutUrl,
         payment_data: {
           platform: 'custom',
           token: tokenData.result.token,
