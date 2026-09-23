@@ -92,6 +92,7 @@ export type Database = {
           community: string | null
           consented_at: string
           created_at: string
+          custom_price: number | null
           customer_id: string
           day_of_month: number
           description: string | null
@@ -118,6 +119,7 @@ export type Database = {
           community?: string | null
           consented_at?: string
           created_at?: string
+          custom_price?: number | null
           customer_id: string
           day_of_month?: number
           description?: string | null
@@ -144,6 +146,7 @@ export type Database = {
           community?: string | null
           consented_at?: string
           created_at?: string
+          custom_price?: number | null
           customer_id?: string
           day_of_month?: number
           description?: string | null
