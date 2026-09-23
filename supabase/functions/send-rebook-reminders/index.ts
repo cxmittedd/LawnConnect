@@ -55,7 +55,34 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
+    // This is a scheduled task: only the cron secret, the service role key, or an
+    // admin user may run it. The public anon key is never accepted.
+    const cronSecret = Deno.env.get("CRON_AUTH_TOKEN") ?? Deno.env.get("CRON_SECRET");
+    const providedCronSecret = req.headers.get("x-cron-secret");
+    const isCron = !!cronSecret && providedCronSecret === cronSecret;
+    const authHeader = req.headers.get("authorization");
+    const token = (authHeader ?? "").replace("Bearer ", "");
+
+    const unauthorized = (status: number, message: string) =>
+      new Response(
+        JSON.stringify({ error: message }),
+        { status, headers: { "Content-Type": "application/json", ...corsHeaders } },
+      );
+
     const supabase = createClient(SUPABASE_URL, SERVICE_ROLE);
+
+    if (!isCron) {
+      if (!authHeader) return unauthorized(401, "Unauthorized");
+      if (token !== SERVICE_ROLE) {
+        const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+        if (authError || !user) return unauthorized(401, "Unauthorized");
+        const { data: isAdmin } = await supabase.rpc("has_role", {
+          _user_id: user.id,
+          _role: "admin",
+        });
+        if (!isAdmin) return unauthorized(403, "Forbidden");
+      }
+    }
 
     const cutoff = new Date();
     cutoff.setDate(cutoff.getDate() - 30);
