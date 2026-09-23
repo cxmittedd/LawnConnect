@@ -175,6 +175,77 @@ export type Database = {
           },
         ]
       }
+      custom_quotes: {
+        Row: {
+          claimed_at: string | null
+          claimed_by: string | null
+          community: string | null
+          created_at: string
+          created_by: string
+          customer_name: string | null
+          customer_phone: string | null
+          description: string | null
+          id: string
+          job_id: string | null
+          lawn_size: string | null
+          location: string
+          parish: string
+          price: number
+          status: string
+          title: string
+          token: string
+          updated_at: string
+        }
+        Insert: {
+          claimed_at?: string | null
+          claimed_by?: string | null
+          community?: string | null
+          created_at?: string
+          created_by: string
+          customer_name?: string | null
+          customer_phone?: string | null
+          description?: string | null
+          id?: string
+          job_id?: string | null
+          lawn_size?: string | null
+          location: string
+          parish: string
+          price: number
+          status?: string
+          title?: string
+          token: string
+          updated_at?: string
+        }
+        Update: {
+          claimed_at?: string | null
+          claimed_by?: string | null
+          community?: string | null
+          created_at?: string
+          created_by?: string
+          customer_name?: string | null
+          customer_phone?: string | null
+          description?: string | null
+          id?: string
+          job_id?: string | null
+          lawn_size?: string | null
+          location?: string
+          parish?: string
+          price?: number
+          status?: string
+          title?: string
+          token?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "custom_quotes_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "job_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       customer_discounts: {
         Row: {
           active: boolean
