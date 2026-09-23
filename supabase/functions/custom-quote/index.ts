@@ -145,7 +145,7 @@ serve(async (req) => {
         final_price: price,
         platform_fee: Math.round(price * 0.3 * 100) / 100,
         provider_payout: Math.round(price * 0.7 * 100) / 100,
-        status: "pending",
+        status: "open",
         payment_status: "pending",
       })
       .select("id")
