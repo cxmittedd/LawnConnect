@@ -123,6 +123,16 @@ serve(async (req) => {
       return json({ success: true, schedule_id: schedule.id });
     }
 
+    const rawDate = String(body?.preferred_date ?? "").trim();
+    let preferredDate: string | null = quote.preferred_date ?? null;
+    if (rawDate) {
+      const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(rawDate) || rawDate < tomorrow) {
+        return json({ success: false, error: "Please pick a date from tomorrow onward" }, 400);
+      }
+      preferredDate = rawDate;
+    }
+
     // Already claimed: only the same account may continue with it.
     if (quote.job_id) {
       if (quote.claimed_by && quote.claimed_by !== user.id) {
@@ -133,16 +143,6 @@ serve(async (req) => {
           .eq("id", quote.job_id).eq("payment_status", "pending");
       }
       return json({ success: true, job_id: quote.job_id, quote: publicQuote });
-    }
-
-    const rawDate = String(body?.preferred_date ?? "").trim();
-    let preferredDate: string | null = quote.preferred_date ?? null;
-    if (rawDate) {
-      const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(rawDate) || rawDate < tomorrow) {
-        return json({ success: false, error: "Please pick a date from tomorrow onward" }, 400);
-      }
-      preferredDate = rawDate;
     }
 
     const price = Number(quote.price);
