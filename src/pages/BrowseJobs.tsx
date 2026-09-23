@@ -31,6 +31,8 @@ const COMMUNITY_LABELS: Record<string, string> = {
   phoenix_park_village: 'Phoenix Park Village',
   drax_hall_manor: 'Drax Hall Manor',
   richmond_estate: 'Richmond Estate',
+  castlewood: 'Castlewood',
+  holland_estate: 'Holland Estate',
 };
 
 interface Job {

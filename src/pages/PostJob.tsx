@@ -193,6 +193,8 @@ export default function PostJob() {
       'Phoenix Park Village': 'phoenix_park_village',
       'Drax Hall Manor': 'drax_hall_manor',
       'Richmond Estate': 'richmond_estate',
+      'Castlewood': 'castlewood',
+      'Holland Estate': 'holland_estate',
     };
 
     let resolvedLocation = preferences.location || '';
@@ -380,6 +382,8 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
       phoenix_park_village: 'Phoenix Park Village',
       drax_hall_manor: 'Drax Hall Manor',
       richmond_estate: 'Richmond Estate',
+      castlewood: 'Castlewood',
+      holland_estate: 'Holland Estate',
     };
     const isCommunityJob = community && community !== 'none' && community !== '';
     const jobLocation = isCommunityJob
@@ -512,6 +516,8 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
         phoenix_park_village: 'Phoenix Park Village',
         drax_hall_manor: 'Drax Hall Manor',
         richmond_estate: 'Richmond Estate',
+        castlewood: 'Castlewood',
+        holland_estate: 'Holland Estate',
       };
       const isCommunityForSave = community && community !== 'none' && community !== '';
       const savedLocation = isCommunityForSave
@@ -872,6 +878,8 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
                       <SelectItem value="phoenix_park_village">Phoenix Park Village</SelectItem>
                       <SelectItem value="drax_hall_manor">Drax Hall Manor</SelectItem>
                       <SelectItem value="richmond_estate">Richmond Estate</SelectItem>
+                      <SelectItem value="castlewood">Castlewood</SelectItem>
+                      <SelectItem value="holland_estate">Holland Estate</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
