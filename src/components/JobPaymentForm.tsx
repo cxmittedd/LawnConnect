@@ -304,7 +304,7 @@ export function JobPaymentForm({
           </div>
 
           {/* Coupon Code Input */}
-          {!appliedCoupon ? (
+          {hideExtras ? null : !appliedCoupon ? (
             <div className="border border-dashed border-border rounded-lg p-4">
               <div className="flex items-center gap-2 mb-2">
                 <Tag className="h-4 w-4 text-muted-foreground" />
