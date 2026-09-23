@@ -338,6 +338,9 @@ serve(async (req) => {
       const scheduleId = orderId.substring(8);
       console.log(`[${webhookId}] Autopay postback for schedule: ${scheduleId}`);
 
+      const autopayAuthFailure = await assertTrustedCallback(orderId);
+      if (autopayAuthFailure) return autopayAuthFailure;
+
       // Look up the schedule
       const { data: schedule, error: schedError } = await supabase
         .from('autopay_schedules')
