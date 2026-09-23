@@ -26,6 +26,7 @@ import {
   MapPin,
   Percent,
   Gift,
+  FileText,
 } from 'lucide-react';
 import lawnConnectLogo from '@/assets/lawnconnect-logo.png';
 import { useState, useEffect } from 'react';
