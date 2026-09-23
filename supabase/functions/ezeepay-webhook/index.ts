@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { Resend } from "https://esm.sh/resend@2.0.0";
+import { verifyCallbackToken } from "../_shared/ezeepay-callback-token.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -290,6 +291,21 @@ serve(async (req) => {
     console.log(`[${webhookId}]   - TransactionNumber: ${TransactionNumber}`);
     console.log(`[${webhookId}]   - Order ID (resolved): ${orderId}`);
 
+    // Callback authenticity: EzeePay is the only party that receives the signed
+    // post_back_url we register per order, so a valid token proves the payment
+    // notification originated from EzeePay and was not forged by a caller.
+    const callbackToken = new URL(req.url).searchParams.get('wt');
+    const assertTrustedCallback = async (reference: string): Promise<Response | null> => {
+      const ok = await verifyCallbackToken(reference, callbackToken);
+      if (ok) return null;
+      console.error(`[${webhookId}] REJECTED: missing or invalid callback token for ${reference}`);
+      return new Response(
+        JSON.stringify({ success: false, error: 'Unverified payment notification' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    };
+
+
     // --- Handle EzeePay subscription cancellation notification ---
     if (payload.cancellation_date) {
       console.log(`[${webhookId}] Cancellation notification received`);
@@ -321,6 +337,9 @@ serve(async (req) => {
     if (orderId && orderId.startsWith('autopay-')) {
       const scheduleId = orderId.substring(8);
       console.log(`[${webhookId}] Autopay postback for schedule: ${scheduleId}`);
+
+      const autopayAuthFailure = await assertTrustedCallback(orderId);
+      if (autopayAuthFailure) return autopayAuthFailure;
 
       // Look up the schedule
       const { data: schedule, error: schedError } = await supabase
@@ -570,6 +589,10 @@ serve(async (req) => {
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    const jobAuthFailure = await assertTrustedCallback(orderId);
+    if (jobAuthFailure) return jobAuthFailure;
+
 
     // Create idempotency key to prevent replay attacks
     const idempotencyKey = `${orderId}-${TransactionNumber || 'no-txn'}`;

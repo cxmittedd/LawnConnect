@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { buildSignedPostbackUrl } from "../_shared/ezeepay-callback-token.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -129,7 +130,7 @@ serve(async (req) => {
     formData.append('amount', amount.toString());
     formData.append('currency', 'JMD');
     formData.append('order_id', order_id);
-    formData.append('post_back_url', `${functionBaseUrl}/ezeepay-webhook`);
+    formData.append('post_back_url', await buildSignedPostbackUrl(`${functionBaseUrl}/ezeepay-webhook`, order_id));
     formData.append('return_url', `${baseUrl}/post-job?payment_complete=true&order_id=${order_id}`);
     formData.append('cancel_url', `${baseUrl}/post-job?payment_cancelled=true&order_id=${order_id}`);
 
