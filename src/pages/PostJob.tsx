@@ -187,8 +187,6 @@ export default function PostJob() {
       'Florence Hall': 'florence_hall',
       'Stonebrook Vista': 'stonebrook_vista',
       'Stonebrook Manor': 'stonebrook_manor',
-      'Treasure Bay Estates': 'treasure_bay_estates',
-      'Phoenix Park Village': 'phoenix_park_village',
       'Castlewood': 'castlewood',
       'Holland Estate': 'holland_estate',
     };
@@ -372,8 +370,6 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
       florence_hall: 'Florence Hall',
       stonebrook_vista: 'Stonebrook Vista',
       stonebrook_manor: 'Stonebrook Manor',
-      treasure_bay_estates: 'Treasure Bay Estates',
-      phoenix_park_village: 'Phoenix Park Village',
       castlewood: 'Castlewood',
       holland_estate: 'Holland Estate',
     };
@@ -504,8 +500,6 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
         florence_hall: 'Florence Hall',
         stonebrook_vista: 'Stonebrook Vista',
         stonebrook_manor: 'Stonebrook Manor',
-        treasure_bay_estates: 'Treasure Bay Estates',
-        phoenix_park_village: 'Phoenix Park Village',
         castlewood: 'Castlewood',
         holland_estate: 'Holland Estate',
       };
@@ -862,8 +856,6 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
                       <SelectItem value="stonebrook_vista">Stonebrook Vista</SelectItem>
                       <SelectItem value="stonebrook_manor">Stonebrook Manor</SelectItem>
                       
-                      <SelectItem value="treasure_bay_estates">Treasure Bay Estates</SelectItem>
-                      <SelectItem value="phoenix_park_village">Phoenix Park Village</SelectItem>
                       <SelectItem value="castlewood">Castlewood</SelectItem>
                       <SelectItem value="holland_estate">Holland Estate</SelectItem>
                     </SelectContent>
