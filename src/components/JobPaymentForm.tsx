@@ -45,6 +45,9 @@ interface JobPaymentFormProps {
   // Autopay opt-in (before paying)
   autopayOptIn?: boolean;
   onChangeAutopayOptIn?: (value: boolean) => void;
+  // In-app path the customer returns to after checkout
+  returnPath?: string;
+  hideExtras?: boolean;
 }
 
 interface EzeePaymentData {
@@ -84,6 +87,8 @@ export function JobPaymentForm({
   onChangeReferralCredits,
   autopayOptIn = false,
   onChangeAutopayOptIn,
+  returnPath,
+  hideExtras = false,
 }: JobPaymentFormProps) {
   const { user } = useAuth();
   const [processing, setProcessing] = useState(false);
@@ -207,6 +212,7 @@ export function JobPaymentForm({
           customer_name: customerName,
           description: `Payment for ${jobTitle}`,
           origin_url: originUrl,
+          return_path: returnPath,
         }
       });
 
