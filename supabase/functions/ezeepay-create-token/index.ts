@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { buildSignedPostbackUrl } from "../_shared/ezeepay-callback-token.ts";
+import { maskEmail } from "../_shared/lawn-pricing.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -48,22 +49,51 @@ serve(async (req) => {
       console.error(`[${requestId}] ERROR: Auth failed -`, authError?.message || 'No user');
       throw new Error('Unauthorized');
     }
-    console.log(`[${requestId}] Authenticated user: ${user.id} (${user.email})`);
+    console.log(`[${requestId}] Authenticated user: ${user.id} (${maskEmail(user.email)})`);
 
-    const { amount, order_id, customer_email, customer_name, description, origin_url }: TokenRequest = await req.json();
+    const { order_id, customer_name, description, origin_url }: TokenRequest = await req.json();
+
+    if (!order_id) {
+      console.error(`[${requestId}] ERROR: Missing order_id`);
+      throw new Error('Missing required field: order_id');
+    }
+
+    // The amount is NEVER taken from the request body: it is read from the
+    // caller's own booking so a client cannot choose its own checkout price.
+    const serviceClient = createClient(supabaseUrl, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
+    const { data: job, error: jobError } = await serviceClient
+      .from('job_requests')
+      .select('id, customer_id, base_price, final_price, payment_status, title')
+      .eq('id', order_id)
+      .maybeSingle();
+
+    if (jobError || !job) {
+      console.error(`[${requestId}] ERROR: Booking not found for order`);
+      throw new Error('Booking not found');
+    }
+    if (job.customer_id !== user.id) {
+      console.error(`[${requestId}] ERROR: Caller does not own booking ${order_id}`);
+      throw new Error('Unauthorized');
+    }
+    if ((job.payment_status ?? 'pending') !== 'pending') {
+      console.error(`[${requestId}] ERROR: Booking already paid`);
+      throw new Error('This booking has already been paid');
+    }
+
+    const amount = Number(job.final_price ?? job.base_price ?? 0);
+    const customer_email = user.email!;
 
     console.log(`[${requestId}] Payment request details:`);
     console.log(`[${requestId}]   - Order ID: ${order_id}`);
-    console.log(`[${requestId}]   - Amount: J$${amount}`);
-    console.log(`[${requestId}]   - Customer: ${customer_email}`);
+    console.log(`[${requestId}]   - Server-derived amount: J$${amount}`);
+    console.log(`[${requestId}]   - Customer: ${maskEmail(customer_email)}`);
     console.log(`[${requestId}]   - Origin: ${origin_url}`);
 
-    if (!amount || !order_id || !customer_email) {
-      console.error(`[${requestId}] ERROR: Missing required fields`);
-      throw new Error('Missing required fields: amount, order_id, customer_email');
+    if (!customer_email) {
+      throw new Error('Your account has no email address on file');
     }
 
-    if (amount <= 0) {
+    if (!(amount > 0)) {
       console.error(`[${requestId}] ERROR: Invalid amount: ${amount}`);
       throw new Error('Amount must be greater than zero');
     }
@@ -151,7 +181,8 @@ serve(async (req) => {
     console.log(`[${requestId}] EzeePay API response: status=${tokenResponse.status}, duration=${apiDuration}ms`);
 
     const tokenData = await tokenResponse.json();
-    console.log(`[${requestId}] EzeePay response:`, JSON.stringify(tokenData));
+    // Do not log the full response: it contains the checkout token.
+    console.log(`[${requestId}] EzeePay response: status=${tokenData?.result?.status ?? 'unknown'}, message=${tokenData?.result?.message ?? ''}`);
 
     if (!tokenData.result || tokenData.result.status !== 1) {
       const errorMsg = tokenData.result?.message || 'Failed to generate payment token';

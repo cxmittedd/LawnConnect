@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "https://esm.sh/resend@2.0.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.86.0";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
+import { escapeHtml, maskEmail } from "../_shared/lawn-pricing.ts";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
@@ -662,7 +663,25 @@ serve(async (req: Request): Promise<Response> => {
       );
     }
 
-    const { type, recipientId, jobTitle, jobId, additionalData } = parseResult.data;
+    const {
+      type,
+      recipientId,
+      jobTitle: rawJobTitle,
+      jobId,
+      additionalData: rawAdditionalData,
+    } = parseResult.data;
+
+    // Any value a user can influence is escaped before it reaches email markup,
+    // so it can never become HTML in a recipient's inbox.
+    const jobTitle = escapeHtml(rawJobTitle);
+    const additionalData = rawAdditionalData
+      ? Object.fromEntries(
+          Object.entries(rawAdditionalData).map(([key, value]) => [
+            key,
+            typeof value === "string" ? escapeHtml(value) : value,
+          ]),
+        ) as typeof rawAdditionalData
+      : rawAdditionalData;
 
     console.log(`Processing ${type} notification for job: ${jobTitle}`);
 
@@ -739,7 +758,7 @@ serve(async (req: Request): Promise<Response> => {
     }
 
     const recipientEmail = userData.user.email;
-    console.log(`Sending email to: ${recipientEmail}`);
+    console.log(`Sending ${type} email to recipient ${recipientId} (${maskEmail(recipientEmail)})`);
 
     const { subject, html } = getEmailContent(type, jobTitle, jobId, additionalData);
 
