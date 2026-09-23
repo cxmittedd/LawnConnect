@@ -53,6 +53,8 @@ const COMMUNITIES: { value: string; label: string }[] = [
   { value: 'phoenix_park_village', label: 'Phoenix Park Village' },
   { value: 'drax_hall_manor', label: 'Drax Hall Manor' },
   { value: 'richmond_estate', label: 'Richmond Estate' },
+  { value: 'castlewood', label: 'Castlewood' },
+  { value: 'holland_estate', label: 'Holland Estate' },
 ];
 
 const communityLabel = (value: string) => COMMUNITIES.find(c => c.value === value)?.label || value;
