@@ -80,8 +80,10 @@ serve(async (req) => {
     } catch { /* ignore */ }
 
     const functionBaseUrl = `${supabaseUrl}/functions/v1`;
-    const postBackUrl = `${functionBaseUrl}/ezeepay-webhook`;
     const orderId = `autopay-${schedule_id}`;
+    // Signed postback URL so the webhook can prove the callback came from EzeePay
+    const postBackUrl = await buildSignedPostbackUrl(`${functionBaseUrl}/ezeepay-webhook`, orderId);
+
 
     // Step 1: Create the subscription
     console.log(`[${requestId}] Creating subscription: amount=${amount}, frequency=monthly`);
