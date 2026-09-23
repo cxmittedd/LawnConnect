@@ -15,6 +15,7 @@ interface TokenRequest {
   customer_name?: string;
   description?: string;
   origin_url?: string; // The URL where the payment was initiated from
+  return_path?: string; // In-app path to return to after checkout
 }
 
 serve(async (req) => {
@@ -51,7 +52,12 @@ serve(async (req) => {
     }
     console.log(`[${requestId}] Authenticated user: ${user.id} (${maskEmail(user.email)})`);
 
-    const { order_id, customer_name, description, origin_url }: TokenRequest = await req.json();
+    const { order_id, customer_name, description, origin_url, return_path }: TokenRequest = await req.json();
+
+    // Only simple in-app paths may be used for the post-checkout redirect.
+    const safeReturnPath = typeof return_path === 'string' && /^\/[A-Za-z0-9\-\/]{0,80}$/.test(return_path)
+      ? return_path
+      : '/post-job';
 
     if (!order_id) {
       console.error(`[${requestId}] ERROR: Missing order_id`);
@@ -161,8 +167,8 @@ serve(async (req) => {
     formData.append('currency', 'JMD');
     formData.append('order_id', order_id);
     formData.append('post_back_url', await buildSignedPostbackUrl(`${functionBaseUrl}/ezeepay-webhook`, order_id));
-    formData.append('return_url', `${baseUrl}/post-job?payment_complete=true&order_id=${order_id}`);
-    formData.append('cancel_url', `${baseUrl}/post-job?payment_cancelled=true&order_id=${order_id}`);
+    formData.append('return_url', `${baseUrl}${safeReturnPath}?payment_complete=true&order_id=${order_id}`);
+    formData.append('cancel_url', `${baseUrl}${safeReturnPath}?payment_cancelled=true&order_id=${order_id}`);
 
     console.log(`[${requestId}] Calling EzeePay API: ${apiBase}/custom_token/`);
     const apiStartTime = Date.now();
