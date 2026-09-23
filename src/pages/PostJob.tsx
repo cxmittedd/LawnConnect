@@ -933,28 +933,32 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
                   </div>
                 )}
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <Label htmlFor="lawn_size" className="text-sm font-semibold">Lawn Size *</Label>
-                    <Select
-                      value={lawnSizeSelection}
-                      onValueChange={handleLawnSizeChange}
-                      required
-                    >
-                      <SelectTrigger className="h-12 rounded-xl bg-background border-input hover:border-primary/60 focus:ring-2 focus:ring-primary/20 transition-colors">
-                        <SelectValue placeholder="Select lawn size" />
-                      </SelectTrigger>
-                      <SelectContent className="rounded-xl">
-                        {LAWN_SIZES.map((size) => (
-                          <SelectItem key={size.value} value={size.value}>
-                            <div className="flex flex-col">
-                              <span>{size.label}</span>
-                              <span className="text-xs text-muted-foreground">{size.description}</span>
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-semibold">Lawn Size *</Label>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    {LAWN_SIZES.map((size) => {
+                      const selected = lawnSizeSelection === size.value;
+                      return (
+                        <button
+                          key={size.value}
+                          type="button"
+                          onClick={() => handleLawnSizeChange(size.value)}
+                          className={cn(
+                            "rounded-xl border px-3 py-3 text-left transition-all active:scale-[0.98]",
+                            selected
+                              ? "border-primary bg-primary text-primary-foreground shadow-md shadow-primary/20"
+                              : "border-input bg-background hover:border-primary/60"
+                          )}
+                        >
+                          <span className={cn("block text-sm font-semibold leading-tight", selected ? "text-primary-foreground" : "text-foreground")}>
+                            {size.label.split(' (')[0]}
+                          </span>
+                          <span className={cn("block text-xs mt-1 leading-snug", selected ? "text-primary-foreground/80" : "text-muted-foreground")}>
+                            {size.label.includes('(') ? `(${size.label.split(' (')[1]}` : size.description}
+                          </span>
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
 
