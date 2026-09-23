@@ -132,6 +132,9 @@ serve(async (req) => {
       }
       preferredDate = rawDate;
     }
+    if (!preferredDate) {
+      return json({ success: false, error: "A preferred date is required" }, 400);
+    }
 
     // Already claimed: only the same account may continue with it.
     if (quote.job_id) {
