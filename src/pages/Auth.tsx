@@ -159,11 +159,15 @@ export default function Auth() {
     }
   }, [refFromUrl]);
 
+  // Optional in-app destination (e.g. a quote link the customer opened first)
+  const nextParam = searchParams.get('next') || '';
+  const nextPath = /^\/[A-Za-z0-9\-\/]{0,80}$/.test(nextParam) ? nextParam : '/dashboard';
+
   useEffect(() => {
     if (user) {
-      navigate('/dashboard');
+      navigate(nextPath);
     }
-  }, [user, navigate]);
+  }, [user, navigate, nextPath]);
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -183,7 +187,7 @@ export default function Auth() {
       toast.error('Invalid email or password');
     } else {
       toast.success('Signed in successfully!');
-      navigate('/dashboard');
+      navigate(nextPath);
     }
   };
 
