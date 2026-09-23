@@ -747,11 +747,11 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
             </div>
           ) : (
           <form onSubmit={handleProceedToPayment}>
-            <Card>
-              <CardHeader>
+            <Card className="rounded-2xl shadow-lg shadow-primary/5 border-border/60 overflow-hidden">
+              <CardHeader className="px-6 sm:px-8 pt-6 sm:pt-8">
                 <div className="flex items-start justify-between">
                   <div>
-                    <CardTitle>Job Details</CardTitle>
+                    <CardTitle className="text-xl font-bold tracking-tight">Job Details</CardTitle>
                     <CardDescription>Pay upfront to post your job.</CardDescription>
                   </div>
                   <div className="flex gap-2">
@@ -811,18 +811,18 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
                   </Dialog>
                 </div>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="title">Job Type *</Label>
+              <CardContent className="space-y-5 px-6 sm:px-8 pb-8">
+                <div className="space-y-1.5">
+                  <Label htmlFor="title" className="text-sm font-semibold">Job Type *</Label>
                   <Select
                     value={formData.title}
                     onValueChange={(value) => setFormData({ ...formData, title: value })}
                     required
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="h-12 rounded-xl bg-muted/50 border-border/60 hover:border-primary/60 focus:ring-2 focus:ring-primary/20 transition-colors">
                       <SelectValue placeholder="Select job type" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="rounded-xl">
                       {JOB_TYPES.map((type) => (
                         <SelectItem key={type.value} value={type.value}>
                           {type.label}
@@ -832,8 +832,8 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
                   </Select>
                 </div>
 
-                <div className="space-y-2">
-                  <Label>Community</Label>
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-semibold">Community</Label>
                   <Select
                     value={community}
                     onValueChange={(value) => {
@@ -846,10 +846,10 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
                       }
                     }}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="h-12 rounded-xl bg-muted/50 border-border/60 hover:border-primary/60 focus:ring-2 focus:ring-primary/20 transition-colors">
                       <SelectValue placeholder="Select community (optional)" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="rounded-xl">
                       <SelectItem value="none">None</SelectItem>
                       <SelectItem value="coral_spring">Coral Springs Village</SelectItem>
                       <SelectItem value="florence_hall">Florence Hall</SelectItem>
