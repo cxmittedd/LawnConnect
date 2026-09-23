@@ -819,7 +819,7 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
                     onValueChange={(value) => setFormData({ ...formData, title: value })}
                     required
                   >
-                    <SelectTrigger className="h-12 rounded-xl bg-muted/50 border-border/60 hover:border-primary/60 focus:ring-2 focus:ring-primary/20 transition-colors">
+                    <SelectTrigger className="h-12 rounded-xl bg-background border-input hover:border-primary/60 focus:ring-2 focus:ring-primary/20 transition-colors">
                       <SelectValue placeholder="Select job type" />
                     </SelectTrigger>
                     <SelectContent className="rounded-xl">
@@ -846,7 +846,7 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
                       }
                     }}
                   >
-                    <SelectTrigger className="h-12 rounded-xl bg-muted/50 border-border/60 hover:border-primary/60 focus:ring-2 focus:ring-primary/20 transition-colors">
+                    <SelectTrigger className="h-12 rounded-xl bg-background border-input hover:border-primary/60 focus:ring-2 focus:ring-primary/20 transition-colors">
                       <SelectValue placeholder="Select community (optional)" />
                     </SelectTrigger>
                     <SelectContent className="rounded-xl">
@@ -871,7 +871,7 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
                       required
                       disabled={community !== 'none' && community !== ''}
                     >
-                      <SelectTrigger className="h-12 rounded-xl bg-muted/50 border-border/60 hover:border-primary/60 focus:ring-2 focus:ring-primary/20 transition-colors">
+                      <SelectTrigger className="h-12 rounded-xl bg-background border-input hover:border-primary/60 focus:ring-2 focus:ring-primary/20 transition-colors">
                         <SelectValue placeholder="Select parish" />
                       </SelectTrigger>
                       <SelectContent className="rounded-xl">
@@ -894,7 +894,7 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
                           value={lotNumber}
                           onChange={(e) => setLotNumber(e.target.value)}
                           required
-                          className="h-12 rounded-xl bg-muted/50 border-border/60 focus-visible:ring-2 focus-visible:ring-primary/20"
+                          className="h-12 rounded-xl bg-background border-input focus-visible:ring-2 focus-visible:ring-primary/20"
                         />
                       </div>
                     </>
@@ -907,7 +907,7 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
                         value={formData.location}
                         onChange={(e) => setFormData({ ...formData, location: e.target.value })}
                         required
-                        className="h-12 rounded-xl bg-muted/50 border-border/60 focus-visible:ring-2 focus-visible:ring-primary/20"
+                        className="h-12 rounded-xl bg-background border-input focus-visible:ring-2 focus-visible:ring-primary/20"
                       />
                     </div>
                   )}
@@ -921,7 +921,7 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
                       onValueChange={setPhase}
                       required
                     >
-                      <SelectTrigger className="h-12 rounded-xl bg-muted/50 border-border/60 hover:border-primary/60 focus:ring-2 focus:ring-primary/20 transition-colors">
+                      <SelectTrigger className="h-12 rounded-xl bg-background border-input hover:border-primary/60 focus:ring-2 focus:ring-primary/20 transition-colors">
                         <SelectValue placeholder="Select phase" />
                       </SelectTrigger>
                       <SelectContent className="rounded-xl">
@@ -941,7 +941,7 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
                       onValueChange={handleLawnSizeChange}
                       required
                     >
-                      <SelectTrigger className="h-12 rounded-xl bg-muted/50 border-border/60 hover:border-primary/60 focus:ring-2 focus:ring-primary/20 transition-colors">
+                      <SelectTrigger className="h-12 rounded-xl bg-background border-input hover:border-primary/60 focus:ring-2 focus:ring-primary/20 transition-colors">
                         <SelectValue placeholder="Select lawn size" />
                       </SelectTrigger>
                       <SelectContent className="rounded-xl">
@@ -966,7 +966,7 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
                         <Button
                           variant="outline"
                           className={cn(
-                            "w-full h-12 rounded-xl bg-muted/50 border-border/60 justify-start text-left font-normal hover:border-primary/60 transition-colors",
+                            "w-full h-12 rounded-xl bg-background border-input justify-start text-left font-normal hover:border-primary/60 transition-colors",
                             !formData.preferred_date && "text-muted-foreground"
                           )}
                         >
@@ -998,7 +998,7 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
                       placeholder="e.g., Morning, Afternoon"
                       value={formData.preferred_time}
                       onChange={(e) => setFormData({ ...formData, preferred_time: e.target.value })}
-                      className="h-12 rounded-xl bg-muted/50 border-border/60 focus-visible:ring-2 focus-visible:ring-primary/20"
+                      className="h-12 rounded-xl bg-background border-input focus-visible:ring-2 focus-visible:ring-primary/20"
                     />
                   </div>
                 </div>
@@ -1013,7 +1013,7 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                     rows={3}
-                    className="rounded-xl bg-muted/50 border-border/60 focus-visible:ring-2 focus-visible:ring-primary/20 resize-none"
+                    className="rounded-xl bg-background border-input focus-visible:ring-2 focus-visible:ring-primary/20 resize-none"
                   />
                 </div>
 
