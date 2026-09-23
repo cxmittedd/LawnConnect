@@ -1,0 +1,1 @@
+ALTER TABLE public.custom_quotes ADD COLUMN IF NOT EXISTS preferred_date date;
