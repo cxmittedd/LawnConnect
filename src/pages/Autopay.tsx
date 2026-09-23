@@ -47,12 +47,8 @@ const COMMUNITIES: { value: string; label: string }[] = [
   { value: 'florence_hall', label: 'Florence Hall' },
   { value: 'stonebrook_vista', label: 'Stonebrook Vista' },
   { value: 'stonebrook_manor', label: 'Stonebrook Manor' },
-  { value: 'paradisiac_beach_club', label: 'Paradisiac Beach Club' },
-  { value: 'camelot_village', label: 'Camelot Village' },
   { value: 'treasure_bay_estates', label: 'Treasure Bay Estates' },
   { value: 'phoenix_park_village', label: 'Phoenix Park Village' },
-  { value: 'drax_hall_manor', label: 'Drax Hall Manor' },
-  { value: 'richmond_estate', label: 'Richmond Estate' },
   { value: 'castlewood', label: 'Castlewood' },
   { value: 'holland_estate', label: 'Holland Estate' },
 ];
