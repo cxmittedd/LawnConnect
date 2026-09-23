@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { Resend } from "https://esm.sh/resend@2.0.0";
 import { verifyCallbackToken } from "../_shared/ezeepay-callback-token.ts";
+import { escapeHtml, maskEmail } from "../_shared/lawn-pricing.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -718,7 +719,7 @@ serve(async (req) => {
         }
 
         const customerEmail = authUser?.user?.email;
-        console.log(`[${webhookId}] Customer email: ${customerEmail || 'NOT FOUND'}`);
+        console.log(`[${webhookId}] Customer email: ${maskEmail(customerEmail)}`);
         
         // Get customer profile for name
         const { data: customerProfile } = await supabase
@@ -728,7 +729,7 @@ serve(async (req) => {
           .single();
 
         const customerName = customerProfile?.first_name || customerProfile?.full_name || 'Valued Customer';
-        console.log(`[${webhookId}] Customer name: ${customerName}`);
+        console.log(`[${webhookId}] Customer profile resolved`);
 
         if (customerEmail) {
           const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
@@ -745,7 +746,7 @@ serve(async (req) => {
             paymentDate
           );
 
-          console.log(`[${webhookId}] Sending confirmation email to: ${customerEmail}`);
+          console.log(`[${webhookId}] Sending confirmation email to: ${maskEmail(customerEmail)}`);
           const emailResponse = await resend.emails.send({
             from: "LawnConnect <billing@connectlawn.com>",
             to: [customerEmail],
@@ -812,14 +813,14 @@ serve(async (req) => {
               </div>
               <div style="padding: 24px; border: 1px solid #e5e7eb; border-top: 0;">
                 <table style="width: 100%; border-collapse: collapse;">
-                  <tr><td style="padding: 6px 0;"><strong>Job</strong></td><td style="padding: 6px 0;">${existingJob.title}</td></tr>
+                  <tr><td style="padding: 6px 0;"><strong>Job</strong></td><td style="padding: 6px 0;">${escapeHtml(existingJob.title)}</td></tr>
                   <tr><td style="padding: 6px 0;"><strong>Job ID</strong></td><td style="padding: 6px 0;">${existingJob.id}</td></tr>
-                  <tr><td style="padding: 6px 0;"><strong>Customer</strong></td><td style="padding: 6px 0;">${adminCustomerName}${adminCustomerProfile?.phone_number ? ` (${adminCustomerProfile.phone_number})` : ''}</td></tr>
-                  <tr><td style="padding: 6px 0;"><strong>Location</strong></td><td style="padding: 6px 0;">${existingJob.location || ''}, ${existingJob.parish || ''}</td></tr>
-                  <tr><td style="padding: 6px 0;"><strong>Lawn size</strong></td><td style="padding: 6px 0;">${existingJob.lawn_size || 'N/A'}</td></tr>
-                  <tr><td style="padding: 6px 0;"><strong>Preferred date</strong></td><td style="padding: 6px 0;">${existingJob.preferred_date || 'Not specified'}</td></tr>
+                  <tr><td style="padding: 6px 0;"><strong>Customer</strong></td><td style="padding: 6px 0;">${escapeHtml(adminCustomerName)}${adminCustomerProfile?.phone_number ? ` (${escapeHtml(adminCustomerProfile.phone_number)})` : ''}</td></tr>
+                  <tr><td style="padding: 6px 0;"><strong>Location</strong></td><td style="padding: 6px 0;">${escapeHtml(existingJob.location || '')}, ${escapeHtml(existingJob.parish || '')}</td></tr>
+                  <tr><td style="padding: 6px 0;"><strong>Lawn size</strong></td><td style="padding: 6px 0;">${escapeHtml(existingJob.lawn_size || 'N/A')}</td></tr>
+                  <tr><td style="padding: 6px 0;"><strong>Preferred date</strong></td><td style="padding: 6px 0;">${escapeHtml(existingJob.preferred_date || 'Not specified')}</td></tr>
                   <tr><td style="padding: 6px 0;"><strong>Amount paid</strong></td><td style="padding: 6px 0;">J$${Number(bookingAmount || 0).toLocaleString()}</td></tr>
-                  <tr><td style="padding: 6px 0;"><strong>Transaction</strong></td><td style="padding: 6px 0;">${TransactionNumber}</td></tr>
+                  <tr><td style="padding: 6px 0;"><strong>Transaction</strong></td><td style="padding: 6px 0;">${escapeHtml(TransactionNumber)}</td></tr>
                 </table>
               </div>
             </div>
