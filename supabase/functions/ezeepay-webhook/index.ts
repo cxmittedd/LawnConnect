@@ -472,8 +472,8 @@ serve(async (req) => {
             preferred_time: schedule.preferred_time,
             base_price: recurringPrice,
             final_price: recurringPrice,
-            platform_fee: Math.round(recurringPrice * 0.3 * 100) / 100,
-            provider_payout: Math.round(recurringPrice * 0.7 * 100) / 100,
+            platform_fee: Math.min(2000, recurringPrice),
+            provider_payout: Math.max(recurringPrice - 2000, 0),
             payment_status: 'pending',
             status: 'open',
           })

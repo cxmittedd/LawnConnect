@@ -432,7 +432,7 @@ const AdminDashboard = () => {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Platform Revenue (30%)</CardTitle>
+              <CardTitle className="text-sm font-medium">Platform Revenue (J$2,000 per job)</CardTitle>
               <DollarSign className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -441,7 +441,7 @@ const AdminDashboard = () => {
               ) : (
                 <>
                   <div className="text-2xl font-bold text-primary">{formatCurrency(totals.totalRevenue)}</div>
-                  <p className="text-xs text-muted-foreground">Platform's 30% cut</p>
+                  <p className="text-xs text-muted-foreground">J$2,000 flat fee per job</p>
                 </>
               )}
             </CardContent>
@@ -449,7 +449,7 @@ const AdminDashboard = () => {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Provider Payouts (70%)</CardTitle>
+              <CardTitle className="text-sm font-medium">Provider Payouts</CardTitle>
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>

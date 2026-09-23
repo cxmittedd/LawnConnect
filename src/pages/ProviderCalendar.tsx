@@ -102,7 +102,7 @@ export default function ProviderCalendar() {
 
   const calculateProviderCut = (job: ScheduledJob) => {
     const price = job.final_price || job.base_price;
-    return Math.round(price * 0.7);
+    return Math.max(price - 2000, 0);
   };
 
   return (

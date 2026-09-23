@@ -124,8 +124,8 @@ serve(async (req) => {
             preferred_time: s.preferred_time,
             base_price: price,
             final_price: price,
-            platform_fee: Math.round(price * 0.3 * 100) / 100,
-            provider_payout: Math.round(price * 0.7 * 100) / 100,
+            platform_fee: Math.min(2000, price),
+            provider_payout: Math.max(price - 2000, 0),
             payment_status: "pending",
             status: "open",
           })

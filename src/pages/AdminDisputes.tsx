@@ -224,9 +224,9 @@ export default function AdminDisputes() {
         refundAmount = selectedDispute.final_price || 0;
         refundReason = `Full refund - Dispute resolved in favor of customer. Original dispute reason: ${selectedDispute.reason}`;
       } else if (resolutionType === 'favor_provider') {
-        const payoutPercentage = 0.70;
-        const providerPayout = (selectedDispute.final_price || 0) * payoutPercentage;
-        const platformFee = (selectedDispute.final_price || 0) * (1 - payoutPercentage);
+        const disputePrice = selectedDispute.final_price || 0;
+        const providerPayout = Math.max(disputePrice - 2000, 0);
+        const platformFee = Math.min(2000, disputePrice);
         
         await supabase
           .from('job_requests')

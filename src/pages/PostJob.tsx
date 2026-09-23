@@ -387,8 +387,8 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
       const jobTypeExtra = getJobTypeExtraCost(formData.title);
       const fullPrice = currentMinOffer + jobTypeExtra;
       const basePrice = fullPrice;
-      const providerPayout = fullPrice * 0.70;
-      const platformFee = fullPrice * 0.30;
+      const providerPayout = Math.max(fullPrice - 2000, 0);
+      const platformFee = Math.min(2000, fullPrice);
       // Referral credits are deducted server-side when they are redeemed,
       // so the job is created with the coupon price only.
       const priceBeforeCredits = Math.max(0, currentMinOffer - discountAmount + jobTypeExtra);
