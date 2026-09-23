@@ -290,6 +290,21 @@ serve(async (req) => {
     console.log(`[${webhookId}]   - TransactionNumber: ${TransactionNumber}`);
     console.log(`[${webhookId}]   - Order ID (resolved): ${orderId}`);
 
+    // Callback authenticity: EzeePay is the only party that receives the signed
+    // post_back_url we register per order, so a valid token proves the payment
+    // notification originated from EzeePay and was not forged by a caller.
+    const callbackToken = new URL(req.url).searchParams.get('wt');
+    const assertTrustedCallback = async (reference: string): Promise<Response | null> => {
+      const ok = await verifyCallbackToken(reference, callbackToken);
+      if (ok) return null;
+      console.error(`[${webhookId}] REJECTED: missing or invalid callback token for ${reference}`);
+      return new Response(
+        JSON.stringify({ success: false, error: 'Unverified payment notification' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    };
+
+
     // --- Handle EzeePay subscription cancellation notification ---
     if (payload.cancellation_date) {
       console.log(`[${webhookId}] Cancellation notification received`);
