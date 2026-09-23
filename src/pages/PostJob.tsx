@@ -516,6 +516,8 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
         phoenix_park_village: 'Phoenix Park Village',
         drax_hall_manor: 'Drax Hall Manor',
         richmond_estate: 'Richmond Estate',
+        castlewood: 'Castlewood',
+        holland_estate: 'Holland Estate',
       };
       const isCommunityForSave = community && community !== 'none' && community !== '';
       const savedLocation = isCommunityForSave
