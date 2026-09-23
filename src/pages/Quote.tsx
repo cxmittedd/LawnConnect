@@ -4,6 +4,8 @@ import { Navigation } from '@/components/Navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Loader2, FileText, MapPin, Ruler, CheckCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/auth';
@@ -22,6 +24,7 @@ interface QuoteDetails {
   status: string;
   job_id: string | null;
   customer_name: string | null;
+  preferred_date: string | null;
 }
 
 export default function Quote() {
@@ -34,6 +37,8 @@ export default function Quote() {
   const [claiming, setClaiming] = useState(false);
   const [jobId, setJobId] = useState<string | null>(null);
   const [autopayOptIn, setAutopayOptIn] = useState(false);
+  const [preferredDate, setPreferredDate] = useState('');
+  const minDate = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
 
   useEffect(() => {
     const load = async () => {
@@ -47,6 +52,7 @@ export default function Quote() {
         return;
       }
       setQuote(data.quote);
+      if (data.quote?.preferred_date) setPreferredDate(data.quote.preferred_date);
       setLoading(false);
     };
     load();
@@ -67,7 +73,7 @@ export default function Quote() {
     }
     setClaiming(true);
     const { data, error: fnError } = await supabase.functions.invoke('custom-quote', {
-      body: { action: 'claim', token },
+      body: { action: 'claim', token, preferred_date: preferredDate || undefined },
     });
     setClaiming(false);
     if (fnError || !data?.success) {
@@ -187,6 +193,19 @@ export default function Quote() {
                 <span className="font-medium text-foreground">Total</span>
                 <span className="text-lg font-semibold text-primary">J${quote.price.toLocaleString()}</span>
               </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="quote-date" className="text-sm font-semibold">Preferred date</Label>
+              <Input
+                id="quote-date"
+                type="date"
+                min={minDate}
+                value={preferredDate}
+                onChange={(e) => setPreferredDate(e.target.value)}
+                className="h-12 rounded-xl"
+              />
+              <p className="text-xs text-muted-foreground">Providers will complete the job within 3 days.</p>
             </div>
 
             <p className="flex items-start gap-2 text-xs text-muted-foreground">

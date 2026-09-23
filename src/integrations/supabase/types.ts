@@ -193,6 +193,7 @@ export type Database = {
           lawn_size: string | null
           location: string
           parish: string
+          preferred_date: string | null
           price: number
           status: string
           title: string
@@ -213,6 +214,7 @@ export type Database = {
           lawn_size?: string | null
           location: string
           parish: string
+          preferred_date?: string | null
           price: number
           status?: string
           title?: string
@@ -233,6 +235,7 @@ export type Database = {
           lawn_size?: string | null
           location?: string
           parish?: string
+          preferred_date?: string | null
           price?: number
           status?: string
           title?: string

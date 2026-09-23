@@ -36,6 +36,13 @@
       "when": 1790164761980,
       "tag": "0004_fix_job_pricing_service_role_check",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1790184901051,
+      "tag": "0005_custom_quotes_preferred_date",
+      "breakpoints": true
     }
   ]
 }
