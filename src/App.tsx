@@ -31,6 +31,8 @@ import AdminBanking from "./pages/AdminBanking";
 import AdminCommunities from "./pages/AdminCommunities";
 import AdminDiscounts from "./pages/AdminDiscounts";
 import AdminTransactions from "./pages/AdminTransactions";
+import AdminQuotes from "./pages/AdminQuotes";
+import Quote from "./pages/Quote";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
 import Install from "./pages/Install";
@@ -65,6 +67,7 @@ const App = () => (
               <Route path="/terms" element={<TermsOfService />} />
               <Route path="/privacy" element={<PrivacyPolicy />} />
               <Route path="/refund-policy" element={<RefundPolicy />} />
+              <Route path="/quote/:token" element={<Quote />} />
               <Route
                 path="/dashboard"
                 element={
@@ -230,6 +233,14 @@ const App = () => (
                 element={
                   <AdminRoute>
                     <AdminTransactions />
+                  </AdminRoute>
+                }
+              />
+              <Route
+                path="/admin/quotes"
+                element={
+                  <AdminRoute>
+                    <AdminQuotes />
                   </AdminRoute>
                 }
               />

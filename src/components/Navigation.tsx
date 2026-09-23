@@ -26,6 +26,7 @@ import {
   MapPin,
   Percent,
   Gift,
+  FileText,
 } from 'lucide-react';
 import lawnConnectLogo from '@/assets/lawnconnect-logo.png';
 import { useState, useEffect } from 'react';
@@ -102,6 +103,7 @@ export function Navigation() {
     { path: '/admin/refunds', label: 'Refunds', icon: RefreshCw },
     { path: '/admin/communities', label: 'Communities', icon: MapPin },
     { path: '/admin/discounts', label: 'Discounts', icon: Percent },
+    { path: '/admin/quotes', label: 'Custom Quotes', icon: FileText },
   ];
 
   const navItems = user
