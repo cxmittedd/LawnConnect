@@ -180,6 +180,7 @@ export type Database = {
       }
       custom_quotes: {
         Row: {
+          autopay_price: number | null
           claimed_at: string | null
           claimed_by: string | null
           community: string | null
@@ -201,6 +202,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          autopay_price?: number | null
           claimed_at?: string | null
           claimed_by?: string | null
           community?: string | null
@@ -222,6 +224,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          autopay_price?: number | null
           claimed_at?: string | null
           claimed_by?: string | null
           community?: string | null
