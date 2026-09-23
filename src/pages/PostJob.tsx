@@ -863,18 +863,18 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="parish">Parish *</Label>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="parish" className="text-sm font-semibold">Parish *</Label>
                     <Select
                       value={formData.parish}
                       onValueChange={(value) => setFormData({ ...formData, parish: value })}
                       required
                       disabled={community !== 'none' && community !== ''}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="h-12 rounded-xl bg-muted/50 border-border/60 hover:border-primary/60 focus:ring-2 focus:ring-primary/20 transition-colors">
                         <SelectValue placeholder="Select parish" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="rounded-xl">
                         {JAMAICA_PARISHES.map((parish) => (
                           <SelectItem key={parish} value={parish}>
                             {parish}
@@ -885,8 +885,8 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
                   </div>
                   {(community !== 'none' && community !== '') ? (
                     <>
-                      <div className="space-y-2">
-                        <Label htmlFor="lot_number">Lot Number *</Label>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="lot_number" className="text-sm font-semibold">Lot Number *</Label>
                         <Input
                           id="lot_number"
                           type="number"
@@ -894,35 +894,37 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
                           value={lotNumber}
                           onChange={(e) => setLotNumber(e.target.value)}
                           required
+                          className="h-12 rounded-xl bg-muted/50 border-border/60 focus-visible:ring-2 focus-visible:ring-primary/20"
                         />
                       </div>
                     </>
                   ) : (
-                    <div className="space-y-2">
-                      <Label htmlFor="location">Location *</Label>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="location" className="text-sm font-semibold">Location *</Label>
                       <Input
                         id="location"
                         placeholder="Street address or neighborhood"
                         value={formData.location}
                         onChange={(e) => setFormData({ ...formData, location: e.target.value })}
                         required
+                        className="h-12 rounded-xl bg-muted/50 border-border/60 focus-visible:ring-2 focus-visible:ring-primary/20"
                       />
                     </div>
                   )}
                 </div>
 
                 {(community !== 'none' && community !== '') && (
-                  <div className="space-y-2">
-                    <Label>Phase *</Label>
+                  <div className="space-y-1.5">
+                    <Label className="text-sm font-semibold">Phase *</Label>
                     <Select
                       value={phase}
                       onValueChange={setPhase}
                       required
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="h-12 rounded-xl bg-muted/50 border-border/60 hover:border-primary/60 focus:ring-2 focus:ring-primary/20 transition-colors">
                         <SelectValue placeholder="Select phase" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="rounded-xl">
                         <SelectItem value="Phase 1">Phase 1</SelectItem>
                         <SelectItem value="Phase 2">Phase 2</SelectItem>
                         <SelectItem value="Phase 3">Phase 3</SelectItem>
