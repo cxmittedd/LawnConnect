@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { verifyTwilioSignature, forbidden } from "../_shared/twilio-signature.ts";
+import { maskPhone } from "../_shared/lawn-pricing.ts";
 
 /**
  * Twilio status callback for the initial outbound call (To = caller).
@@ -27,8 +28,8 @@ serve(async (req) => {
       jobId,
       callSid: params.get("CallSid"),
       callStatus: params.get("CallStatus"),
-      to: params.get("To"),
-      from: params.get("From"),
+      to: maskPhone(params.get("To")),
+      from: maskPhone(params.get("From")),
       direction: params.get("Direction"),
       apiVersion: params.get("ApiVersion"),
       errorCode: params.get("ErrorCode"),

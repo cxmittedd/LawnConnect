@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "https://esm.sh/resend@2.0.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.86.0";
+import { escapeHtml } from "../_shared/lawn-pricing.ts";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
@@ -223,37 +224,90 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    const invoiceData: InvoiceRequest = await req.json();
-    
-    // Verify the user owns this invoice/is the customer
-    if (invoiceData.customerId !== user.id) {
-      console.error("User does not own this invoice:", user.id, invoiceData.customerId);
+    const requestBody = await req.json() as Partial<InvoiceRequest>;
+    const jobId = requestBody?.jobId;
+
+    if (!jobId || typeof jobId !== 'string') {
+      return new Response(
+        JSON.stringify({ error: 'jobId is required' }),
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    // Service role client used for the trusted lookups and the insert
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Invoice content is derived from the stored booking, never from the request
+    // body, and the booking must belong to the caller.
+    const { data: job, error: jobError } = await supabase
+      .from('job_requests')
+      .select('id, customer_id, title, location, parish, lawn_size, base_price, final_price, platform_fee, payment_reference, payment_confirmed_at')
+      .eq('id', jobId)
+      .maybeSingle();
+
+    if (jobError || !job) {
+      return new Response(
+        JSON.stringify({ error: 'Booking not found' }),
+        { status: 404, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    if (job.customer_id !== user.id) {
+      console.error("Caller does not own this booking:", user.id);
       return new Response(
         JSON.stringify({ error: 'Forbidden' }),
         { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
-    
-    console.log("Sending invoice to:", invoiceData.customerEmail);
-    console.log("Invoice data for user:", user.id);
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('first_name, last_name')
+      .eq('id', user.id)
+      .maybeSingle();
+
+    const paymentDate = job.payment_confirmed_at || new Date().toISOString();
+    const invoiceData: InvoiceRequest = {
+      jobId: job.id,
+      customerId: user.id,
+      // The invoice always goes to the signed-in account's own email address
+      customerEmail: user.email!,
+      customerName: escapeHtml(
+        `${profile?.first_name ?? ''} ${profile?.last_name ?? ''}`.trim() || 'Customer'
+      ),
+      jobTitle: escapeHtml(job.title),
+      jobLocation: escapeHtml(job.location),
+      parish: escapeHtml(job.parish),
+      lawnSize: job.lawn_size ? escapeHtml(job.lawn_size) : null,
+      amount: Number(job.final_price ?? job.base_price ?? 0),
+      platformFee: Number(job.platform_fee ?? 0),
+      paymentReference: escapeHtml(job.payment_reference ?? ''),
+      paymentDate,
+    };
+
+    if (!invoiceData.customerEmail) {
+      return new Response(
+        JSON.stringify({ error: 'No email address on file' }),
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    console.log("Sending invoice for user:", user.id);
 
     const invoiceNumber = generateInvoiceNumber(invoiceData.jobId, invoiceData.paymentDate);
     const htmlContent = createInvoiceEmail(invoiceData, invoiceNumber);
-
-    // Store invoice in database using service role
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     const { error: dbError } = await supabase.from('invoices').insert({
       invoice_number: invoiceNumber,
       customer_id: invoiceData.customerId,
       job_id: invoiceData.jobId,
-      job_title: invoiceData.jobTitle,
-      job_location: invoiceData.jobLocation,
-      parish: invoiceData.parish,
-      lawn_size: invoiceData.lawnSize,
+      job_title: job.title,
+      job_location: job.location,
+      parish: job.parish,
+      lawn_size: job.lawn_size,
       amount: invoiceData.amount,
       platform_fee: invoiceData.platformFee,
-      payment_reference: invoiceData.paymentReference,
+      payment_reference: job.payment_reference,
       payment_date: invoiceData.paymentDate,
     });
 

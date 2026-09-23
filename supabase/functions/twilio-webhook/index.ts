@@ -42,7 +42,7 @@ serve(async (req) => {
     const dialCallStatus = (formData.get("DialCallStatus") as string | null) ?? null;
     const dialCallSid = (formData.get("DialCallSid") as string | null) ?? null;
 
-    console.log("Twilio webhook received:", { from, to, callSid, messageSid, dialCallStatus, dialCallSid });
+    console.log("Twilio webhook received:", { callSid, messageSid, dialCallStatus, dialCallSid });
 
     // Verify the call/SMS is to our Twilio number
     if (!twilioPhoneNumber || normalizePhoneNumber(to) !== normalizePhoneNumber(twilioPhoneNumber)) {
@@ -54,7 +54,7 @@ serve(async (req) => {
 
     // Find the caller's phone in profiles to identify them
     const normalizedFrom = normalizePhoneNumber(from);
-    console.log("Looking for caller with normalized phone:", normalizedFrom);
+    console.log("Looking up caller by phone number");
     
     // Get all profiles with phone numbers and find matching one
     const { data: profiles, error: profileError } = await supabaseClient
@@ -75,7 +75,7 @@ serve(async (req) => {
     );
 
     if (!callerProfile) {
-      console.log("Caller not found in system:", normalizedFrom, "Available phones:", profiles?.map(p => p.phone_number));
+      console.log("Caller not found in system");
       return new Response(generateTwiMLResponse("Your phone number is not registered in our system."), {
         headers: { ...corsHeaders, "Content-Type": "text/xml" },
       });

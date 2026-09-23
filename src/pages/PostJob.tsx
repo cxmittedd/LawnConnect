@@ -393,7 +393,6 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
     // Create a pending job first so we have a job ID for payment
     setLoading(true);
     try {
-      const paymentAmount = getPaymentAmount();
       // Provider payout is always based on the full (undiscounted) price at 70%.
       // Store base_price as the full undiscounted total (including job-type extras)
       // so fallbacks and the admin can derive the discount as base_price - final_price.
@@ -402,7 +401,10 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
       const basePrice = fullPrice;
       const providerPayout = fullPrice * 0.70;
       const platformFee = fullPrice * 0.30;
-      
+      // Referral credits are deducted server-side when they are redeemed,
+      // so the job is created with the coupon price only.
+      const priceBeforeCredits = Math.max(0, currentMinOffer - discountAmount + jobTypeExtra);
+
       const { data: job, error: jobError } = await supabase
         .from('job_requests')
         .insert({
@@ -417,7 +419,7 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
           preferred_time: formData.preferred_time || null,
           additional_requirements: formData.additional_requirements || null,
           base_price: basePrice,
-          final_price: paymentAmount,
+          final_price: priceBeforeCredits,
           platform_fee: platformFee,
           provider_payout: providerPayout,
           payment_status: 'pending',

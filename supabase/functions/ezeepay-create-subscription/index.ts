@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { buildSignedPostbackUrl } from "../_shared/ezeepay-callback-token.ts";
+import { serviceBasePrice } from "../_shared/lawn-pricing.ts";
 
 interface RequestBody {
   schedule_id: string;
@@ -33,12 +34,29 @@ serve(async (req) => {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) throw new Error("Unauthorized");
 
-    const { schedule_id, amount, customer_email, customer_name, description, origin_url }: RequestBody = await req.json();
+    const { schedule_id, customer_name, description, origin_url }: RequestBody = await req.json();
 
-    if (!schedule_id || !amount || !customer_email) {
-      throw new Error("Missing required fields: schedule_id, amount, customer_email");
+    if (!schedule_id) {
+      throw new Error("Missing required field: schedule_id");
     }
-    if (amount <= 0) throw new Error("Amount must be greater than zero");
+
+    // The recurring amount is derived from the caller's own schedule using the
+    // server price table — never from the request body.
+    const { data: schedule, error: scheduleError } = await supabase
+      .from("autopay_schedules")
+      .select("id, customer_id, lawn_size, title")
+      .eq("id", schedule_id)
+      .eq("customer_id", user.id)
+      .maybeSingle();
+
+    if (scheduleError || !schedule) {
+      throw new Error("Autopay schedule not found");
+    }
+
+    const amount = serviceBasePrice(schedule.lawn_size, schedule.title);
+    const customer_email = user.email!;
+    if (!customer_email) throw new Error("Your account has no email address on file");
+    if (!(amount > 0)) throw new Error("Amount must be greater than zero");
 
     const sandbox = Deno.env.get("EZEEPAY_SANDBOX_MODE") === "true";
     const sandboxLicenceKey = Deno.env.get("EZEEPAY_SANDBOX_LICENCE_KEY");
@@ -106,7 +124,7 @@ serve(async (req) => {
     });
 
     const subData = await subResponse.json();
-    console.log(`[${requestId}] Subscription response:`, JSON.stringify(subData));
+    console.log(`[${requestId}] Subscription response: status=${subData?.result?.status ?? 'unknown'}, message=${subData?.result?.message ?? ''}`);
 
     if (!subData.result || subData.result.status !== 1) {
       throw new Error(subData.result?.message || "Failed to create subscription");
@@ -136,7 +154,7 @@ serve(async (req) => {
     });
 
     const tokenData = await tokenResponse.json();
-    console.log(`[${requestId}] Token response:`, JSON.stringify(tokenData));
+    console.log(`[${requestId}] Token response: status=${tokenData?.result?.status ?? 'unknown'}, message=${tokenData?.result?.message ?? ''}`);
 
     if (!tokenData.result || tokenData.result.status !== 1) {
       throw new Error(tokenData.result?.message || "Failed to generate payment token");
