@@ -205,7 +205,7 @@ export default function Quote() {
                 onChange={(e) => setPreferredDate(e.target.value)}
                 className="h-12 rounded-xl"
               />
-              <p className="text-xs text-muted-foreground">Providers will complete the job within 3 days.</p>
+              <p className="text-xs text-muted-foreground">Providers will complete the job on this day or within 3 days.</p>
             </div>
 
             <p className="flex items-start gap-2 text-xs text-muted-foreground">
