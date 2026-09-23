@@ -67,6 +67,10 @@ export default function Quote() {
   }, [quote, user]);
 
   const handleContinue = async () => {
+    if (!preferredDate) {
+      safeToast.error('Please pick a preferred date before continuing.');
+      return;
+    }
     if (!user) {
       navigate(`/auth?next=/quote/${token}`);
       return;
@@ -213,7 +217,7 @@ export default function Quote() {
               Your payment is held until the job is completed, and your provider will complete it within 3 days.
             </p>
 
-            <Button className="h-12 w-full rounded-xl" onClick={handleContinue} disabled={claiming}>
+            <Button className="h-12 w-full rounded-xl" onClick={handleContinue} disabled={claiming || !preferredDate}>
               {claiming ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
               {user ? 'Continue to Payment' : 'Sign in to Pay'}
             </Button>

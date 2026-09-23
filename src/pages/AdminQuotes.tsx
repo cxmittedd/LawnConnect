@@ -110,6 +110,10 @@ export default function AdminQuotes() {
       toast.error('Parish and address are required');
       return;
     }
+    if (!form.preferred_date) {
+      toast.error('A preferred date is required');
+      return;
+    }
 
     setSaving(true);
     const { error } = await supabase.from('custom_quotes').insert([{
@@ -314,7 +318,7 @@ export default function AdminQuotes() {
                 />
               </div>
               <div className="space-y-2">
-                <Label>Preferred date (optional — client can change it)</Label>
+                <Label>Preferred date (required — client can change it)</Label>
                 <Input
                   type="date"
                   min={new Date(Date.now() + 86400000).toISOString().slice(0, 10)}
