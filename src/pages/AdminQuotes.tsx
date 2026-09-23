@@ -137,8 +137,13 @@ export default function AdminQuotes() {
   };
 
   const copyLink = (q: CustomQuote) => {
-    const link = `${window.location.origin}/quote/${q.token}`;
+    // Always share the public site link, never a preview/staging address
+    const origin = window.location.hostname.endsWith('connectlawn.com')
+      ? window.location.origin
+      : 'https://connectlawn.com';
+    const link = `${origin}/quote/${q.token}`;
     navigator.clipboard.writeText(link);
+
     setCopiedId(q.id);
     toast.success('Payment link copied!');
     setTimeout(() => setCopiedId(null), 2000);

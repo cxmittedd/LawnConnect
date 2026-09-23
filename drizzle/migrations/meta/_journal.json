@@ -29,6 +29,13 @@
       "when": 1790164215621,
       "tag": "0003_autopay_custom_price",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1790164761980,
+      "tag": "0004_fix_job_pricing_service_role_check",
+      "breakpoints": true
     }
   ]
 }
