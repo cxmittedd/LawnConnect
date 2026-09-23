@@ -747,11 +747,11 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
             </div>
           ) : (
           <form onSubmit={handleProceedToPayment}>
-            <Card>
-              <CardHeader>
+            <Card className="rounded-2xl shadow-lg shadow-primary/5 border-border/60 overflow-hidden">
+              <CardHeader className="px-6 sm:px-8 pt-6 sm:pt-8">
                 <div className="flex items-start justify-between">
                   <div>
-                    <CardTitle>Job Details</CardTitle>
+                    <CardTitle className="text-xl font-bold tracking-tight">Job Details</CardTitle>
                     <CardDescription>Pay upfront to post your job.</CardDescription>
                   </div>
                   <div className="flex gap-2">
@@ -811,18 +811,18 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
                   </Dialog>
                 </div>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="title">Job Type *</Label>
+              <CardContent className="space-y-5 px-6 sm:px-8 pb-8">
+                <div className="space-y-1.5">
+                  <Label htmlFor="title" className="text-sm font-semibold">Job Type *</Label>
                   <Select
                     value={formData.title}
                     onValueChange={(value) => setFormData({ ...formData, title: value })}
                     required
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="h-12 rounded-xl bg-muted/50 border-border/60 hover:border-primary/60 focus:ring-2 focus:ring-primary/20 transition-colors">
                       <SelectValue placeholder="Select job type" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="rounded-xl">
                       {JOB_TYPES.map((type) => (
                         <SelectItem key={type.value} value={type.value}>
                           {type.label}
@@ -832,8 +832,8 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
                   </Select>
                 </div>
 
-                <div className="space-y-2">
-                  <Label>Community</Label>
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-semibold">Community</Label>
                   <Select
                     value={community}
                     onValueChange={(value) => {
@@ -846,10 +846,10 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
                       }
                     }}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="h-12 rounded-xl bg-muted/50 border-border/60 hover:border-primary/60 focus:ring-2 focus:ring-primary/20 transition-colors">
                       <SelectValue placeholder="Select community (optional)" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="rounded-xl">
                       <SelectItem value="none">None</SelectItem>
                       <SelectItem value="coral_spring">Coral Springs Village</SelectItem>
                       <SelectItem value="florence_hall">Florence Hall</SelectItem>
@@ -863,18 +863,18 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="parish">Parish *</Label>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="parish" className="text-sm font-semibold">Parish *</Label>
                     <Select
                       value={formData.parish}
                       onValueChange={(value) => setFormData({ ...formData, parish: value })}
                       required
                       disabled={community !== 'none' && community !== ''}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="h-12 rounded-xl bg-muted/50 border-border/60 hover:border-primary/60 focus:ring-2 focus:ring-primary/20 transition-colors">
                         <SelectValue placeholder="Select parish" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="rounded-xl">
                         {JAMAICA_PARISHES.map((parish) => (
                           <SelectItem key={parish} value={parish}>
                             {parish}
@@ -885,8 +885,8 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
                   </div>
                   {(community !== 'none' && community !== '') ? (
                     <>
-                      <div className="space-y-2">
-                        <Label htmlFor="lot_number">Lot Number *</Label>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="lot_number" className="text-sm font-semibold">Lot Number *</Label>
                         <Input
                           id="lot_number"
                           type="number"
@@ -894,35 +894,37 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
                           value={lotNumber}
                           onChange={(e) => setLotNumber(e.target.value)}
                           required
+                          className="h-12 rounded-xl bg-muted/50 border-border/60 focus-visible:ring-2 focus-visible:ring-primary/20"
                         />
                       </div>
                     </>
                   ) : (
-                    <div className="space-y-2">
-                      <Label htmlFor="location">Location *</Label>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="location" className="text-sm font-semibold">Location *</Label>
                       <Input
                         id="location"
                         placeholder="Street address or neighborhood"
                         value={formData.location}
                         onChange={(e) => setFormData({ ...formData, location: e.target.value })}
                         required
+                        className="h-12 rounded-xl bg-muted/50 border-border/60 focus-visible:ring-2 focus-visible:ring-primary/20"
                       />
                     </div>
                   )}
                 </div>
 
                 {(community !== 'none' && community !== '') && (
-                  <div className="space-y-2">
-                    <Label>Phase *</Label>
+                  <div className="space-y-1.5">
+                    <Label className="text-sm font-semibold">Phase *</Label>
                     <Select
                       value={phase}
                       onValueChange={setPhase}
                       required
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="h-12 rounded-xl bg-muted/50 border-border/60 hover:border-primary/60 focus:ring-2 focus:ring-primary/20 transition-colors">
                         <SelectValue placeholder="Select phase" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="rounded-xl">
                         <SelectItem value="Phase 1">Phase 1</SelectItem>
                         <SelectItem value="Phase 2">Phase 2</SelectItem>
                         <SelectItem value="Phase 3">Phase 3</SelectItem>
@@ -932,17 +934,17 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
                 )}
 
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="lawn_size">Lawn Size *</Label>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="lawn_size" className="text-sm font-semibold">Lawn Size *</Label>
                     <Select
                       value={lawnSizeSelection}
                       onValueChange={handleLawnSizeChange}
                       required
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="h-12 rounded-xl bg-muted/50 border-border/60 hover:border-primary/60 focus:ring-2 focus:ring-primary/20 transition-colors">
                         <SelectValue placeholder="Select lawn size" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="rounded-xl">
                         {LAWN_SIZES.map((size) => (
                           <SelectItem key={size.value} value={size.value}>
                             <div className="flex flex-col">
@@ -957,14 +959,14 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="preferred_date">Preferred Date *</Label>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="preferred_date" className="text-sm font-semibold">Preferred Date *</Label>
                     <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
                       <PopoverTrigger asChild>
                         <Button
                           variant="outline"
                           className={cn(
-                            "w-full justify-start text-left font-normal",
+                            "w-full h-12 rounded-xl bg-muted/50 border-border/60 justify-start text-left font-normal hover:border-primary/60 transition-colors",
                             !formData.preferred_date && "text-muted-foreground"
                           )}
                         >
@@ -989,19 +991,20 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
                       Note: This is your preferred date, not a guarantee. Providers will complete the job within 3 days.
                     </p>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="preferred_time">Preferred Time</Label>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="preferred_time" className="text-sm font-semibold">Preferred Time</Label>
                     <Input
                       id="preferred_time"
                       placeholder="e.g., Morning, Afternoon"
                       value={formData.preferred_time}
                       onChange={(e) => setFormData({ ...formData, preferred_time: e.target.value })}
+                      className="h-12 rounded-xl bg-muted/50 border-border/60 focus-visible:ring-2 focus-visible:ring-primary/20"
                     />
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="description">
+                <div className="space-y-1.5">
+                  <Label htmlFor="description" className="text-sm font-semibold">
                     Description <span className="text-muted-foreground font-normal">(optional)</span>
                   </Label>
                   <Textarea
@@ -1010,6 +1013,7 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                     rows={3}
+                    className="rounded-xl bg-muted/50 border-border/60 focus-visible:ring-2 focus-visible:ring-primary/20 resize-none"
                   />
                 </div>
 
@@ -1092,7 +1096,7 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
                   );
                 })()}
 
-                <div className="flex items-start space-x-3 p-4 rounded-lg border border-border bg-muted/50">
+                <div className="flex items-start space-x-3 p-4 rounded-xl border border-border/60 bg-muted/50">
                   <Checkbox
                     id="terms-agreement"
                     checked={agreedToTerms}
@@ -1110,7 +1114,7 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
                   </label>
                 </div>
 
-                <Button type="submit" className="w-full" disabled={loading || !agreedToTerms}>
+                <Button type="submit" className="w-full h-12 rounded-xl font-bold shadow-lg shadow-primary/20 transition-all active:scale-[0.98]" disabled={loading || !agreedToTerms}>
                   <span>Continue to Payment</span>
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
