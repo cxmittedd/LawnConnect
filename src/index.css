@@ -82,35 +82,35 @@ All colors MUST be HSL.
   }
 
   .dark {
-    --background: 150 22% 6%;
-    --foreground: 150 20% 96%;
+    --background: 150 12% 7%;
+    --foreground: 150 8% 92%;
 
-    --card: 150 18% 10%;
-    --card-foreground: 150 20% 96%;
+    --card: 150 10% 10%;
+    --card-foreground: 150 8% 92%;
 
-    --popover: 150 18% 12%;
-    --popover-foreground: 150 20% 96%;
+    --popover: 150 10% 11%;
+    --popover-foreground: 150 8% 92%;
 
-    --primary: 158 72% 48%;
-    --primary-foreground: 158 80% 8%;
+    --primary: 158 45% 40%;
+    --primary-foreground: 150 30% 96%;
 
-    --primary-hover: 158 72% 42%;
+    --primary-hover: 158 45% 35%;
 
-    --secondary: 150 14% 16%;
-    --secondary-foreground: 150 20% 96%;
+    --secondary: 150 8% 14%;
+    --secondary-foreground: 150 8% 88%;
 
-    --muted: 150 14% 16%;
-    --muted-foreground: 150 10% 65%;
+    --muted: 150 8% 14%;
+    --muted-foreground: 150 6% 58%;
 
-    --accent: 158 40% 16%;
-    --accent-foreground: 158 72% 65%;
+    --accent: 158 25% 14%;
+    --accent-foreground: 158 45% 60%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 85% 97%;
 
-    --border: 150 14% 20%;
-    --input: 150 14% 22%;
-    --ring: 158 72% 48%;
+    --border: 150 10% 17%;
+    --input: 150 10% 19%;
+    --ring: 158 45% 40%;
 
     --success: 142 76% 36%;
     --success-foreground: 0 0% 100%;
@@ -121,13 +121,13 @@ All colors MUST be HSL.
     --info: 199 89% 48%;
     --info-foreground: 0 0% 100%;
 
-    --sidebar-background: 150 20% 8%;
-    --sidebar-foreground: 150 20% 96%;
-    --sidebar-primary: 158 72% 48%;
-    --sidebar-primary-foreground: 158 80% 8%;
-    --sidebar-accent: 150 14% 16%;
-    --sidebar-accent-foreground: 150 20% 96%;
-    --sidebar-border: 150 14% 20%;
+    --sidebar-background: 150 12% 8%;
+    --sidebar-foreground: 150 8% 92%;
+    --sidebar-primary: 158 45% 40%;
+    --sidebar-primary-foreground: 150 30% 96%;
+    --sidebar-accent: 150 8% 14%;
+    --sidebar-accent-foreground: 150 8% 88%;
+    --sidebar-border: 150 10% 17%;
     --sidebar-ring: 158 64% 51%;
     --chart-1: 156 71% 66%;
     --chart-2: 141 76% 73%;
@@ -188,17 +188,17 @@ All colors MUST be HSL.
     background: linear-gradient(
       180deg,
       hsl(var(--background)) 0%,
-      hsl(150 24% 8%) 50%,
-      hsl(158 26% 10%) 100%
+      hsl(150 14% 7%) 50%,
+      hsl(158 16% 9%) 100%
     );
   }
 
   .dark .bg-page-pattern {
     background-color: hsl(var(--background));
     background-image: 
-      radial-gradient(circle at 20% 80%, hsl(158 72% 40% / 0.07) 0%, transparent 50%),
-      radial-gradient(circle at 80% 20%, hsl(84 80% 45% / 0.05) 0%, transparent 50%),
-      radial-gradient(circle at 40% 40%, hsl(158 72% 40% / 0.04) 0%, transparent 30%);
+      radial-gradient(circle at 20% 80%, hsl(158 50% 35% / 0.04) 0%, transparent 50%),
+      radial-gradient(circle at 80% 20%, hsl(84 60% 40% / 0.03) 0%, transparent 50%),
+      radial-gradient(circle at 40% 40%, hsl(158 50% 35% / 0.025) 0%, transparent 30%);
   }
 
   /* Interactive micro-animations */
