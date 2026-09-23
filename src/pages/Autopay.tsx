@@ -61,6 +61,7 @@ interface Schedule {
   location: string;
   lawn_size: string | null;
   preferred_time: string | null;
+  custom_price: number | null;
   day_of_month: number;
   active: boolean;
   next_run_date: string;
@@ -96,7 +97,7 @@ export default function Autopay() {
   const load = async () => {
     const { data, error } = await supabase
       .from('autopay_schedules')
-      .select('id, title, description, parish, location, lawn_size, preferred_time, day_of_month, active, next_run_date, last_run_date, ezeepay_status, ezeepay_subscription_id')
+      .select('id, title, description, parish, location, lawn_size, preferred_time, custom_price, day_of_month, active, next_run_date, last_run_date, ezeepay_status, ezeepay_subscription_id')
       .order('created_at', { ascending: false });
     if (error) {
       toast.error('Could not load your repeat bookings');
@@ -662,6 +663,11 @@ export default function Autopay() {
                         <p className="font-semibold">{s.title}</p>
                         <p className="text-sm text-muted-foreground">{s.lawn_size} · {s.parish}</p>
                         <p className="text-sm text-muted-foreground">{s.location}</p>
+                        {Number(s.custom_price) > 0 && (
+                          <p className="mt-1 text-sm font-medium text-primary">
+                            J${Number(s.custom_price).toLocaleString()} per month (agreed price)
+                          </p>
+                        )}
                       </div>
                       <div className="flex flex-col items-end gap-1">
                         <Badge variant={s.active ? 'default' : 'secondary'}>

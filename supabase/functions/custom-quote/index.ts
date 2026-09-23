@@ -56,7 +56,7 @@ serve(async (req) => {
       return json({ success: true, quote: publicQuote });
     }
 
-    if (action !== "claim") {
+    if (action !== "claim" && action !== "setup_autopay") {
       return json({ success: false, error: "Unknown action" }, 400);
     }
 
@@ -72,6 +72,54 @@ serve(async (req) => {
 
     if (quote.status === "cancelled") {
       return json({ success: false, error: "This quote is no longer available" }, 400);
+    }
+
+    // --- Turn the quote into a monthly autopay at the agreed price ---
+    if (action === "setup_autopay") {
+      if (!quote.job_id || quote.claimed_by !== user.id) {
+        return json({ success: false, error: "Pay for this quote first" }, 403);
+      }
+
+      const normalize = (s: string) => String(s ?? "").trim().toLowerCase().replace(/\s+/g, " ");
+      const { data: existing } = await serviceClient
+        .from("autopay_schedules")
+        .select("id, location")
+        .eq("customer_id", user.id)
+        .eq("active", true);
+
+      if ((existing ?? []).some((s: { location: string }) => normalize(s.location) === normalize(quote.location))) {
+        return json({ success: false, error: "You already have autopay set up for this address" }, 400);
+      }
+
+      const now = new Date();
+      const day = Math.min(now.getUTCDate(), 28);
+      const next = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, day));
+
+      const { data: schedule, error: scheduleError } = await serviceClient
+        .from("autopay_schedules")
+        .insert({
+          customer_id: user.id,
+          title: quote.title,
+          description: quote.description,
+          parish: quote.parish,
+          community: quote.community,
+          location: quote.location,
+          lawn_size: quote.lawn_size,
+          custom_price: Number(quote.price),
+          frequency: "monthly",
+          day_of_month: day,
+          next_run_date: next.toISOString().slice(0, 10),
+        })
+        .select("id")
+        .single();
+
+      if (scheduleError || !schedule) {
+        console.error(`[${requestId}] Autopay from quote failed: ${scheduleError?.message}`);
+        return json({ success: false, error: "Could not set up autopay" }, 500);
+      }
+
+      console.log(`[${requestId}] Autopay schedule created from quote`);
+      return json({ success: true, schedule_id: schedule.id });
     }
 
     // Already claimed: only the same account may continue with it.

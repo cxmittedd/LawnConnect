@@ -44,7 +44,7 @@ serve(async (req) => {
     // server price table — never from the request body.
     const { data: schedule, error: scheduleError } = await supabase
       .from("autopay_schedules")
-      .select("id, customer_id, lawn_size, title")
+      .select("id, customer_id, lawn_size, title, custom_price")
       .eq("id", schedule_id)
       .eq("customer_id", user.id)
       .maybeSingle();
@@ -53,7 +53,11 @@ serve(async (req) => {
       throw new Error("Autopay schedule not found");
     }
 
-    const amount = serviceBasePrice(schedule.lawn_size, schedule.title);
+    // A quote-based schedule repeats the admin-agreed price; everything else
+    // uses the standard server price table.
+    const amount = Number(schedule.custom_price) > 0
+      ? Number(schedule.custom_price)
+      : serviceBasePrice(schedule.lawn_size, schedule.title);
     const customer_email = user.email!;
     if (!customer_email) throw new Error("Your account has no email address on file");
     if (!(amount > 0)) throw new Error("Amount must be greater than zero");

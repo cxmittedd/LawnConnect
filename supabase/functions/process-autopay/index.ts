@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { Resend } from "https://esm.sh/resend@2.0.0";
+import { serviceBasePrice } from "../_shared/lawn-pricing.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -104,7 +105,11 @@ serve(async (req) => {
 
     for (const s of schedules ?? []) {
       try {
-        // Prices are recalculated authoritatively by the database from lawn size + job type.
+        // Quote-based schedules repeat the agreed price; all others use the
+        // standard server price table.
+        const price = Number(s.custom_price) > 0
+          ? Number(s.custom_price)
+          : serviceBasePrice(s.lawn_size, s.title);
         const { data: job, error: jobError } = await supabase
           .from("job_requests")
           .insert({
@@ -117,7 +122,10 @@ serve(async (req) => {
             lawn_size: s.lawn_size,
             preferred_date: todayStr,
             preferred_time: s.preferred_time,
-            base_price: 0,
+            base_price: price,
+            final_price: price,
+            platform_fee: Math.round(price * 0.3 * 100) / 100,
+            provider_payout: Math.round(price * 0.7 * 100) / 100,
             payment_status: "pending",
             status: "open",
           })

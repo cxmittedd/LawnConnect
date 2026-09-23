@@ -2,7 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { Resend } from "https://esm.sh/resend@2.0.0";
 import { verifyCallbackToken } from "../_shared/ezeepay-callback-token.ts";
-import { escapeHtml, maskEmail } from "../_shared/lawn-pricing.ts";
+import { escapeHtml, maskEmail, serviceBasePrice } from "../_shared/lawn-pricing.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -345,7 +345,7 @@ serve(async (req) => {
       // Look up the schedule
       const { data: schedule, error: schedError } = await supabase
         .from('autopay_schedules')
-        .select('id, customer_id, title, description, parish, community, location, lawn_size, preferred_time, ezeepay_status, ezeepay_subscription_id, frequency, day_of_month, next_run_date, failure_count')
+        .select('id, customer_id, title, description, parish, community, location, lawn_size, preferred_time, custom_price, ezeepay_status, ezeepay_subscription_id, frequency, day_of_month, next_run_date, failure_count')
         .eq('id', scheduleId)
         .single();
 
@@ -453,6 +453,11 @@ serve(async (req) => {
         console.log(`[${webhookId}] Recurring autopay charge for schedule ${scheduleId}`);
 
         const todayStr = new Date().toISOString().slice(0, 10);
+        // Quote-based schedules repeat the agreed price; all others use the
+        // standard server price table.
+        const recurringPrice = Number((schedule as any).custom_price) > 0
+          ? Number((schedule as any).custom_price)
+          : serviceBasePrice(schedule.lawn_size, schedule.title);
         const { data: job, error: jobError } = await supabase
           .from('job_requests')
           .insert({
@@ -465,7 +470,10 @@ serve(async (req) => {
             lawn_size: schedule.lawn_size,
             preferred_date: todayStr,
             preferred_time: schedule.preferred_time,
-            base_price: 0,
+            base_price: recurringPrice,
+            final_price: recurringPrice,
+            platform_fee: Math.round(recurringPrice * 0.3 * 100) / 100,
+            provider_payout: Math.round(recurringPrice * 0.7 * 100) / 100,
             payment_status: 'pending',
             status: 'open',
           })
