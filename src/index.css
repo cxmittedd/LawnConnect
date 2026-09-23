@@ -188,17 +188,17 @@ All colors MUST be HSL.
     background: linear-gradient(
       180deg,
       hsl(var(--background)) 0%,
-      hsl(222 47% 13%) 50%,
-      hsl(217 33% 15%) 100%
+      hsl(150 24% 8%) 50%,
+      hsl(158 26% 10%) 100%
     );
   }
 
   .dark .bg-page-pattern {
     background-color: hsl(var(--background));
     background-image: 
-      radial-gradient(circle at 20% 80%, hsl(192 82% 41% / 0.05) 0%, transparent 50%),
-      radial-gradient(circle at 80% 20%, hsl(43 96% 56% / 0.03) 0%, transparent 50%),
-      radial-gradient(circle at 40% 40%, hsl(192 82% 41% / 0.03) 0%, transparent 30%);
+      radial-gradient(circle at 20% 80%, hsl(158 72% 40% / 0.07) 0%, transparent 50%),
+      radial-gradient(circle at 80% 20%, hsl(84 80% 45% / 0.05) 0%, transparent 50%),
+      radial-gradient(circle at 40% 40%, hsl(158 72% 40% / 0.04) 0%, transparent 30%);
   }
 
   /* Interactive micro-animations */
