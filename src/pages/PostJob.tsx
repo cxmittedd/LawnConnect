@@ -934,17 +934,17 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
                 )}
 
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="lawn_size">Lawn Size *</Label>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="lawn_size" className="text-sm font-semibold">Lawn Size *</Label>
                     <Select
                       value={lawnSizeSelection}
                       onValueChange={handleLawnSizeChange}
                       required
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="h-12 rounded-xl bg-muted/50 border-border/60 hover:border-primary/60 focus:ring-2 focus:ring-primary/20 transition-colors">
                         <SelectValue placeholder="Select lawn size" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="rounded-xl">
                         {LAWN_SIZES.map((size) => (
                           <SelectItem key={size.value} value={size.value}>
                             <div className="flex flex-col">
@@ -959,14 +959,14 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="preferred_date">Preferred Date *</Label>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="preferred_date" className="text-sm font-semibold">Preferred Date *</Label>
                     <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
                       <PopoverTrigger asChild>
                         <Button
                           variant="outline"
                           className={cn(
-                            "w-full justify-start text-left font-normal",
+                            "w-full h-12 rounded-xl bg-muted/50 border-border/60 justify-start text-left font-normal hover:border-primary/60 transition-colors",
                             !formData.preferred_date && "text-muted-foreground"
                           )}
                         >
@@ -991,19 +991,20 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
                       Note: This is your preferred date, not a guarantee. Providers will complete the job within 3 days.
                     </p>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="preferred_time">Preferred Time</Label>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="preferred_time" className="text-sm font-semibold">Preferred Time</Label>
                     <Input
                       id="preferred_time"
                       placeholder="e.g., Morning, Afternoon"
                       value={formData.preferred_time}
                       onChange={(e) => setFormData({ ...formData, preferred_time: e.target.value })}
+                      className="h-12 rounded-xl bg-muted/50 border-border/60 focus-visible:ring-2 focus-visible:ring-primary/20"
                     />
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="description">
+                <div className="space-y-1.5">
+                  <Label htmlFor="description" className="text-sm font-semibold">
                     Description <span className="text-muted-foreground font-normal">(optional)</span>
                   </Label>
                   <Textarea
@@ -1012,6 +1013,7 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                     rows={3}
+                    className="rounded-xl bg-muted/50 border-border/60 focus-visible:ring-2 focus-visible:ring-primary/20 resize-none"
                   />
                 </div>
 
@@ -1094,7 +1096,7 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
                   );
                 })()}
 
-                <div className="flex items-start space-x-3 p-4 rounded-lg border border-border bg-muted/50">
+                <div className="flex items-start space-x-3 p-4 rounded-xl border border-border/60 bg-muted/50">
                   <Checkbox
                     id="terms-agreement"
                     checked={agreedToTerms}
@@ -1112,7 +1114,7 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
                   </label>
                 </div>
 
-                <Button type="submit" className="w-full" disabled={loading || !agreedToTerms}>
+                <Button type="submit" className="w-full h-12 rounded-xl font-bold shadow-lg shadow-primary/20 transition-all active:scale-[0.98]" disabled={loading || !agreedToTerms}>
                   <span>Continue to Payment</span>
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
