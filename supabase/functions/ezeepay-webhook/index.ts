@@ -590,6 +590,10 @@ serve(async (req) => {
       );
     }
 
+    const jobAuthFailure = await assertTrustedCallback(orderId);
+    if (jobAuthFailure) return jobAuthFailure;
+
+
     // Create idempotency key to prevent replay attacks
     const idempotencyKey = `${orderId}-${TransactionNumber || 'no-txn'}`;
     console.log(`[${webhookId}] Idempotency key: ${idempotencyKey}`);
