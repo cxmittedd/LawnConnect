@@ -193,6 +193,8 @@ export default function PostJob() {
       'Phoenix Park Village': 'phoenix_park_village',
       'Drax Hall Manor': 'drax_hall_manor',
       'Richmond Estate': 'richmond_estate',
+      'Castlewood': 'castlewood',
+      'Holland Estate': 'holland_estate',
     };
 
     let resolvedLocation = preferences.location || '';
