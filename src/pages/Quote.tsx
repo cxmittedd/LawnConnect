@@ -33,6 +33,7 @@ export default function Quote() {
   const [error, setError] = useState<string | null>(null);
   const [claiming, setClaiming] = useState(false);
   const [jobId, setJobId] = useState<string | null>(null);
+  const [autopayOptIn, setAutopayOptIn] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -115,8 +116,23 @@ export default function Quote() {
             customerName={quote.customer_name || undefined}
             returnPath={`/quote/${token}`}
             hideExtras
-            onPaymentSuccess={() => {
+            autopayOptIn={autopayOptIn}
+            onChangeAutopayOptIn={setAutopayOptIn}
+            onPaymentSuccess={async () => {
               toast.success('Payment received — your job is booked!');
+              if (autopayOptIn) {
+                const { data, error: fnError } = await supabase.functions.invoke('custom-quote', {
+                  body: { action: 'setup_autopay', token },
+                });
+                if (fnError || !data?.success) {
+                  safeToast.error(data?.error || 'Your job is booked, but autopay could not be set up.');
+                  navigate(`/job/${jobId}`);
+                  return;
+                }
+                toast.success('Autopay added — finish setting up your card below');
+                navigate('/autopay');
+                return;
+              }
               navigate(`/job/${jobId}`);
             }}
             onCancel={() => setJobId(null)}
