@@ -187,12 +187,8 @@ export default function PostJob() {
       'Florence Hall': 'florence_hall',
       'Stonebrook Vista': 'stonebrook_vista',
       'Stonebrook Manor': 'stonebrook_manor',
-      'Paradisiac Beach Club': 'paradisiac_beach_club',
-      'Camelot Village': 'camelot_village',
       'Treasure Bay Estates': 'treasure_bay_estates',
       'Phoenix Park Village': 'phoenix_park_village',
-      'Drax Hall Manor': 'drax_hall_manor',
-      'Richmond Estate': 'richmond_estate',
       'Castlewood': 'castlewood',
       'Holland Estate': 'holland_estate',
     };
@@ -376,12 +372,8 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
       florence_hall: 'Florence Hall',
       stonebrook_vista: 'Stonebrook Vista',
       stonebrook_manor: 'Stonebrook Manor',
-      paradisiac_beach_club: 'Paradisiac Beach Club',
-      camelot_village: 'Camelot Village',
       treasure_bay_estates: 'Treasure Bay Estates',
       phoenix_park_village: 'Phoenix Park Village',
-      drax_hall_manor: 'Drax Hall Manor',
-      richmond_estate: 'Richmond Estate',
       castlewood: 'Castlewood',
       holland_estate: 'Holland Estate',
     };
@@ -512,12 +504,8 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
         florence_hall: 'Florence Hall',
         stonebrook_vista: 'Stonebrook Vista',
         stonebrook_manor: 'Stonebrook Manor',
-        paradisiac_beach_club: 'Paradisiac Beach Club',
-        camelot_village: 'Camelot Village',
         treasure_bay_estates: 'Treasure Bay Estates',
         phoenix_park_village: 'Phoenix Park Village',
-        drax_hall_manor: 'Drax Hall Manor',
-        richmond_estate: 'Richmond Estate',
         castlewood: 'Castlewood',
         holland_estate: 'Holland Estate',
       };
@@ -873,13 +861,9 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
                       <SelectItem value="florence_hall">Florence Hall</SelectItem>
                       <SelectItem value="stonebrook_vista">Stonebrook Vista</SelectItem>
                       <SelectItem value="stonebrook_manor">Stonebrook Manor</SelectItem>
-                      <SelectItem value="paradisiac_beach_club">Paradisiac Beach Club</SelectItem>
                       
-                      <SelectItem value="camelot_village">Camelot Village</SelectItem>
                       <SelectItem value="treasure_bay_estates">Treasure Bay Estates</SelectItem>
                       <SelectItem value="phoenix_park_village">Phoenix Park Village</SelectItem>
-                      <SelectItem value="drax_hall_manor">Drax Hall Manor</SelectItem>
-                      <SelectItem value="richmond_estate">Richmond Estate</SelectItem>
                       <SelectItem value="castlewood">Castlewood</SelectItem>
                       <SelectItem value="holland_estate">Holland Estate</SelectItem>
                     </SelectContent>
