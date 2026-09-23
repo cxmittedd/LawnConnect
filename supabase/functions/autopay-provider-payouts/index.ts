@@ -237,7 +237,7 @@ serve(async (req) => {
 
       const providerId = job.accepted_provider_id;
       // Provider payout is based on the full UNDISCOUNTED price (base_price), not final_price.
-      const payout = job.provider_payout || (job.base_price ? job.base_price * NORMAL_PAYOUT_PERCENTAGE : 0);
+      const payout = job.provider_payout || (job.base_price ? Math.max(job.base_price - 2000, 0) : 0);
 
       if (!providerJobsMap.has(providerId)) {
         providerJobsMap.set(providerId, { jobs: [], totalPayout: 0 });

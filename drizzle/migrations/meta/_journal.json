@@ -50,6 +50,13 @@
       "when": 1790185848489,
       "tag": "0006_quote_autopay_price",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1790187765996,
+      "tag": "0007_flat_platform_fee",
+      "breakpoints": true
     }
   ]
 }

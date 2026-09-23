@@ -437,7 +437,7 @@ export default function BrowseJobs() {
                       <div className="text-xs text-muted-foreground">Your Earnings</div>
                       <div className="text-2xl font-bold text-primary flex items-center gap-1">
                         <DollarSign className="h-5 w-5" />
-                        J${(job.provider_payout || (job.base_price * 0.70)).toFixed(2)}
+                        J${(job.provider_payout || Math.max(job.base_price - 2000, 0)).toFixed(2)}
                       </div>
                     </div>
                     <Button onClick={() => handleConfirmJob(job)}>
@@ -484,7 +484,7 @@ export default function BrowseJobs() {
                 <div>
                   <span className="font-medium">Your Earnings:</span>{' '}
                   <span className="text-primary font-bold">
-                    J${(selectedJob.provider_payout || (selectedJob.base_price * 0.70)).toFixed(2)}
+                    J${(selectedJob.provider_payout || Math.max(selectedJob.base_price - 2000, 0)).toFixed(2)}
                   </span>
                 </div>
                 
