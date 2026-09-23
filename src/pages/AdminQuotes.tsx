@@ -71,6 +71,7 @@ const emptyForm = {
   description: '',
   customer_name: '',
   customer_phone: '',
+  preferred_date: '',
 };
 
 export default function AdminQuotes() {
@@ -122,6 +123,7 @@ export default function AdminQuotes() {
       price,
       customer_name: form.customer_name.trim() || null,
       customer_phone: form.customer_phone.trim() || null,
+      preferred_date: form.preferred_date || null,
       created_by: user.id,
     }]);
     setSaving(false);
@@ -309,6 +311,15 @@ export default function AdminQuotes() {
                   placeholder="e.g. Castlewood"
                   value={form.community}
                   onChange={(e) => setForm({ ...form, community: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Preferred date (optional — client can change it)</Label>
+                <Input
+                  type="date"
+                  min={new Date(Date.now() + 86400000).toISOString().slice(0, 10)}
+                  value={form.preferred_date}
+                  onChange={(e) => setForm({ ...form, preferred_date: e.target.value })}
                 />
               </div>
               <div className="space-y-2">
