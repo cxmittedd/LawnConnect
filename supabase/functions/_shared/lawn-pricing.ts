@@ -5,7 +5,7 @@ export const OVERGROWN_TITLE = "Lawn Cut (Overgrown Grass)";
 
 export const lawnSizePrice = (lawnSize: string | null | undefined): number => {
   const size = (lawnSize ?? "").toLowerCase();
-  if (size.startsWith("small")) return 7000;
+  if (size.startsWith("small")) return 6500;
   if (size.startsWith("medium")) return 13000;
   if (size.startsWith("extra large")) return 35000;
   if (size.startsWith("large")) return 18500;
