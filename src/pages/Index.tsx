@@ -3,7 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import {
   ArrowRight, CalendarCheck, CheckCircle2, CreditCard, Gift, HeartHandshake, Home, MapPin, Menu,
-  MessageCircle, Moon, ShieldCheck, Sparkles, Sun, Users, X, XCircle, Sprout, ClipboardCheck, Headphones,
+  MessageCircle, Moon, ShieldCheck, Sparkles, Sun, Users, X, XCircle, Sprout, ClipboardCheck, Headphones, Instagram,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth";
@@ -377,6 +377,9 @@ const Index = () => {
             </div>
             <p className="mt-4 max-w-sm opacity-75">Connecting residents with reliable lawn cutters in their communities.</p>
             <p className="mt-4 text-sm opacity-60">officiallawnconnect@gmail.com</p>
+            <a href="https://www.instagram.com/lawnconnectjm" target="_blank" rel="noopener noreferrer" className="mt-2 inline-flex items-center gap-2 text-sm opacity-75 hover:opacity-100 hover:underline">
+              <Instagram className="h-4 w-4" /> @lawnconnectjm
+            </a>
           </div>
           <div>
             <p className="mb-4 font-semibold">Explore</p>
