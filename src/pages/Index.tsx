@@ -35,11 +35,13 @@ const NAV = [
   { href: "#communities", label: "Communities" },
 ];
 
-const COMMUNITIES = [
-  { name: "Coral Springs Village", parish: "Trelawny", img: coralSpringVillage.url },
-  { name: "Castlewood", parish: "Jamaica", img: lawnLarge },
-  { name: "Holland Estate", parish: "Jamaica", img: lawnSmall },
-];
+const FALLBACK_IMG: Record<string, string> = {
+  "Coral Springs Village": coralSpringVillage.url,
+  Castlewood: lawnLarge,
+  "Holland Estate": lawnSmall,
+};
+type Community = { name: string; parish: string; img: string };
+type Promo = { id: string; title: string; body: string | null; cta_label: string | null; cta_link: string | null };
 
 const Eyebrow = ({ children }: { children: React.ReactNode }) => (
   <span className="inline-flex items-center gap-2 rounded-full bg-accent px-3 py-1 text-xs font-semibold uppercase tracking-wider text-primary">
@@ -322,7 +324,7 @@ const Index = () => {
               <Button variant="outline" onClick={book} className="rounded-full px-6 font-semibold">Find LawnConnect in Your Community</Button>
             </div>
             <div className="mt-12 grid gap-6 md:grid-cols-3">
-              {COMMUNITIES.map((c) => (
+              {communities.map((c) => (
                 <button key={c.name} onClick={book} className="group overflow-hidden rounded-3xl border border-border/70 bg-background text-left shadow-soft hover-lift">
                   <div className="h-48 overflow-hidden">
                     <img src={c.img} alt={`Lawn in ${c.name}`} loading="lazy" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
