@@ -40,7 +40,7 @@ const NAV = [
 const FALLBACK_IMG: Record<string, string> = {
   "Coral Springs Village": coralSpringVillage,
   Castlewood: lawnLarge,
-  "Holland Estate": lawnSmall,
+  "Holland Estate": hollandEstate,
 };
 type Community = { name: string; parish: string; img: string };
 type Promo = { id: string; title: string; body: string | null; cta_label: string | null; cta_link: string | null };
