@@ -32,6 +32,7 @@ import AdminCommunities from "./pages/AdminCommunities";
 import AdminDiscounts from "./pages/AdminDiscounts";
 import AdminTransactions from "./pages/AdminTransactions";
 import AdminQuotes from "./pages/AdminQuotes";
+import AdminHomepage from "./pages/AdminHomepage";
 import Quote from "./pages/Quote";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
@@ -244,6 +245,7 @@ const App = () => (
                   </AdminRoute>
                 }
               />
+              <Route path="/admin/homepage" element={<AdminRoute><AdminHomepage /></AdminRoute>} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

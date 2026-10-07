@@ -104,6 +104,7 @@ export function Navigation() {
     { path: '/admin/communities', label: 'Communities', icon: MapPin },
     { path: '/admin/discounts', label: 'Discounts', icon: Percent },
     { path: '/admin/quotes', label: 'Custom Quotes', icon: FileText },
+    { path: '/admin/homepage', label: 'Homepage', icon: FileText },
   ];
 
   const navItems = user
