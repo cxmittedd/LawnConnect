@@ -14,7 +14,7 @@ import { isGiveawayVisible, GIVEAWAY } from "@/lib/giveaway";
 import lawnConnectLogo from "@/assets/lawnconnect-logo.png";
 import heroImage from "@/assets/coral-spring-village.jpg";
 import lawnMedium from "@/assets/lawn-size-medium.jpg";
-import lawnLarge from "@/assets/lawn-size-large.jpg";
+import stonebrookManor from "@/assets/stonebrook-manor.jpg";
 import coralSpringVillage from "@/assets/coral-spring-village.jpg";
 import hollandEstate from "@/assets/holland-estate.jpg";
 import { supabase } from "@/integrations/supabase/client";
@@ -38,7 +38,7 @@ const NAV = [
 
 const FALLBACK_IMG: Record<string, string> = {
   "Coral Springs Village": coralSpringVillage,
-  Castlewood: lawnLarge,
+  "Stonebrook Manor": stonebrookManor,
   "Holland Estate": hollandEstate,
 };
 type Community = { name: string; parish: string; img: string };
