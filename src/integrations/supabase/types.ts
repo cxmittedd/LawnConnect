@@ -491,6 +491,66 @@ export type Database = {
           },
         ]
       }
+      homepage_communities: {
+        Row: {
+          active: boolean
+          created_at: string
+          id: string
+          image_url: string | null
+          name: string
+          parish: string
+          sort_order: number
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          name: string
+          parish?: string
+          sort_order?: number
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          name?: string
+          parish?: string
+          sort_order?: number
+        }
+        Relationships: []
+      }
+      homepage_promos: {
+        Row: {
+          active: boolean
+          body: string | null
+          created_at: string
+          cta_label: string | null
+          cta_link: string | null
+          id: string
+          title: string
+        }
+        Insert: {
+          active?: boolean
+          body?: string | null
+          created_at?: string
+          cta_label?: string | null
+          cta_link?: string | null
+          id?: string
+          title: string
+        }
+        Update: {
+          active?: boolean
+          body?: string | null
+          created_at?: string
+          cta_label?: string | null
+          cta_link?: string | null
+          id?: string
+          title?: string
+        }
+        Relationships: []
+      }
       invoices: {
         Row: {
           amount: number
