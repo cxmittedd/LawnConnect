@@ -12,11 +12,11 @@ import InstallBanner from "@/components/InstallBanner";
 import { SEO } from "@/components/SEO";
 import { isGiveawayVisible, GIVEAWAY } from "@/lib/giveaway";
 import lawnConnectLogo from "@/assets/lawnconnect-logo.png";
-import heroImage from "@/assets/hero-community.jpg";
+import heroImage from "@/assets/coral-spring-village.jpg";
 import lawnMedium from "@/assets/lawn-size-medium.jpg";
 import lawnLarge from "@/assets/lawn-size-large.jpg";
 import lawnSmall from "@/assets/lawn-size-small.jpg";
-import coralSpringVillage from "@/assets/coral-spring-village.jpg.asset.json";
+import coralSpringVillage from "@/assets/coral-spring-village.jpg";
 import { supabase } from "@/integrations/supabase/client";
 
 const FAQ_JSONLD = {
@@ -37,7 +37,7 @@ const NAV = [
 ];
 
 const FALLBACK_IMG: Record<string, string> = {
-  "Coral Springs Village": coralSpringVillage.url,
+  "Coral Springs Village": coralSpringVillage,
   Castlewood: lawnLarge,
   "Holland Estate": lawnSmall,
 };
