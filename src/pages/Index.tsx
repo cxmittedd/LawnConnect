@@ -13,9 +13,8 @@ import { SEO } from "@/components/SEO";
 import { isGiveawayVisible, GIVEAWAY } from "@/lib/giveaway";
 import lawnConnectLogo from "@/assets/lawnconnect-logo.png";
 import heroImage from "@/assets/hero-community.jpg";
-import lawnMedium from "@/assets/lawn-size-medium.jpg";
-import lawnLarge from "@/assets/lawn-size-large.jpg";
 import lawnSmall from "@/assets/lawn-size-small.jpg";
+import coralSpringVillage from "@/assets/coral-spring-village.jpg.asset.json";
 
 const FAQ_JSONLD = {
   "@context": "https://schema.org",
