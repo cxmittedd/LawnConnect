@@ -15,8 +15,8 @@ import lawnConnectLogo from "@/assets/lawnconnect-logo.png";
 import heroImage from "@/assets/coral-spring-village.jpg";
 import lawnMedium from "@/assets/lawn-size-medium.jpg";
 import lawnLarge from "@/assets/lawn-size-large.jpg";
-import lawnSmall from "@/assets/lawn-size-small.jpg";
 import coralSpringVillage from "@/assets/coral-spring-village.jpg";
+import hollandEstate from "@/assets/holland-estate.jpg";
 import { supabase } from "@/integrations/supabase/client";
 
 const FAQ_JSONLD = {
@@ -39,7 +39,7 @@ const NAV = [
 const FALLBACK_IMG: Record<string, string> = {
   "Coral Springs Village": coralSpringVillage,
   Castlewood: lawnLarge,
-  "Holland Estate": lawnSmall,
+  "Holland Estate": hollandEstate,
 };
 type Community = { name: string; parish: string; img: string };
 type Promo = { id: string; title: string; body: string | null; cta_label: string | null; cta_link: string | null };
