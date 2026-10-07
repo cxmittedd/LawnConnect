@@ -85,7 +85,7 @@ const Index = () => {
         }`}
       >
         <div className="container mx-auto flex h-[72px] items-center justify-between gap-4 px-4 py-3">
-          <Link to="/" className="flex items-center gap-2">
+          <Link to="/" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} className="flex items-center gap-2">
             <img src={lawnConnectLogo} alt="LawnConnect" className="h-11 w-11 object-contain" />
             <span className="text-xl font-extrabold tracking-tight text-forest dark:text-foreground">
               Lawn<span className="text-primary">Connect</span>
