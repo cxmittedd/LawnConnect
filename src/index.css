@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Work+Sans:wght@400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap");
 @import url("https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600;700&display=swap");
 @import url("https://fonts.googleapis.com/css2?family=Inconsolata:wght@400;700&display=swap");
 @tailwind base;
@@ -11,37 +11,45 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    --background: 0 0% 96%;
-    --foreground: 0 0% 9%;
+    --background: 90 23% 97%;
+    --foreground: 151 49% 14%;
 
-    --card: 0 0% 98%;
-    --card-foreground: 0 0% 9%;
+    --card: 0 0% 100%;
+    --card-foreground: 151 49% 14%;
 
-    --popover: 0 0% 89%;
-    --popover-foreground: 0 0% 9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 151 49% 14%;
 
-    --primary: 161 93% 30%;
-    --primary-foreground: 151 80% 95%;
+    --primary: 145 65% 25%;
+    --primary-foreground: 0 0% 100%;
 
-    --primary-hover: 192 82% 26%;
+    --primary-hover: 145 65% 20%;
 
-    --secondary: 0 0% 32%;
-    --secondary-foreground: 0 0% 98%;
+    --secondary: 122 30% 93%;
+    --secondary-foreground: 151 49% 14%;
 
-    --muted: 0 0% 63%;
-    --muted-foreground: 0 0% 9%;
+    --muted: 100 15% 93%;
+    --muted-foreground: 150 10% 38%;
 
-    --accent: 166 76% 96%;
-    --accent-foreground: 173 80% 40%;
+    --accent: 122 39% 94%;
+    --accent-foreground: 145 65% 25%;
 
     --destructive: 0 72% 50%;
     --destructive-foreground: 0 85% 97%;
 
-    --border: 0 0% 83%;
-    --input: 0 0% 83%;
-    --ring: 161 93% 30%;
+    --border: 100 12% 87%;
+    --input: 100 12% 85%;
+    --ring: 145 65% 25%;
 
-    --radius: 0.75rem;
+    --radius: 0.875rem;
+
+    --forest: 151 49% 14%;
+    --forest-foreground: 90 23% 97%;
+    --fresh: 122 39% 49%;
+    --sun: 44 89% 61%;
+    --sun-foreground: 151 49% 14%;
+    --shadow-soft: 0 10px 40px -12px hsl(151 49% 14% / 0.18);
+    --shadow-float: 0 20px 50px -15px hsl(151 49% 14% / 0.35);
 
     --success: 142 76% 36%;
     --success-foreground: 0 0% 100%;
@@ -54,19 +62,19 @@ All colors MUST be HSL.
 
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 0 0% 9%;
-    --sidebar-primary: 161 93% 30%;
+    --sidebar-primary: 145 65% 25%;
     --sidebar-primary-foreground: 151 80% 95%;
     --sidebar-accent: 0 0% 32%;
     --sidebar-accent-foreground: 0 0% 98%;
     --sidebar-border: 0 0% 83%;
-    --sidebar-ring: 161 93% 30%;
+    --sidebar-ring: 145 65% 25%;
     --chart-1: 158 64% 51%;
     --chart-2: 141 69% 58%;
     --chart-3: 172 66% 50%;
     --chart-4: 82 77% 55%;
     --chart-5: 0 0% 45%;
     --sidebar: 0 0% 98%;
-    --font-sans: 'Work Sans', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif;
+    --font-sans: 'Manrope', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif;
     --font-serif: 'Lora', ui-serif, Georgia, Cambria, 'Times New Roman', Times, serif;
     --font-mono: 'Inconsolata', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
     --shadow-2xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
@@ -143,6 +151,13 @@ All colors MUST be HSL.
     --shadow-lg: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 4px 6px -1px hsl(0 0% 0% / 0.1);
     --shadow-xl: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 8px 10px -1px hsl(0 0% 0% / 0.1);
     --shadow-2xl: 0 1px 3px 0px hsl(0 0% 0% / 0.25);
+    --forest: 151 40% 8%;
+    --forest-foreground: 0 0% 98%;
+    --fresh: 122 39% 55%;
+    --sun: 44 89% 61%;
+    --sun-foreground: 151 49% 14%;
+    --shadow-soft: 0 10px 40px -12px hsl(0 0% 0% / 0.5);
+    --shadow-float: 0 20px 50px -15px hsl(0 0% 0% / 0.6);
   }
 }
 
@@ -152,7 +167,10 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-sans antialiased;
+  }
+  h1, h2, h3 {
+    letter-spacing: -0.02em;
   }
 }
 
