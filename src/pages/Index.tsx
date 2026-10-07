@@ -17,6 +17,7 @@ import lawnMedium from "@/assets/lawn-size-medium.jpg";
 import lawnLarge from "@/assets/lawn-size-large.jpg";
 import lawnSmall from "@/assets/lawn-size-small.jpg";
 import coralSpringVillage from "@/assets/coral-spring-village.jpg.asset.json";
+import { supabase } from "@/integrations/supabase/client";
 
 const FAQ_JSONLD = {
   "@context": "https://schema.org",
@@ -35,11 +36,13 @@ const NAV = [
   { href: "#communities", label: "Communities" },
 ];
 
-const COMMUNITIES = [
-  { name: "Coral Springs Village", parish: "Trelawny", img: coralSpringVillage.url },
-  { name: "Castlewood", parish: "Jamaica", img: lawnLarge },
-  { name: "Holland Estate", parish: "Jamaica", img: lawnSmall },
-];
+const FALLBACK_IMG: Record<string, string> = {
+  "Coral Springs Village": coralSpringVillage.url,
+  Castlewood: lawnLarge,
+  "Holland Estate": lawnSmall,
+};
+type Community = { name: string; parish: string; img: string };
+type Promo = { id: string; title: string; body: string | null; cta_label: string | null; cta_link: string | null };
 
 const Eyebrow = ({ children }: { children: React.ReactNode }) => (
   <span className="inline-flex items-center gap-2 rounded-full bg-accent px-3 py-1 text-xs font-semibold uppercase tracking-wider text-primary">
@@ -53,6 +56,19 @@ const Index = () => {
   const navigate = useNavigate();
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [communities, setCommunities] = useState<Community[]>(
+    Object.entries(FALLBACK_IMG).map(([name, img]) => ({ name, parish: "Jamaica", img }))
+  );
+  const [promos, setPromos] = useState<Promo[]>([]);
+
+  useEffect(() => {
+    supabase.from("homepage_communities").select("name,parish,image_url").eq("active", true).order("sort_order")
+      .then(({ data }) => {
+        if (data) setCommunities(data.map((c) => ({ name: c.name, parish: c.parish, img: c.image_url || FALLBACK_IMG[c.name] || lawnMedium })));
+      });
+    supabase.from("homepage_promos").select("id,title,body,cta_label,cta_link").eq("active", true).order("created_at", { ascending: false })
+      .then(({ data }) => { if (data) setPromos(data); });
+  }, []);
 
   useEffect(() => {
     if (user) navigate("/dashboard");
@@ -322,7 +338,7 @@ const Index = () => {
               <Button variant="outline" onClick={book} className="rounded-full px-6 font-semibold">Find LawnConnect in Your Community</Button>
             </div>
             <div className="mt-12 grid gap-6 md:grid-cols-3">
-              {COMMUNITIES.map((c) => (
+              {communities.map((c) => (
                 <button key={c.name} onClick={book} className="group overflow-hidden rounded-3xl border border-border/70 bg-background text-left shadow-soft hover-lift">
                   <div className="h-48 overflow-hidden">
                     <img src={c.img} alt={`Lawn in ${c.name}`} loading="lazy" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
@@ -335,8 +351,34 @@ const Index = () => {
                 </button>
               ))}
             </div>
+            <div className="mt-12 overflow-hidden rounded-3xl border border-border/70 shadow-soft">
+              <iframe
+                title="Map of communities LawnConnect serves in Jamaica"
+                src="https://maps.google.com/maps?q=Falmouth,Trelawny,Jamaica&z=11&output=embed"
+                className="h-80 w-full md:h-96"
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+              />
+            </div>
           </div>
         </section>
+
+        {promos.length > 0 && (
+          <section className="container mx-auto px-4 pt-16">
+            <div className="grid gap-6 md:grid-cols-2">
+              {promos.map((p) => (
+                <div key={p.id} className="rounded-3xl border border-sun/40 bg-sun/10 p-8 shadow-soft">
+                  <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-primary"><Gift className="h-4 w-4" /> Promotion</span>
+                  <h3 className="mt-3 text-2xl font-extrabold">{p.title}</h3>
+                  {p.body && <p className="mt-2 text-muted-foreground">{p.body}</p>}
+                  {p.cta_label && p.cta_link && (
+                    <Button asChild className="mt-5 rounded-full"><a href={p.cta_link}>{p.cta_label}</a></Button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* Story */}
         <section className="container mx-auto px-4 py-20 md:py-28">
