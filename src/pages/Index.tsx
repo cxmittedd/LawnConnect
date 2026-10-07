@@ -17,6 +17,7 @@ import lawnMedium from "@/assets/lawn-size-medium.jpg";
 import lawnLarge from "@/assets/lawn-size-large.jpg";
 import lawnSmall from "@/assets/lawn-size-small.jpg";
 import coralSpringVillage from "@/assets/coral-spring-village.jpg";
+import hollandEstate from "@/assets/holland-estate.jpg";
 import { supabase } from "@/integrations/supabase/client";
 
 const FAQ_JSONLD = {
