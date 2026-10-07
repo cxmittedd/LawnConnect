@@ -56,6 +56,15 @@ export default {
   				DEFAULT: 'hsl(var(--warning))',
   				foreground: 'hsl(var(--warning-foreground))'
   			},
+  			forest: {
+  				DEFAULT: 'hsl(var(--forest))',
+  				foreground: 'hsl(var(--forest-foreground))'
+  			},
+  			fresh: 'hsl(var(--fresh))',
+  			sun: {
+  				DEFAULT: 'hsl(var(--sun))',
+  				foreground: 'hsl(var(--sun-foreground))'
+  			},
   			info: {
   				DEFAULT: 'hsl(var(--info))',
   				foreground: 'hsl(var(--info-foreground))'
@@ -117,11 +126,13 @@ export default {
   			md: 'var(--shadow-md)',
   			lg: 'var(--shadow-lg)',
   			xl: 'var(--shadow-xl)',
-  			'2xl': 'var(--shadow-2xl)'
+  			'2xl': 'var(--shadow-2xl)',
+  			soft: 'var(--shadow-soft)',
+  			float: 'var(--shadow-float)'
   		},
   		fontFamily: {
   			sans: [
-  				'Work Sans',
+  				'Manrope',
   				'ui-sans-serif',
   				'system-ui',
   				'-apple-system',

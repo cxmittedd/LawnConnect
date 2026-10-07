@@ -127,12 +127,12 @@ export function Navigation() {
   const isAdminPage = location.pathname.startsWith('/admin');
 
   return (
-    <nav className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
+    <nav className="border-b border-border/60 bg-card/80 backdrop-blur-md supports-[backdrop-filter]:bg-card/70 sticky top-0 z-50 shadow-sm">
       <div className="container mx-auto px-4">
         <div className="flex h-20 items-center justify-between gap-4">
           <Link to={user ? '/dashboard' : '/'} className="flex items-center gap-2 shrink-0">
             <img src={lawnConnectLogo} alt="LawnConnect" className="h-14 w-14 object-contain" />
-            <span className="text-lg font-bold text-foreground">LawnConnect</span>
+            <span className="text-lg font-extrabold tracking-tight text-forest dark:text-foreground">Lawn<span className="text-primary">Connect</span></span>
           </Link>
 
           {/* Desktop Navigation */}
