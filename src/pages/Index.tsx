@@ -16,6 +16,7 @@ import heroImage from "@/assets/hero-community.jpg";
 import lawnMedium from "@/assets/lawn-size-medium.jpg";
 import lawnLarge from "@/assets/lawn-size-large.jpg";
 import lawnSmall from "@/assets/lawn-size-small.jpg";
+import coralSpringVillage from "@/assets/coral-spring-village.jpg.asset.json";
 
 const FAQ_JSONLD = {
   "@context": "https://schema.org",
@@ -35,7 +36,7 @@ const NAV = [
 ];
 
 const COMMUNITIES = [
-  { name: "Coral Springs Village", parish: "Trelawny", img: lawnMedium },
+  { name: "Coral Springs Village", parish: "Trelawny", img: coralSpringVillage.url },
   { name: "Castlewood", parish: "Jamaica", img: lawnLarge },
   { name: "Holland Estate", parish: "Jamaica", img: lawnSmall },
 ];
