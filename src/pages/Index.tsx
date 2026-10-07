@@ -83,7 +83,7 @@ const Index = () => {
           scrolled ? "bg-card/80 backdrop-blur-md shadow-sm border-b border-border/60" : "bg-transparent"
         }`}
       >
-        <div className="container mx-auto flex h-18 items-center justify-between gap-4 px-4 py-3">
+        <div className="container mx-auto flex h-[72px] items-center justify-between gap-4 px-4 py-3">
           <Link to="/" className="flex items-center gap-2">
             <img src={lawnConnectLogo} alt="LawnConnect" className="h-11 w-11 object-contain" />
             <span className="text-xl font-extrabold tracking-tight text-forest dark:text-foreground">
@@ -136,10 +136,10 @@ const Index = () => {
                 LawnConnect connects residents with reliable lawn cutters in their communities, making it easier to book, pay, and get the job done.
               </p>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-                <Button size="lg" onClick={book} className="h-13 rounded-full px-8 text-base font-semibold shadow-soft">
+                <Button size="lg" onClick={book} className="h-[52px] rounded-full px-8 text-base font-semibold shadow-soft">
                   Book a Lawn Cut <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
-                <Button size="lg" variant="outline" asChild className="h-13 rounded-full px-8 text-base font-semibold bg-card">
+                <Button size="lg" variant="outline" asChild className="h-[52px] rounded-full px-8 text-base font-semibold bg-card">
                   <a href="#how-it-works">How LawnConnect Works</a>
                 </Button>
               </div>
