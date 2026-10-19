@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { withRequestTimeout } from "./requestTimeout";
+import { withRequestTimeout } from "./requestTimeout.ts";
 
 describe("bounded photo requests", () => {
   test("returns successful results", async () => {
