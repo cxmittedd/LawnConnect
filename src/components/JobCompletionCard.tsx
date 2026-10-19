@@ -32,6 +32,7 @@ import { toast } from "sonner";
 import { safeToast } from "@/lib/errorHandler";
 import { format } from "date-fns";
 import { sendNotification } from "@/lib/notifications";
+import { compressImage } from "@/lib/imageCompression";
 
 interface JobCompletionCardProps {
   jobId: string;
