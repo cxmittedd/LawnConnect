@@ -6,9 +6,9 @@
  */
 export async function compressImage(
   file: File,
-  maxBytes = 4 * 1024 * 1024,
-  maxDimension = 3000,
-  quality = 0.85
+  maxBytes = 1024 * 1024,
+  maxDimension = 1920,
+  quality = 0.8
 ): Promise<File> {
   try {
     if (!file.type.startsWith("image/")) return file;
