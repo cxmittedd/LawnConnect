@@ -34,6 +34,7 @@ import { format } from "date-fns";
 import { sendNotification } from "@/lib/notifications";
 import { compressImage } from "@/lib/imageCompression";
 import { withRequestTimeout } from "@/lib/requestTimeout";
+import { appendCompletionPhotos, validCompletionPhotoCounts } from "@/lib/completionPhotoLimits";
 
 interface JobCompletionCardProps {
   jobId: string;
@@ -102,6 +103,8 @@ export function JobCompletionCard({
   const [completionPhotos, setCompletionPhotos] = useState<CompletionPhoto[]>([]);
   const [uploadingPhotos, setUploadingPhotos] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [preparingPhotos, setPreparingPhotos] = useState(false);
+  const preparingPhotosRef = useRef(false);
   const [selectedBeforeFiles, setSelectedBeforeFiles] = useState<File[]>([]);
   const [selectedAfterFiles, setSelectedAfterFiles] = useState<File[]>([]);
   const [previewBeforeUrls, setPreviewBeforeUrls] = useState<string[]>([]);
@@ -274,22 +277,44 @@ export function JobCompletionCard({
 
   const handleBeforeFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
+    e.target.value = "";
+    if (preparingPhotosRef.current || uploadingPhotos) return;
     if (files.length + selectedBeforeFiles.length > 5) {
       toast.error("Maximum 5 before photos allowed");
       return;
     }
-    const compressed = await Promise.all(files.map((f) => compressImage(f)));
-    setSelectedBeforeFiles((prev) => [...prev, ...compressed]);
+    preparingPhotosRef.current = true;
+    setPreparingPhotos(true);
+    try {
+      const compressed = await Promise.all(files.map((f) => compressImage(f)));
+      setSelectedBeforeFiles((prev) => appendCompletionPhotos(prev, compressed));
+    } catch (error) {
+      safeToast.error(error);
+    } finally {
+      preparingPhotosRef.current = false;
+      setPreparingPhotos(false);
+    }
   };
 
   const handleAfterFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
+    e.target.value = "";
+    if (preparingPhotosRef.current || uploadingPhotos) return;
     if (files.length + selectedAfterFiles.length > 5) {
       toast.error("Maximum 5 after photos allowed");
       return;
     }
-    const compressed = await Promise.all(files.map((f) => compressImage(f)));
-    setSelectedAfterFiles((prev) => [...prev, ...compressed]);
+    preparingPhotosRef.current = true;
+    setPreparingPhotos(true);
+    try {
+      const compressed = await Promise.all(files.map((f) => compressImage(f)));
+      setSelectedAfterFiles((prev) => appendCompletionPhotos(prev, compressed));
+    } catch (error) {
+      safeToast.error(error);
+    } finally {
+      preparingPhotosRef.current = false;
+      setPreparingPhotos(false);
+    }
   };
 
   const handleDisputeFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -329,8 +354,14 @@ export function JobCompletionCard({
   };
 
   const uploadPhotos = async (): Promise<boolean> => {
+    if (preparingPhotosRef.current || uploadingPhotos) return false;
     if (selectedBeforeFiles.length === 0 || selectedAfterFiles.length === 0) {
       toast.error("Please upload at least one before photo and one after photo");
+      return false;
+    }
+
+    if (!validCompletionPhotoCounts(selectedBeforeFiles.length, selectedAfterFiles.length)) {
+      toast.error("Maximum 5 before photos and 5 after photos allowed");
       return false;
     }
 
@@ -1218,6 +1249,7 @@ export function JobCompletionCard({
                   type="button"
                   variant="outline"
                   onClick={() => beforeFileInputRef.current?.click()}
+                  disabled={preparingPhotos || uploadingPhotos || submitting}
                   className="w-full"
                 >
                   <Upload className="h-4 w-4 mr-2" />
@@ -1261,6 +1293,7 @@ export function JobCompletionCard({
                   type="button"
                   variant="outline"
                   onClick={() => afterFileInputRef.current?.click()}
+                  disabled={preparingPhotos || uploadingPhotos || submitting}
                   className="w-full"
                 >
                   <Upload className="h-4 w-4 mr-2" />
@@ -1274,6 +1307,7 @@ export function JobCompletionCard({
           <DialogFooter>
             <Button
               variant="outline"
+              disabled={preparingPhotos || uploadingPhotos || submitting}
               onClick={() => {
                 setProviderCompleteDialog(false);
                 setSelectedBeforeFiles([]);
@@ -1285,10 +1319,10 @@ export function JobCompletionCard({
             <Button
               onClick={handleProviderMarkComplete}
               disabled={
-                submitting || uploadingPhotos || selectedBeforeFiles.length === 0 || selectedAfterFiles.length === 0
+                submitting || uploadingPhotos || preparingPhotos || !validCompletionPhotoCounts(selectedBeforeFiles.length, selectedAfterFiles.length)
               }
             >
-              {uploadingPhotos ? `Uploading ${uploadProgress}/${selectedBeforeFiles.length + selectedAfterFiles.length}...` : submitting ? "Submitting..." : "Complete Job"}
+              {preparingPhotos ? "Preparing photos..." : uploadingPhotos ? `Uploading ${uploadProgress}/${selectedBeforeFiles.length + selectedAfterFiles.length}...` : submitting ? "Submitting..." : "Complete Job"}
             </Button>
           </DialogFooter>
         </DialogContent>
