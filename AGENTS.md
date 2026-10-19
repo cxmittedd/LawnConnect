@@ -1,0 +1,2 @@
+# Project rules
+- Bound completion-photo authentication, uploads, and record writes with the shared request timeout helper so stalled network requests cannot leave the completion form permanently busy.

@@ -33,6 +33,7 @@ import { safeToast } from "@/lib/errorHandler";
 import { format } from "date-fns";
 import { sendNotification } from "@/lib/notifications";
 import { compressImage } from "@/lib/imageCompression";
+import { withRequestTimeout } from "@/lib/requestTimeout";
 
 interface JobCompletionCardProps {
   jobId: string;
@@ -100,6 +101,7 @@ export function JobCompletionCard({
   const [providerResponseText, setProviderResponseText] = useState("");
   const [completionPhotos, setCompletionPhotos] = useState<CompletionPhoto[]>([]);
   const [uploadingPhotos, setUploadingPhotos] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [selectedBeforeFiles, setSelectedBeforeFiles] = useState<File[]>([]);
   const [selectedAfterFiles, setSelectedAfterFiles] = useState<File[]>([]);
   const [previewBeforeUrls, setPreviewBeforeUrls] = useState<string[]>([]);
@@ -333,10 +335,11 @@ export function JobCompletionCard({
     }
 
     setUploadingPhotos(true);
+    setUploadProgress(0);
     try {
       const {
         data: { user },
-      } = await supabase.auth.getUser();
+      } = await withRequestTimeout(supabase.auth.getUser(), 20_000);
       if (!user) throw new Error("Not authenticated");
 
       // Upload before photos
@@ -344,18 +347,19 @@ export function JobCompletionCard({
         const fileExt = file.name.split(".").pop();
         const fileName = `${jobId}/before_${crypto.randomUUID()}.${fileExt}`;
 
-        const { error: uploadError } = await supabase.storage.from("completion-photos").upload(fileName, file);
+        const { error: uploadError } = await withRequestTimeout(supabase.storage.from("completion-photos").upload(fileName, file));
 
         if (uploadError) throw uploadError;
 
-        const { error: dbError } = await supabase.from("job_completion_photos").insert({
+        const { error: dbError } = await withRequestTimeout(supabase.from("job_completion_photos").insert({
           job_id: jobId,
           photo_url: fileName,
           uploaded_by: user.id,
           photo_type: "before",
-        });
+        }).abortSignal(AbortSignal.timeout(30_000)), 30_000);
 
         if (dbError) throw dbError;
+        setUploadProgress((count) => count + 1);
       }
 
       // Upload after photos
@@ -363,23 +367,25 @@ export function JobCompletionCard({
         const fileExt = file.name.split(".").pop();
         const fileName = `${jobId}/after_${crypto.randomUUID()}.${fileExt}`;
 
-        const { error: uploadError } = await supabase.storage.from("completion-photos").upload(fileName, file);
+        const { error: uploadError } = await withRequestTimeout(supabase.storage.from("completion-photos").upload(fileName, file));
 
         if (uploadError) throw uploadError;
 
-        const { error: dbError } = await supabase.from("job_completion_photos").insert({
+        const { error: dbError } = await withRequestTimeout(supabase.from("job_completion_photos").insert({
           job_id: jobId,
           photo_url: fileName,
           uploaded_by: user.id,
           photo_type: "after",
-        });
+        }).abortSignal(AbortSignal.timeout(30_000)), 30_000);
 
         if (dbError) throw dbError;
+        setUploadProgress((count) => count + 1);
       }
 
       setSelectedBeforeFiles([]);
       setSelectedAfterFiles([]);
-      await loadCompletionPhotos();
+      // Refresh signed previews without blocking submission on another request.
+      void loadCompletionPhotos();
       return true;
     } catch (error) {
       safeToast.error(error);
@@ -1282,7 +1288,7 @@ export function JobCompletionCard({
                 submitting || uploadingPhotos || selectedBeforeFiles.length === 0 || selectedAfterFiles.length === 0
               }
             >
-              {uploadingPhotos ? "Uploading..." : submitting ? "Submitting..." : "Complete Job"}
+              {uploadingPhotos ? `Uploading ${uploadProgress}/${selectedBeforeFiles.length + selectedAfterFiles.length}...` : submitting ? "Submitting..." : "Complete Job"}
             </Button>
           </DialogFooter>
         </DialogContent>
