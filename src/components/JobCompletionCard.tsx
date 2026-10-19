@@ -269,40 +269,44 @@ export function JobCompletionCard({
     }
   };
 
-  const handleBeforeFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleBeforeFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (files.length + selectedBeforeFiles.length > 5) {
       toast.error("Maximum 5 before photos allowed");
       return;
     }
-    setSelectedBeforeFiles((prev) => [...prev, ...files]);
+    const compressed = await Promise.all(files.map((f) => compressImage(f)));
+    setSelectedBeforeFiles((prev) => [...prev, ...compressed]);
   };
 
-  const handleAfterFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAfterFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (files.length + selectedAfterFiles.length > 5) {
       toast.error("Maximum 5 after photos allowed");
       return;
     }
-    setSelectedAfterFiles((prev) => [...prev, ...files]);
+    const compressed = await Promise.all(files.map((f) => compressImage(f)));
+    setSelectedAfterFiles((prev) => [...prev, ...compressed]);
   };
 
-  const handleDisputeFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleDisputeFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (files.length + selectedDisputeFiles.length > 5) {
       toast.error("Maximum 5 photos allowed");
       return;
     }
-    setSelectedDisputeFiles((prev) => [...prev, ...files]);
+    const compressed = await Promise.all(files.map((f) => compressImage(f)));
+    setSelectedDisputeFiles((prev) => [...prev, ...compressed]);
   };
 
-  const handleResponseFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleResponseFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (files.length + selectedResponseFiles.length > 5) {
       toast.error("Maximum 5 photos allowed");
       return;
     }
-    setSelectedResponseFiles((prev) => [...prev, ...files]);
+    const compressed = await Promise.all(files.map((f) => compressImage(f)));
+    setSelectedResponseFiles((prev) => [...prev, ...compressed]);
   };
 
   const removeBeforeFile = (index: number) => {
