@@ -52,7 +52,10 @@ export default function Quote() {
         return;
       }
       setQuote(data.quote);
-      if (data.quote?.preferred_date) setPreferredDate(data.quote.preferred_date);
+      const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
+      if (data.quote?.preferred_date && data.quote.preferred_date >= tomorrow) {
+        setPreferredDate(data.quote.preferred_date);
+      }
       setLoading(false);
     };
     load();
@@ -81,7 +84,12 @@ export default function Quote() {
     });
     setClaiming(false);
     if (fnError || !data?.success) {
-      safeToast.error(data?.error || 'Could not open this quote.');
+      let message = data?.error;
+      try {
+        const body = await (fnError as { context?: Response })?.context?.json?.();
+        message = body?.error || message;
+      } catch { /* ignore */ }
+      safeToast.error(message || 'Could not open this quote.');
       return;
     }
     setJobId(data.job_id);
