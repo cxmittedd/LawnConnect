@@ -34,6 +34,7 @@ import AdminTransactions from "./pages/AdminTransactions";
 import AdminQuotes from "./pages/AdminQuotes";
 import AdminHomepage from "./pages/AdminHomepage";
 import Quote from "./pages/Quote";
+import PaymentConfirmation from "./pages/PaymentConfirmation";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
 import Install from "./pages/Install";
@@ -69,6 +70,7 @@ const App = () => (
               <Route path="/privacy" element={<PrivacyPolicy />} />
               <Route path="/refund-policy" element={<RefundPolicy />} />
               <Route path="/quote/:token" element={<Quote />} />
+              <Route path="/payment/:id" element={<ProtectedRoute><PaymentConfirmation /></ProtectedRoute>} />
               <Route
                 path="/dashboard"
                 element={

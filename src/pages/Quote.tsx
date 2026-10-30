@@ -151,7 +151,7 @@ export default function Quote() {
                 navigate('/autopay');
                 return;
               }
-              navigate(`/job/${jobId}`);
+              navigate(`/payment/${jobId}`);
             }}
             onCancel={() => setJobId(null)}
           />
