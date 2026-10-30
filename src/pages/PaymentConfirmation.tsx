@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { jsPDF } from 'jspdf';
 import { CheckCircle2, Clock, XCircle, Download, Loader2 } from 'lucide-react';
-import Navigation from '@/components/Navigation';
+import { Navigation } from '@/components/Navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
