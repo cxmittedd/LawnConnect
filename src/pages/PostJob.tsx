@@ -1129,7 +1129,7 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
         </div>
       </main>
 
-      <Dialog open={showAutopayOffer} onOpenChange={(open) => { if (!open) { setShowAutopayOffer(false); navigate('/my-jobs'); } }}>
+      <Dialog open={showAutopayOffer} onOpenChange={(open) => { if (!open) { setShowAutopayOffer(false); navigate(pendingJobId ? `/payment/${pendingJobId}` : '/my-jobs'); } }}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Repeat this every month?</DialogTitle>
@@ -1152,7 +1152,7 @@ const handleProceedToPayment = async (e: React.FormEvent) => {
             ))}
           </div>
           <DialogFooter className="gap-2 sm:gap-0">
-            <Button variant="outline" onClick={() => { setShowAutopayOffer(false); navigate('/my-jobs'); }}>
+            <Button variant="outline" onClick={() => { setShowAutopayOffer(false); navigate(pendingJobId ? `/payment/${pendingJobId}` : '/my-jobs'); }}>
               No thanks
             </Button>
             <Button onClick={() => setUpAutopayFromBooking()} disabled={autopaySaving}>
