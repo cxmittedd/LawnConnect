@@ -6,6 +6,21 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+const COMMUNITY_LABELS: Record<string, string> = {
+  coral_spring: "Coral Springs Village",
+  florence_hall: "Florence Hall",
+  stonebrook_vista: "Stonebrook Vista",
+  stonebrook_manor: "Stonebrook Manor",
+  castlewood: "Castlewood",
+  holland_estate: "Holland Estate",
+};
+// Match normal bookings: "<Community Label>, <address>"
+const jobLocation = (q: { community?: string | null; location: string }) => {
+  const label = q.community ? COMMUNITY_LABELS[q.community] : undefined;
+  if (!label || q.location.toLowerCase().includes(label.toLowerCase())) return q.location;
+  return `${label}, ${q.location}`;
+};
+
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), {
     status,
@@ -44,7 +59,7 @@ serve(async (req) => {
       description: quote.description,
       parish: quote.parish,
       community: quote.community,
-      location: quote.location,
+      location: jobLocation(quote),
       lawn_size: quote.lawn_size,
       price: Number(quote.price),
       status: quote.status,
@@ -104,7 +119,7 @@ serve(async (req) => {
           description: quote.description,
           parish: quote.parish,
           community: quote.community,
-          location: quote.location,
+          location: jobLocation(quote),
           lawn_size: quote.lawn_size,
           custom_price: Number(quote.price),
           frequency: "monthly",
@@ -157,7 +172,7 @@ serve(async (req) => {
         description: quote.description,
         parish: quote.parish,
         community: quote.community,
-        location: quote.location,
+        location: jobLocation(quote),
         lawn_size: quote.lawn_size,
         preferred_date: preferredDate,
         base_price: price,
