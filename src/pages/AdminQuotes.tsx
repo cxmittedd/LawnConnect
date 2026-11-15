@@ -17,6 +17,14 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/auth';
 import { safeToast } from '@/lib/errorHandler';
 import { toast } from 'sonner';
+const QUOTE_COMMUNITIES = [
+  { value: 'coral_spring', label: 'Coral Springs Village' },
+  { value: 'florence_hall', label: 'Florence Hall' },
+  { value: 'stonebrook_vista', label: 'Stonebrook Vista' },
+  { value: 'stonebrook_manor', label: 'Stonebrook Manor' },
+  { value: 'castlewood', label: 'Castlewood' },
+  { value: 'holland_estate', label: 'Holland Estate' },
+];
 import { Loader2, Plus, Copy, CheckCircle, Trash2, FileText } from 'lucide-react';
 
 const JAMAICA_PARISHES = [
@@ -225,7 +233,7 @@ export default function AdminQuotes() {
                       <TableCell className="text-sm">
                         {q.location}
                         <div className="text-xs text-muted-foreground">
-                          {q.community ? `${q.community}, ` : ''}{q.parish}
+                          {q.community ? `${QUOTE_COMMUNITIES.find((c) => c.value === q.community)?.label || q.community}, ` : ''}{q.parish}
                         </div>
                       </TableCell>
                       <TableCell className="font-semibold">J${Number(q.price).toLocaleString()}</TableCell>
@@ -311,11 +319,18 @@ export default function AdminQuotes() {
               </div>
               <div className="space-y-2">
                 <Label>Community (optional)</Label>
-                <Input
-                  placeholder="e.g. Castlewood"
-                  value={form.community}
-                  onChange={(e) => setForm({ ...form, community: e.target.value })}
-                />
+                <Select
+                  value={form.community || 'none'}
+                  onValueChange={(v) => setForm({ ...form, community: v === 'none' ? '' : v })}
+                >
+                  <SelectTrigger><SelectValue placeholder="Select community" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">No community</SelectItem>
+                    {QUOTE_COMMUNITIES.map((c) => (
+                      <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2">
                 <Label>Preferred date (required — client can change it)</Label>
