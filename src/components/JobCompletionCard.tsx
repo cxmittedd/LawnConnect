@@ -34,7 +34,7 @@ import { format } from "date-fns";
 import { sendNotification } from "@/lib/notifications";
 import { compressImage } from "@/lib/imageCompression";
 import { withRequestTimeout } from "@/lib/requestTimeout";
-import { appendCompletionPhotos, validCompletionPhotoCounts } from "@/lib/completionPhotoLimits";
+import { appendCompletionPhotos, validCompletionPhotoCounts, MIN_COMPLETION_PHOTOS_PER_TYPE, MAX_COMPLETION_PHOTOS_PER_TYPE } from "@/lib/completionPhotoLimits";
 
 interface JobCompletionCardProps {
   jobId: string;
@@ -279,8 +279,8 @@ export function JobCompletionCard({
     const files = Array.from(e.target.files || []);
     e.target.value = "";
     if (preparingPhotosRef.current || uploadingPhotos) return;
-    if (files.length + selectedBeforeFiles.length > 5) {
-      toast.error("Maximum 5 before photos allowed");
+    if (files.length + selectedBeforeFiles.length > MAX_COMPLETION_PHOTOS_PER_TYPE) {
+      toast.error(`Maximum ${MAX_COMPLETION_PHOTOS_PER_TYPE} before photos allowed`);
       return;
     }
     preparingPhotosRef.current = true;
@@ -300,8 +300,8 @@ export function JobCompletionCard({
     const files = Array.from(e.target.files || []);
     e.target.value = "";
     if (preparingPhotosRef.current || uploadingPhotos) return;
-    if (files.length + selectedAfterFiles.length > 5) {
-      toast.error("Maximum 5 after photos allowed");
+    if (files.length + selectedAfterFiles.length > MAX_COMPLETION_PHOTOS_PER_TYPE) {
+      toast.error(`Maximum ${MAX_COMPLETION_PHOTOS_PER_TYPE} after photos allowed`);
       return;
     }
     preparingPhotosRef.current = true;
@@ -355,13 +355,13 @@ export function JobCompletionCard({
 
   const uploadPhotos = async (): Promise<boolean> => {
     if (preparingPhotosRef.current || uploadingPhotos) return false;
-    if (selectedBeforeFiles.length === 0 || selectedAfterFiles.length === 0) {
-      toast.error("Please upload at least one before photo and one after photo");
+    if (selectedBeforeFiles.length < MIN_COMPLETION_PHOTOS_PER_TYPE || selectedAfterFiles.length < MIN_COMPLETION_PHOTOS_PER_TYPE) {
+      toast.error(`Please upload at least ${MIN_COMPLETION_PHOTOS_PER_TYPE} before photos and ${MIN_COMPLETION_PHOTOS_PER_TYPE} after photos`);
       return false;
     }
 
     if (!validCompletionPhotoCounts(selectedBeforeFiles.length, selectedAfterFiles.length)) {
-      toast.error("Maximum 5 before photos and 5 after photos allowed");
+      toast.error(`Upload ${MIN_COMPLETION_PHOTOS_PER_TYPE}–${MAX_COMPLETION_PHOTOS_PER_TYPE} before photos and ${MIN_COMPLETION_PHOTOS_PER_TYPE}–${MAX_COMPLETION_PHOTOS_PER_TYPE} after photos`);
       return false;
     }
 
@@ -1244,7 +1244,7 @@ export function JobCompletionCard({
                 </div>
               )}
 
-              {selectedBeforeFiles.length < 5 && (
+              {selectedBeforeFiles.length < MAX_COMPLETION_PHOTOS_PER_TYPE && (
                 <Button
                   type="button"
                   variant="outline"
@@ -1253,10 +1253,10 @@ export function JobCompletionCard({
                   className="w-full"
                 >
                   <Upload className="h-4 w-4 mr-2" />
-                  Add Before Photos ({selectedBeforeFiles.length}/5)
+                  Add Before Photos ({selectedBeforeFiles.length}/{MAX_COMPLETION_PHOTOS_PER_TYPE})
                 </Button>
               )}
-              <p className="text-xs text-muted-foreground">Photos showing the lawn before you started work</p>
+              <p className="text-xs text-muted-foreground">Photos showing the lawn before you started work ({MIN_COMPLETION_PHOTOS_PER_TYPE}–{MAX_COMPLETION_PHOTOS_PER_TYPE} required)</p>
             </div>
 
             {/* After Photos Section */}
@@ -1288,7 +1288,7 @@ export function JobCompletionCard({
                 </div>
               )}
 
-              {selectedAfterFiles.length < 5 && (
+              {selectedAfterFiles.length < MAX_COMPLETION_PHOTOS_PER_TYPE && (
                 <Button
                   type="button"
                   variant="outline"
@@ -1297,10 +1297,10 @@ export function JobCompletionCard({
                   className="w-full"
                 >
                   <Upload className="h-4 w-4 mr-2" />
-                  Add After Photos ({selectedAfterFiles.length}/5)
+                  Add After Photos ({selectedAfterFiles.length}/{MAX_COMPLETION_PHOTOS_PER_TYPE})
                 </Button>
               )}
-              <p className="text-xs text-muted-foreground">Photos showing the completed work</p>
+              <p className="text-xs text-muted-foreground">Photos showing the completed work ({MIN_COMPLETION_PHOTOS_PER_TYPE}–{MAX_COMPLETION_PHOTOS_PER_TYPE} required)</p>
             </div>
           </div>
 

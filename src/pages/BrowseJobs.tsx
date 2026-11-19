@@ -501,7 +501,7 @@ export default function BrowseJobs() {
                 <Alert className="mt-4 border-primary/30 bg-primary/5">
                   <Camera className="h-4 w-4 text-primary" />
                   <AlertDescription>
-                    <strong>Photo Requirement:</strong> You must take <strong>before</strong> and <strong>after</strong> photos of the property. 
+                    <strong>Photo Requirement:</strong> You must take <strong>at least 3 before</strong> and <strong>3 after</strong> photos of the property. 
                     These photos are required to mark the job as complete and receive payment.
                   </AlertDescription>
                 </Alert>
